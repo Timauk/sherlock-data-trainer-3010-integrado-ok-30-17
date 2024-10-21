@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { loadModel } from '@/utils/continuousLearning';
+import * as tf from '@tensorflow/tfjs';
 
 interface GameInitializerProps {
   csvData: number[][];
-  trainedModel: any;
+  trainedModel: tf.LayersModel | null;
   initializePlayers: () => void;
   addLog: (message: string) => void;
-  setTrainedModel: (model: any) => void;
+  setTrainedModel: (model: tf.LayersModel | null) => void;
 }
 
 const GameInitializer: React.FC<GameInitializerProps> = ({

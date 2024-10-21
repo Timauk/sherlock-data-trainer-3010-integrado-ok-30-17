@@ -200,6 +200,7 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     modelMetrics,
     logs,
     addLog,
-    trainedModel
+    trainedModel,
+    setTrainedModel
   };
 };
