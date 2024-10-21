@@ -4,7 +4,7 @@ import * as tf from '@tensorflow/tfjs';
 import DataUploader from '@/components/DataUploader';
 import GameControls from '@/components/GameControls';
 import GameBoard from '@/components/GameBoard';
-import LogDisplay from '@/components/LogDisplay';
+import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
 import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
 import ModelMetrics from '@/components/ModelMetrics';
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,7 @@ const PlayPage: React.FC = () => {
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
@@ -38,8 +38,8 @@ const PlayPage: React.FC = () => {
     modelMetrics
   } = useGameLogic(csvData, trainedModel);
 
-  const addLog = useCallback((message: string) => {
-    setLogs(prevLogs => [...prevLogs, message]);
+  const addLog = useCallback((message: string, matches?: number) => {
+    setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
   const loadCSV = async (file: File) => {
@@ -195,7 +195,7 @@ const PlayPage: React.FC = () => {
             evolutionData={evolutionData}
           />
           
-          <LogDisplay logs={logs} />
+          <EnhancedLogDisplay logs={logs} />
         </div>
 
         <Card className="flex-1">

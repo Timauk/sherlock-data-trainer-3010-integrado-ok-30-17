@@ -27,6 +27,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     randomAccuracy: 0,
     totalPredictions: 0,
   });
+  const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
 
   const initializePlayers = useCallback(() => {
     const newPlayers = Array.from({ length: 10 }, (_, i) => ({
@@ -88,6 +89,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       totalRandomMatches += randomMatches;
 
       const reward = calculateDynamicReward(matches);
+
+      if (matches >= 13) {
+        addLog(`Jogador ${player.id} acertou ${matches} números!`, matches);
+      }
+
       return {
         ...player,
         score: player.score + reward,
@@ -113,7 +119,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }));
 
     setConcursoNumber(prev => prev + 1);
-  }, [players, csvData, concursoNumber, generation, trainedModel]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
 
   const evolveGeneration = useCallback(() => {
     setGeneration(prev => prev + 1);
@@ -123,6 +129,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const calculateDynamicReward = (matches: number): number => {
     return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
   };
+
+  const addLog = useCallback((message: string, matches?: number) => {
+    setLogs(prevLogs => [...prevLogs, { message, matches }]);
+  }, []);
 
   return {
     players,
@@ -136,6 +146,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     gameLoop,
     evolveGeneration,
     neuralNetworkVisualization,
-    modelMetrics
+    modelMetrics,
+    logs,
+    addLog
   };
 };
