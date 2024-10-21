@@ -125,3 +125,6 @@ export {
   ToastClose,
   ToastAction,
 }
+
+// Add this export for the useToast hook
+export { useToast } from "@/components/ui/use-toast"
