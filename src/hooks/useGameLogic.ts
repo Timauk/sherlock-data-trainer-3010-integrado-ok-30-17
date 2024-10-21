@@ -17,7 +17,7 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(initialModel);
   const { toast } = useToast();
 
-  const playerLogic = usePlayerLogic();
+  const { players, initializePlayers, updatePlayerScores } = usePlayerLogic();
   const { makePrediction } = usePredictionLogic(trainedModel, concursoNumber);
 
   const addLog = useCallback((message: string, matches?: number) => {
@@ -38,19 +38,19 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     let newTrainingData: number[][] = [];
     let newLabels: number[][] = [];
 
-    const playerPredictions = playerLogic.players.map(player => makePrediction(currentBoardNumbers, player.weights));
+    const playerPredictions = players.map(player => makePrediction(currentBoardNumbers, player.weights));
     const matches = playerPredictions.map(prediction => 
       prediction.filter(num => currentBoardNumbers.includes(num)).length
     );
 
     totalMatches = matches.reduce((sum, count) => sum + count, 0);
-    totalRandomMatches = playerLogic.players.length * 3; // Assuming average 3 matches for random predictions
+    totalRandomMatches = players.length * 3; // Assuming average 3 matches for random predictions
 
-    playerLogic.updatePlayerScores(matches);
+    updatePlayerScores(matches);
 
     matches.forEach((matchCount, index) => {
       if (matchCount >= 13) {
-        addLog(`Jogador ${playerLogic.players[index].id} acertou ${matchCount} números!`, matchCount);
+        addLog(`Jogador ${players[index].id} acertou ${matchCount} números!`, matchCount);
         newTrainingData.push([...currentBoardNumbers, concursoNumber / 3184, Date.now() / (1000 * 60 * 60 * 24 * 365)]);
         newLabels.push(playerPredictions[index].map(n => n / 25));
       }
@@ -58,7 +58,7 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
 
     setEvolutionData(prev => [
       ...prev,
-      ...playerLogic.players.map(player => ({
+      ...players.map(player => ({
         generation,
         playerId: player.id,
         score: player.score
@@ -67,8 +67,8 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
 
     // Update model metrics
     setModelMetrics(prev => ({
-      accuracy: (prev.accuracy * prev.totalPredictions + totalMatches / (15 * playerLogic.players.length)) / (prev.totalPredictions + 1),
-      randomAccuracy: (prev.randomAccuracy * prev.totalPredictions + totalRandomMatches / (15 * playerLogic.players.length)) / (prev.totalPredictions + 1),
+      accuracy: (prev.accuracy * prev.totalPredictions + totalMatches / (15 * players.length)) / (prev.totalPredictions + 1),
+      randomAccuracy: (prev.randomAccuracy * prev.totalPredictions + totalRandomMatches / (15 * players.length)) / (prev.totalPredictions + 1),
       totalPredictions: prev.totalPredictions + 1,
     }));
 
@@ -89,7 +89,7 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     }
 
     setConcursoNumber(prev => prev + 1);
-  }, [playerLogic, csvData, concursoNumber, generation, trainedModel, addLog, makePrediction, toast]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, makePrediction, toast, updatePlayerScores]);
 
   const evolveGeneration = useCallback(() => {
     setGeneration(prev => prev + 1);
@@ -135,20 +135,20 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
 
   useEffect(() => {
     if (csvData.length > 0 && trainedModel) {
-      playerLogic.initializePlayers();
+      initializePlayers();
       addLog("Jogo pronto para iniciar. Clique em 'Iniciar' para começar.");
     }
-  }, [csvData, trainedModel, playerLogic, addLog]);
+  }, [csvData, trainedModel, initializePlayers, addLog]);
 
   return {
-    players: playerLogic.players,
+    players,
     generation,
     evolutionData,
     boardNumbers,
     concursoNumber,
     isInfiniteMode,
     setIsInfiniteMode,
-    initializePlayers: playerLogic.initializePlayers,
+    initializePlayers,
     gameLoop,
     evolveGeneration,
     neuralNetworkVisualization,
