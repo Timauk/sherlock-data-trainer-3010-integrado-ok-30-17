@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 
 export const updateModel = async (model: tf.LayersModel, newData: number[][], labels: number[][]) => {
   // Ensure the model is compiled
-  if (!model.compiled) {
+  if (!model.optimizer) {
     model.compile({
       optimizer: 'adam',
       loss: 'meanSquaredError',
