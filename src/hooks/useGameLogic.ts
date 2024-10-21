@@ -49,7 +49,13 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     
     setNeuralNetworkVisualization({ input: weightedInput, output: result, weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) });
     
-    return result.map(num => Math.round(num * 24) + 1);
+    // Ensure 15 unique numbers
+    const uniqueNumbers = new Set<number>();
+    while (uniqueNumbers.size < 15) {
+      const num = Math.floor(Math.random() * 25) + 1;
+      uniqueNumbers.add(num);
+    }
+    return Array.from(uniqueNumbers);
   };
 
   const gameLoop = useCallback(() => {
