@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from 'next-themes';
-import * as tf from '@tensorflow/tfjs';
-import DataUploader from '@/components/DataUploader';
 import GameControls from '@/components/GameControls';
 import GameBoard from '@/components/GameBoard';
 import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
@@ -10,17 +8,15 @@ import ModelMetrics from '@/components/ModelMetrics';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
-import { loadModel, saveModel } from '@/utils/continuousLearning';
+import GameInitializer from '@/components/GameInitializer';
+import DataLoader from '@/components/DataLoader';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [csvData, setCsvData] = useState<number[][]>([]);
-  const [csvDates, setCsvDates] = useState<Date[]>([]);
   const { theme, setTheme } = useTheme();
-  const { toast } = useToast();
 
   const {
     players,
@@ -37,77 +33,9 @@ const PlayPage: React.FC = () => {
     modelMetrics,
     logs,
     addLog,
-    trainedModel
+    trainedModel,
+    setTrainedModel
   } = useGameLogic(csvData, null);
-
-  const loadCSV = async (file: File) => {
-    try {
-      const text = await file.text();
-      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
-      const data = lines.map(line => {
-        const values = line.split(',');
-        return {
-          concurso: parseInt(values[0], 10),
-          data: new Date(values[1].split('/').reverse().join('-')),
-          bolas: values.slice(2).map(Number)
-        };
-      });
-      setCsvData(data.map(d => d.bolas));
-      setCsvDates(data.map(d => d.data));
-      addLog("CSV carregado e processado com sucesso!");
-      addLog(`Número de registros carregados: ${data.length}`);
-    } catch (error) {
-      addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
-  };
-
-  const loadModelFromFile = async (jsonFile: File, weightsFile: File) => {
-    try {
-      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      await saveModel(model);
-      toast({
-        title: "Modelo Carregado",
-        description: "O modelo foi carregado e salvo com sucesso.",
-      });
-      addLog("Modelo carregado com sucesso!");
-    } catch (error) {
-      addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      console.error("Detalhes do erro:", error);
-      toast({
-        title: "Erro ao Carregar Modelo",
-        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const saveModelToFile = async () => {
-    if (trainedModel) {
-      try {
-        await trainedModel.save('downloads://modelo-sherlok');
-        addLog("Modelo salvo com sucesso!");
-        toast({
-          title: "Modelo Salvo",
-          description: "O modelo atual foi salvo com sucesso.",
-        });
-      } catch (error) {
-        addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        console.error("Detalhes do erro:", error);
-        toast({
-          title: "Erro ao Salvar Modelo",
-          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      addLog("Nenhum modelo para salvar.");
-      toast({
-        title: "Nenhum Modelo",
-        description: "Não há nenhum modelo carregado para salvar.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const playGame = () => {
     if (csvData.length === 0 || !trainedModel) {
@@ -136,7 +64,7 @@ const PlayPage: React.FC = () => {
     addLog(`Modo infinito ${!isInfiniteMode ? 'ativado' : 'desativado'}.`);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     let intervalId: NodeJS.Timeout;
     if (isPlaying) {
       intervalId = setInterval(() => {
@@ -158,60 +86,69 @@ const PlayPage: React.FC = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4 neon-title">SHERLOK</h2>
       
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1">
-          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModelFromFile} onSaveModel={saveModelToFile} />
+      <GameInitializer
+        csvData={csvData}
+        trainedModel={trainedModel}
+        initializePlayers={initializePlayers}
+        addLog={addLog}
+        setTrainedModel={setTrainedModel}
+      />
 
-          <GameControls
-            isPlaying={isPlaying}
-            onPlay={playGame}
-            onPause={pauseGame}
-            onReset={resetGame}
-            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          />
+      <DataLoader
+        onCsvUpload={setCsvData}
+        addLog={addLog}
+        setTrainedModel={setTrainedModel}
+        trainedModel={trainedModel}
+      />
 
-          <Button onClick={toggleInfiniteMode} className="mt-2">
-            {isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
-          </Button>
+      <GameControls
+        isPlaying={isPlaying}
+        onPlay={playGame}
+        onPause={pauseGame}
+        onReset={resetGame}
+        onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      />
 
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Progresso da Geração {generation}</h3>
-            <Progress value={progress} className="w-full" />
-          </div>
+      <Button onClick={toggleInfiniteMode} className="mt-2">
+        {isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
+      </Button>
 
-          <ModelMetrics
-            accuracy={modelMetrics.accuracy}
-            randomAccuracy={modelMetrics.randomAccuracy}
-            totalPredictions={modelMetrics.totalPredictions}
-          />
-
-          <GameBoard
-            boardNumbers={boardNumbers}
-            concursoNumber={concursoNumber}
-            players={players}
-            evolutionData={evolutionData}
-          />
-          
-          <EnhancedLogDisplay logs={logs} />
-        </div>
-
-        <Card className="flex-1">
-          <CardHeader>
-            <CardTitle>Visualização da Rede Neural</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {neuralNetworkVisualization ? (
-              <NeuralNetworkVisualization
-                input={neuralNetworkVisualization.input}
-                output={neuralNetworkVisualization.output}
-                weights={neuralNetworkVisualization.weights}
-              />
-            ) : (
-              <p>Aguardando dados da rede neural...</p>
-            )}
-          </CardContent>
-        </Card>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">Progresso da Geração {generation}</h3>
+        <Progress value={progress} className="w-full" />
       </div>
+
+      <ModelMetrics
+        accuracy={modelMetrics.accuracy}
+        randomAccuracy={modelMetrics.randomAccuracy}
+        totalPredictions={modelMetrics.totalPredictions}
+      />
+
+      <GameBoard
+        boardNumbers={boardNumbers}
+        concursoNumber={concursoNumber}
+        players={players}
+        evolutionData={evolutionData}
+      />
+      
+      <EnhancedLogDisplay logs={logs} />
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Visualização da Rede Neural</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {neuralNetworkVisualization ? (
+            <NeuralNetworkVisualization
+              input={neuralNetworkVisualization.input}
+              output={neuralNetworkVisualization.output}
+              weights={neuralNetworkVisualization.weights}
+            />
+          ) : (
+            <p>Aguardando dados da rede neural...</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
