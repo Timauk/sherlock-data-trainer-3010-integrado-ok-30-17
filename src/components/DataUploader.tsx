@@ -1,13 +1,14 @@
 import React, { useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload } from 'lucide-react';
+import { Upload, Save } from 'lucide-react';
 
 interface DataUploaderProps {
   onCsvUpload: (file: File) => void;
   onModelUpload: (jsonFile: File, weightsFile: File) => void;
+  onSaveModel: () => void;
 }
 
-const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload }) => {
+const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload, onSaveModel }) => {
   const jsonFileRef = useRef<HTMLInputElement>(null);
   const weightsFileRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +57,9 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload 
       </div>
       <Button onClick={handleModelUpload}>
         <Upload className="mr-2 h-4 w-4" /> Carregar Modelo
+      </Button>
+      <Button onClick={onSaveModel}>
+        <Save className="mr-2 h-4 w-4" /> Salvar Modelo Atual
       </Button>
     </div>
   );

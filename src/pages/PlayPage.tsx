@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,6 +20,7 @@ const PlayPage: React.FC = () => {
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
 
   const {
     players,
@@ -64,9 +66,46 @@ const PlayPage: React.FC = () => {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
       setTrainedModel(model);
       addLog("Modelo carregado com sucesso!");
+      toast({
+        title: "Modelo Carregado",
+        description: "O modelo foi carregado com sucesso.",
+      });
     } catch (error) {
       addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       console.error("Detalhes do erro:", error);
+      toast({
+        title: "Erro ao Carregar Modelo",
+        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveModel = async () => {
+    if (trainedModel) {
+      try {
+        await trainedModel.save('downloads://modelo-atual');
+        addLog("Modelo salvo com sucesso!");
+        toast({
+          title: "Modelo Salvo",
+          description: "O modelo atual foi salvo com sucesso.",
+        });
+      } catch (error) {
+        addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        console.error("Detalhes do erro:", error);
+        toast({
+          title: "Erro ao Salvar Modelo",
+          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      addLog("Nenhum modelo para salvar.");
+      toast({
+        title: "Nenhum Modelo",
+        description: "Não há nenhum modelo carregado para salvar.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -122,7 +161,7 @@ const PlayPage: React.FC = () => {
       
       <div className="flex flex-wrap gap-4">
         <div className="flex-1">
-          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModel} />
+          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModel} onSaveModel={saveModel} />
 
           <GameControls
             isPlaying={isPlaying}
