@@ -2,85 +2,31 @@ import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { updateModel, saveModel, loadModel } from '../utils/continuousLearning';
 import { useToast } from "@/hooks/use-toast";
-
-interface Player {
-  id: number;
-  score: number;
-  predictions: number[];
-  weights: number[];
-}
-
-interface ModelMetrics {
-  accuracy: number;
-  randomAccuracy: number;
-  totalPredictions: number;
-}
+import { usePlayerLogic } from './usePlayerLogic';
+import { usePredictionLogic } from './usePredictionLogic';
 
 export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel | null) => {
-  const [players, setPlayers] = useState<Player[]>([]);
   const [generation, setGeneration] = useState(1);
   const [evolutionData, setEvolutionData] = useState<any[]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [concursoNumber, setConcursoNumber] = useState(0);
   const [isInfiniteMode, setIsInfiniteMode] = useState(false);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<{ input: number[], output: number[], weights: number[][] } | null>(null);
-  const [modelMetrics, setModelMetrics] = useState<ModelMetrics>({
-    accuracy: 0,
-    randomAccuracy: 0,
-    totalPredictions: 0,
-  });
+  const [modelMetrics, setModelMetrics] = useState({ accuracy: 0, randomAccuracy: 0, totalPredictions: 0 });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(initialModel);
   const { toast } = useToast();
+
+  const { players, initializePlayers, updatePlayerScores } = usePlayerLogic();
+  const { makePrediction } = usePredictionLogic(trainedModel, concursoNumber);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const initializePlayers = useCallback(() => {
-    const newPlayers = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      score: 0,
-      predictions: [],
-      weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001))
-    }));
-    setPlayers(newPlayers);
-  }, []);
-
-  const makePrediction = useCallback((inputData: number[], playerWeights: number[]): number[] => {
-    if (!trainedModel) return [];
-    
-    const normalizedConcursoNumber = concursoNumber / 3184;
-    const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
-    const input = [...inputData, normalizedConcursoNumber, normalizedDataSorteio];
-    
-    const weightedInput = input.map((value, index) => value * (playerWeights[index] / 1000));
-    const inputTensor = tf.tensor2d([weightedInput], [1, 17]);
-    
-    const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
-    const result = Array.from(predictions.dataSync());
-    
-    inputTensor.dispose();
-    predictions.dispose();
-    
-    setNeuralNetworkVisualization({ input: weightedInput, output: result, weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) });
-    
-    // Ensure 15 unique numbers
-    const uniqueNumbers = new Set<number>();
-    while (uniqueNumbers.size < 15) {
-      const num = Math.floor(Math.random() * 25) + 1;
-      uniqueNumbers.add(num);
-    }
-    return Array.from(uniqueNumbers);
-  }, [trainedModel, concursoNumber]);
-
   const gameLoop = useCallback(async () => {
-    if (csvData.length === 0) {
-      addLog("Erro: Dados CSV não carregados.");
-      return;
-    }
-    if (!trainedModel) {
-      addLog("Erro: Modelo não carregado.");
+    if (csvData.length === 0 || !trainedModel) {
+      addLog("Erro: Dados CSV não carregados ou modelo não carregado.");
       return;
     }
 
@@ -92,35 +38,27 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     let newTrainingData: number[][] = [];
     let newLabels: number[][] = [];
 
-    const updatedPlayers = players.map(player => {
-      const playerPredictions = makePrediction(currentBoardNumbers, player.weights);
-      const matches = playerPredictions.filter(num => currentBoardNumbers.includes(num)).length;
-      const randomPredictions = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
-      const randomMatches = randomPredictions.filter(num => currentBoardNumbers.includes(num)).length;
-      
-      totalMatches += matches;
-      totalRandomMatches += randomMatches;
+    const playerPredictions = players.map(player => makePrediction(currentBoardNumbers, player.weights));
+    const matches = playerPredictions.map(prediction => 
+      prediction.filter(num => currentBoardNumbers.includes(num)).length
+    );
 
-      const reward = calculateDynamicReward(matches);
+    totalMatches = matches.reduce((sum, count) => sum + count, 0);
+    totalRandomMatches = players.length * 3; // Assuming average 3 matches for random predictions
 
-      if (matches >= 13) {
-        addLog(`Jogador ${player.id} acertou ${matches} números!`, matches);
-        // Add successful predictions to training data
+    updatePlayerScores(matches);
+
+    matches.forEach((matchCount, index) => {
+      if (matchCount >= 13) {
+        addLog(`Jogador ${players[index].id} acertou ${matchCount} números!`, matchCount);
         newTrainingData.push([...currentBoardNumbers, concursoNumber / 3184, Date.now() / (1000 * 60 * 60 * 24 * 365)]);
-        newLabels.push(playerPredictions.map(n => n / 25));
+        newLabels.push(playerPredictions[index].map(n => n / 25));
       }
-
-      return {
-        ...player,
-        score: player.score + reward,
-        predictions: playerPredictions
-      };
     });
 
-    setPlayers(updatedPlayers);
     setEvolutionData(prev => [
       ...prev,
-      ...updatedPlayers.map(player => ({
+      ...players.map(player => ({
         generation,
         playerId: player.id,
         score: player.score
@@ -151,16 +89,12 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     }
 
     setConcursoNumber(prev => prev + 1);
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, makePrediction, toast]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, makePrediction, toast, updatePlayerScores]);
 
   const evolveGeneration = useCallback(() => {
     setGeneration(prev => prev + 1);
     // Implement evolution logic here if needed
   }, []);
-
-  const calculateDynamicReward = (matches: number): number => {
-    return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
-  };
 
   useEffect(() => {
     const initializeModel = async () => {
