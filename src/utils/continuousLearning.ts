@@ -1,6 +1,15 @@
 import * as tf from '@tensorflow/tfjs';
 
 export const updateModel = async (model: tf.LayersModel, newData: number[][], labels: number[][]) => {
+  // Ensure the model is compiled
+  if (!model.compiled) {
+    model.compile({
+      optimizer: 'adam',
+      loss: 'meanSquaredError',
+      metrics: ['accuracy']
+    });
+  }
+
   const xs = tf.tensor2d(newData);
   const ys = tf.tensor2d(labels);
 
@@ -27,6 +36,14 @@ export const saveModel = async (model: tf.LayersModel) => {
 export const loadModel = async (): Promise<tf.LayersModel | null> => {
   try {
     const model = await tf.loadLayersModel('indexeddb://sherlok-model');
+    // Ensure the loaded model is compiled
+    if (!model.compiled) {
+      model.compile({
+        optimizer: 'adam',
+        loss: 'meanSquaredError',
+        metrics: ['accuracy']
+      });
+    }
     console.log('Modelo carregado com sucesso');
     return model;
   } catch (error) {

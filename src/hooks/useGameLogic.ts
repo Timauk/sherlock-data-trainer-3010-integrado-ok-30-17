@@ -163,6 +163,27 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
   };
 
   useEffect(() => {
+    const initializeModel = async () => {
+      if (!trainedModel) {
+        const newModel = tf.sequential({
+          layers: [
+            tf.layers.dense({ inputShape: [17], units: 64, activation: 'relu' }),
+            tf.layers.dense({ units: 32, activation: 'relu' }),
+            tf.layers.dense({ units: 15, activation: 'sigmoid' })
+          ]
+        });
+        newModel.compile({
+          optimizer: 'adam',
+          loss: 'meanSquaredError',
+          metrics: ['accuracy']
+        });
+        setTrainedModel(newModel);
+      }
+    };
+    initializeModel();
+  }, [trainedModel]);
+
+  useEffect(() => {
     const loadSavedModel = async () => {
       const savedModel = await loadModel();
       if (savedModel) {
