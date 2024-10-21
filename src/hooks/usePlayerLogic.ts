@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import * as tf from '@tensorflow/tfjs';
 
 interface Player {
   id: number;
