@@ -38,7 +38,7 @@ const PlayPage: React.FC = () => {
     logs,
     addLog,
     trainedModel
-  } = useGameLogic(csvData, null);  // Pass null initially, we'll load the model in useEffect
+  } = useGameLogic(csvData, null);
 
   const loadCSV = async (file: File) => {
     try {
@@ -64,11 +64,12 @@ const PlayPage: React.FC = () => {
   const loadModelFromFile = async (jsonFile: File, weightsFile: File) => {
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      await saveModel(model);  // Save the loaded model to IndexedDB
+      await saveModel(model);
       toast({
         title: "Modelo Carregado",
         description: "O modelo foi carregado e salvo com sucesso.",
       });
+      addLog("Modelo carregado com sucesso!");
     } catch (error) {
       addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       console.error("Detalhes do erro:", error);
@@ -109,7 +110,7 @@ const PlayPage: React.FC = () => {
   };
 
   const playGame = () => {
-    if (!trainedModel || csvData.length === 0) {
+    if (csvData.length === 0 || !trainedModel) {
       addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
       return;
     }

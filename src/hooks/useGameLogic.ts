@@ -75,7 +75,14 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
   }, [trainedModel, concursoNumber]);
 
   const gameLoop = useCallback(async () => {
-    if (csvData.length === 0 || !trainedModel) return;
+    if (csvData.length === 0) {
+      addLog("Erro: Dados CSV não carregados.");
+      return;
+    }
+    if (!trainedModel) {
+      addLog("Erro: Modelo não carregado.");
+      return;
+    }
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
@@ -164,10 +171,19 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
           title: "Modelo Carregado",
           description: "Um modelo salvo anteriormente foi carregado com sucesso.",
         });
+      } else {
+        addLog("Nenhum modelo salvo encontrado. Utilize a opção de carregar modelo.");
       }
     };
     loadSavedModel();
-  }, [toast]);
+  }, [toast, addLog]);
+
+  useEffect(() => {
+    if (csvData.length > 0 && trainedModel) {
+      initializePlayers();
+      addLog("Jogo pronto para iniciar. Clique em 'Iniciar' para começar.");
+    }
+  }, [csvData, trainedModel, initializePlayers, addLog]);
 
   return {
     players,
