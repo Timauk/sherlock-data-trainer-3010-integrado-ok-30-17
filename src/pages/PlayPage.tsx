@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import * as tf from '@tensorflow/tfjs';
 import DataUploader from '@/components/DataUploader';
@@ -19,7 +19,6 @@ const PlayPage: React.FC = () => {
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
-  const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
@@ -35,12 +34,10 @@ const PlayPage: React.FC = () => {
     gameLoop,
     evolveGeneration,
     neuralNetworkVisualization,
-    modelMetrics
+    modelMetrics,
+    logs,
+    addLog
   } = useGameLogic(csvData, trainedModel);
-
-  const addLog = useCallback((message: string, matches?: number) => {
-    setLogs(prevLogs => [...prevLogs, { message, matches }]);
-  }, []);
 
   const loadCSV = async (file: File) => {
     try {
@@ -111,7 +108,7 @@ const PlayPage: React.FC = () => {
     }
   };
 
-  const playGame = useCallback(() => {
+  const playGame = () => {
     if (!trainedModel || csvData.length === 0) {
       addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
       return;
@@ -119,7 +116,7 @@ const PlayPage: React.FC = () => {
     setIsPlaying(true);
     addLog("Jogo iniciado.");
     gameLoop();
-  }, [trainedModel, csvData, gameLoop, addLog]);
+  };
 
   const pauseGame = () => {
     setIsPlaying(false);
@@ -130,7 +127,6 @@ const PlayPage: React.FC = () => {
     setIsPlaying(false);
     setProgress(0);
     initializePlayers();
-    setLogs([]);
     addLog("Jogo reiniciado.");
   };
 

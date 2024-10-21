@@ -29,6 +29,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
 
+  const addLog = useCallback((message: string, matches?: number) => {
+    setLogs(prevLogs => [...prevLogs, { message, matches }]);
+  }, []);
+
   const initializePlayers = useCallback(() => {
     const newPlayers = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
@@ -129,10 +133,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const calculateDynamicReward = (matches: number): number => {
     return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
   };
-
-  const addLog = useCallback((message: string, matches?: number) => {
-    setLogs(prevLogs => [...prevLogs, { message, matches }]);
-  }, []);
 
   return {
     players,
