@@ -8,6 +8,12 @@ interface Player {
   weights: number[];
 }
 
+interface ModelMetrics {
+  accuracy: number;
+  randomAccuracy: number;
+  totalPredictions: number;
+}
+
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [generation, setGeneration] = useState(1);
@@ -16,6 +22,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [concursoNumber, setConcursoNumber] = useState(0);
   const [isInfiniteMode, setIsInfiniteMode] = useState(false);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<{ input: number[], output: number[], weights: number[][] } | null>(null);
+  const [modelMetrics, setModelMetrics] = useState<ModelMetrics>({
+    accuracy: 0,
+    randomAccuracy: 0,
+    totalPredictions: 0,
+  });
 
   const initializePlayers = useCallback(() => {
     const newPlayers = Array.from({ length: 10 }, (_, i) => ({
@@ -64,9 +75,18 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
 
+    let totalMatches = 0;
+    let totalRandomMatches = 0;
+
     const updatedPlayers = players.map(player => {
       const playerPredictions = makePrediction(currentBoardNumbers, player.weights);
       const matches = playerPredictions.filter(num => currentBoardNumbers.includes(num)).length;
+      const randomPredictions = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
+      const randomMatches = randomPredictions.filter(num => currentBoardNumbers.includes(num)).length;
+      
+      totalMatches += matches;
+      totalRandomMatches += randomMatches;
+
       const reward = calculateDynamicReward(matches);
       return {
         ...player,
@@ -84,6 +104,13 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         score: player.score
       }))
     ]);
+
+    // Update model metrics
+    setModelMetrics(prev => ({
+      accuracy: (prev.accuracy * prev.totalPredictions + totalMatches / (15 * players.length)) / (prev.totalPredictions + 1),
+      randomAccuracy: (prev.randomAccuracy * prev.totalPredictions + totalRandomMatches / (15 * players.length)) / (prev.totalPredictions + 1),
+      totalPredictions: prev.totalPredictions + 1,
+    }));
 
     setConcursoNumber(prev => prev + 1);
   }, [players, csvData, concursoNumber, generation, trainedModel]);
@@ -108,6 +135,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     initializePlayers,
     gameLoop,
     evolveGeneration,
-    neuralNetworkVisualization
+    neuralNetworkVisualization,
+    modelMetrics
   };
 };

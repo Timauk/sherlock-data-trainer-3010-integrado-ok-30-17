@@ -6,11 +6,12 @@ import GameControls from '@/components/GameControls';
 import GameBoard from '@/components/GameBoard';
 import LogDisplay from '@/components/LogDisplay';
 import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
+import ModelMetrics from '@/components/ModelMetrics';
 import { Progress } from "@/components/ui/progress";
-import { useGameLogic } from '@/hooks/useGameLogic';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast"; // Updated import path
+import { useToast } from "@/hooks/use-toast";
+import { useGameLogic } from '@/hooks/useGameLogic';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,7 +34,8 @@ const PlayPage: React.FC = () => {
     initializePlayers,
     gameLoop,
     evolveGeneration,
-    neuralNetworkVisualization
+    neuralNetworkVisualization,
+    modelMetrics
   } = useGameLogic(csvData, trainedModel);
 
   const addLog = useCallback((message: string) => {
@@ -179,6 +181,12 @@ const PlayPage: React.FC = () => {
             <h3 className="text-lg font-semibold mb-2">Progresso da Geração {generation}</h3>
             <Progress value={progress} className="w-full" />
           </div>
+
+          <ModelMetrics
+            accuracy={modelMetrics.accuracy}
+            randomAccuracy={modelMetrics.randomAccuracy}
+            totalPredictions={modelMetrics.totalPredictions}
+          />
 
           <GameBoard
             boardNumbers={boardNumbers}
