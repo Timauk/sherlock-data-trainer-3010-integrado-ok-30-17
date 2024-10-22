@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ const PlayPage: React.FC = () => {
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
-  const loadCSV = async (file: File) => {
+  const loadCSV = useCallback(async (file: File) => {
     try {
       const text = await file.text();
       const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
@@ -36,9 +36,9 @@ const PlayPage: React.FC = () => {
     } catch (error) {
       gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
-  };
+  }, [gameLogic]);
 
-  const loadModel = async (jsonFile: File, weightsFile: File) => {
+  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
       setTrainedModel(model);
@@ -56,9 +56,9 @@ const PlayPage: React.FC = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [gameLogic, toast]);
 
-  const saveModel = async () => {
+  const saveModel = useCallback(async () => {
     if (trainedModel) {
       try {
         await trainedModel.save('downloads://modelo-atual');
@@ -84,9 +84,9 @@ const PlayPage: React.FC = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [trainedModel, gameLogic, toast]);
 
-  const playGame = () => {
+  const playGame = useCallback(() => {
     if (!trainedModel || csvData.length === 0) {
       gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
       return;
@@ -94,19 +94,19 @@ const PlayPage: React.FC = () => {
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
     gameLogic.gameLoop();
-  };
+  }, [trainedModel, csvData, gameLogic]);
 
-  const pauseGame = () => {
+  const pauseGame = useCallback(() => {
     setIsPlaying(false);
     gameLogic.addLog("Jogo pausado.");
-  };
+  }, [gameLogic]);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     setIsPlaying(false);
     setProgress(0);
     gameLogic.initializePlayers();
     gameLogic.addLog("Jogo reiniciado.");
-  };
+  }, [gameLogic]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
