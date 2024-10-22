@@ -75,7 +75,11 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
       </div>
 
       <div className="flex-1">
-        <NeuralNetworkVisualization layers={[15, 64, 32, 15]} />
+        <NeuralNetworkVisualization 
+          layers={[15, 64, 32, 15]} 
+          inputData={gameLogic.neuralNetworkVisualization?.input}
+          outputData={gameLogic.neuralNetworkVisualization?.output}
+        />
       </div>
     </div>
   );

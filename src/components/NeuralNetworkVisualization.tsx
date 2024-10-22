@@ -2,25 +2,38 @@ import React, { useState, useEffect } from 'react';
 
 interface NeuralNetworkVisualizationProps {
   layers: number[];
+  inputData?: number[];
+  outputData?: number[];
 }
 
-const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({ layers }) => {
-  const [activeNode, setActiveNode] = useState<string | null>(null);
+const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({ layers, inputData, outputData }) => {
+  const [activeNodes, setActiveNodes] = useState<string[]>([]);
   const width = 600;
   const height = 400;
   const nodeRadius = 10;
   const layerSpacing = width / (layers.length + 1);
-  const maxNodesInLayer = Math.max(...layers);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const randomLayer = Math.floor(Math.random() * layers.length);
-      const randomNode = Math.floor(Math.random() * layers[randomLayer]);
-      setActiveNode(`node-${randomLayer}-${randomNode}`);
-    }, 1000); // Ativa um nó aleatório a cada segundo
-
-    return () => clearInterval(interval);
-  }, [layers]);
+    if (inputData && outputData) {
+      const newActiveNodes: string[] = [];
+      
+      // Ativar nós da camada de entrada
+      inputData.forEach((value, index) => {
+        if (value > 0.5) { // Podemos ajustar este limiar conforme necessário
+          newActiveNodes.push(`node-0-${index}`);
+        }
+      });
+      
+      // Ativar nós da camada de saída
+      outputData.forEach((value, index) => {
+        if (value > 0.5) { // Podemos ajustar este limiar conforme necessário
+          newActiveNodes.push(`node-${layers.length - 1}-${index}`);
+        }
+      });
+      
+      setActiveNodes(newActiveNodes);
+    }
+  }, [inputData, outputData, layers]);
 
   const calculateNodePosition = (layerIndex: number, nodeIndex: number, nodesInLayer: number) => {
     const x = (layerIndex + 1) * layerSpacing;
@@ -41,7 +54,7 @@ const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
             cy={y}
             r={nodeRadius}
             className={`fill-blue-500 transition-all duration-300 ${
-              activeNode === nodeKey ? 'animate-pulse' : ''
+              activeNodes.includes(nodeKey) ? 'animate-pulse' : ''
             }`}
           />
         );
