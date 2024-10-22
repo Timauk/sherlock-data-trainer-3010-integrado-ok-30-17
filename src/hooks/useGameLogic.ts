@@ -155,6 +155,16 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
   }, [csvData]);
 
+  const evolveGeneration = useCallback(() => {
+    setGeneration(prev => prev + 1);
+    // Implement evolution logic here if needed
+    addLog(`Geração ${generation} concluída. Iniciando geração ${generation + 1}.`);
+  }, [generation, addLog]);
+
+  const calculateDynamicReward = (matches: number): number => {
+    return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
+  };
+
   return {
     players,
     generation,
