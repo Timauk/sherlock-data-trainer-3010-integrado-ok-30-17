@@ -1,15 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface NeuralNetworkVisualizationProps {
   layers: number[];
 }
 
 const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({ layers }) => {
+  const [activeNode, setActiveNode] = useState<string | null>(null);
   const width = 600;
   const height = 400;
   const nodeRadius = 10;
   const layerSpacing = width / (layers.length + 1);
   const maxNodesInLayer = Math.max(...layers);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const randomLayer = Math.floor(Math.random() * layers.length);
+      const randomNode = Math.floor(Math.random() * layers[randomLayer]);
+      setActiveNode(`node-${randomLayer}-${randomNode}`);
+    }, 1000); // Ativa um nó aleatório a cada segundo
+
+    return () => clearInterval(interval);
+  }, [layers]);
 
   const calculateNodePosition = (layerIndex: number, nodeIndex: number, nodesInLayer: number) => {
     const x = (layerIndex + 1) * layerSpacing;
@@ -22,13 +33,16 @@ const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
     return layers.flatMap((nodesInLayer, layerIndex) =>
       Array.from({ length: nodesInLayer }, (_, nodeIndex) => {
         const { x, y } = calculateNodePosition(layerIndex, nodeIndex, nodesInLayer);
+        const nodeKey = `node-${layerIndex}-${nodeIndex}`;
         return (
           <circle
-            key={`node-${layerIndex}-${nodeIndex}`}
+            key={nodeKey}
             cx={x}
             cy={y}
             r={nodeRadius}
-            fill="#4299e1"
+            className={`fill-blue-500 transition-all duration-300 ${
+              activeNode === nodeKey ? 'animate-pulse' : ''
+            }`}
           />
         );
       })
@@ -48,7 +62,7 @@ const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
               y1={start.y}
               x2={end.x}
               y2={end.y}
-              stroke="#a0aec0"
+              className="stroke-gray-300"
               strokeWidth="1"
             />
           );
