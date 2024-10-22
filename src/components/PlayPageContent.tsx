@@ -72,6 +72,8 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
         />
         
         <EnhancedLogDisplay logs={gameLogic.logs} />
+        
+        <NeuralNetworkVisualization layers={[15, 64, 32, 15]} />
       </div>
 
       <div className="flex-1">
