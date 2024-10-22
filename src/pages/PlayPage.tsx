@@ -9,9 +9,10 @@ import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization'
 import ModelMetrics from '@/components/ModelMetrics';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
+import { PlayPageHeader } from '@/components/PlayPageHeader';
+import { PlayPageContent } from '@/components/PlayPageContent';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -22,22 +23,7 @@ const PlayPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
-  const {
-    players,
-    generation,
-    evolutionData,
-    boardNumbers,
-    concursoNumber,
-    isInfiniteMode,
-    setIsInfiniteMode,
-    initializePlayers,
-    gameLoop,
-    evolveGeneration,
-    neuralNetworkVisualization,
-    modelMetrics,
-    logs,
-    addLog
-  } = useGameLogic(csvData, trainedModel);
+  const gameLogic = useGameLogic(csvData, trainedModel);
 
   const loadCSV = async (file: File) => {
     try {
@@ -139,78 +125,36 @@ const PlayPage: React.FC = () => {
     let intervalId: NodeJS.Timeout;
     if (isPlaying) {
       intervalId = setInterval(() => {
-        gameLoop();
+        gameLogic.gameLoop();
         setProgress((prevProgress) => {
           const newProgress = prevProgress + (100 / csvData.length);
           if (newProgress >= 100) {
-            evolveGeneration();
-            return isInfiniteMode ? 0 : 100;
+            gameLogic.evolveGeneration();
+            return gameLogic.isInfiniteMode ? 0 : 100;
           }
           return newProgress;
         });
       }, 1000);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLoop, evolveGeneration, isInfiniteMode]);
+  }, [isPlaying, csvData, gameLogic]);
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 neon-title">SHERLOK</h2>
-      
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1">
-          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModel} onSaveModel={saveModel} />
-
-          <GameControls
-            isPlaying={isPlaying}
-            onPlay={playGame}
-            onPause={pauseGame}
-            onReset={resetGame}
-            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          />
-
-          <Button onClick={toggleInfiniteMode} className="mt-2">
-            {isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
-          </Button>
-
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Progresso da Geração {generation}</h3>
-            <Progress value={progress} className="w-full" />
-          </div>
-
-          <ModelMetrics
-            accuracy={modelMetrics.accuracy}
-            randomAccuracy={modelMetrics.randomAccuracy}
-            totalPredictions={modelMetrics.totalPredictions}
-          />
-
-          <GameBoard
-            boardNumbers={boardNumbers}
-            concursoNumber={concursoNumber}
-            players={players}
-            evolutionData={evolutionData}
-          />
-          
-          <EnhancedLogDisplay logs={logs} />
-        </div>
-
-        <Card className="flex-1">
-          <CardHeader>
-            <CardTitle>Visualização da Rede Neural</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {neuralNetworkVisualization ? (
-              <NeuralNetworkVisualization
-                input={neuralNetworkVisualization.input}
-                output={neuralNetworkVisualization.output}
-                weights={neuralNetworkVisualization.weights}
-              />
-            ) : (
-              <p>Aguardando dados da rede neural...</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <PlayPageHeader />
+      <PlayPageContent
+        isPlaying={isPlaying}
+        onPlay={playGame}
+        onPause={pauseGame}
+        onReset={resetGame}
+        onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onCsvUpload={loadCSV}
+        onModelUpload={loadModel}
+        onSaveModel={saveModel}
+        progress={progress}
+        generation={gameLogic.generation}
+        gameLogic={gameLogic}
+      />
     </div>
   );
 };

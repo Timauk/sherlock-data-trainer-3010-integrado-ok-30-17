@@ -62,3 +62,18 @@ export function addDerivedFeatures(data: number[][]): number[][] {
     return [...row, ...frequencies];
   });
 }
+
+export async function updateModel(model: tf.LayersModel, newData: number[][]): Promise<tf.LayersModel> {
+  const xs = tf.tensor2d(newData.map(row => row.slice(0, -15)));
+  const ys = tf.tensor2d(newData.map(row => row.slice(-15)));
+
+  await model.fit(xs, ys, {
+    epochs: 1,
+    batchSize: 32,
+  });
+
+  xs.dispose();
+  ys.dispose();
+
+  return model;
+}

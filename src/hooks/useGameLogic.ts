@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
+import { updateModel } from '../utils/aiModel';
 
 interface Player {
   id: number;
@@ -28,6 +29,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     totalPredictions: 0,
   });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
+
+  const [trainingData, setTrainingData] = useState<number[][]>([]);
+  const [updateInterval, setUpdateInterval] = useState(10);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -115,6 +119,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       }))
     ]);
 
+    // Collect training data
+    setTrainingData(prev => [...prev, [...currentBoardNumbers, ...updatedPlayers[0].predictions]]);
+
     // Update model metrics
     setModelMetrics(prev => ({
       accuracy: (prev.accuracy * prev.totalPredictions + totalMatches / (15 * players.length)) / (prev.totalPredictions + 1),
@@ -123,16 +130,30 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }));
 
     setConcursoNumber(prev => prev + 1);
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
 
-  const evolveGeneration = useCallback(() => {
-    setGeneration(prev => prev + 1);
-    // Implement evolution logic here if needed
-  }, []);
+    // Update model if necessary
+    if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
+      updateModelWithNewData();
+    }
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, updateInterval, trainingData]);
 
-  const calculateDynamicReward = (matches: number): number => {
-    return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
-  };
+  const updateModelWithNewData = useCallback(async () => {
+    if (!trainedModel || trainingData.length === 0) return;
+
+    try {
+      const updatedModel = await updateModel(trainedModel, trainingData);
+      setTrainedModel(updatedModel);
+      setTrainingData([]); // Clear training data after update
+      addLog(`Modelo atualizado com ${trainingData.length} novos registros.`);
+    } catch (error) {
+      addLog(`Erro ao atualizar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  }, [trainedModel, trainingData, addLog]);
+
+  useEffect(() => {
+    // Set update interval based on CSV data length
+    setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
+  }, [csvData]);
 
   return {
     players,
