@@ -77,11 +77,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
       </div>
 
       <div className="flex-1">
-        <NeuralNetworkVisualization
+        {/* We're not using this visualization anymore, so we'll remove it */}
+        {/* <NeuralNetworkVisualization
           input={gameLogic.neuralNetworkVisualization?.input || []}
           output={gameLogic.neuralNetworkVisualization?.output || []}
           weights={gameLogic.neuralNetworkVisualization?.weights || []}
-        />
+        /> */}
       </div>
     </div>
   );
