@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { updateModel, saveModel, loadModel } from '../utils/continuousLearning';
-import { useToast } from "@/hooks/use-toast";
 
 interface Player {
   id: number;
@@ -16,7 +14,7 @@ interface ModelMetrics {
   totalPredictions: number;
 }
 
-export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel | null) => {
+export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [generation, setGeneration] = useState(1);
   const [evolutionData, setEvolutionData] = useState<any[]>([]);
@@ -30,8 +28,6 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     totalPredictions: 0,
   });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
-  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(initialModel);
-  const { toast } = useToast();
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -47,7 +43,11 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     setPlayers(newPlayers);
   }, []);
 
-  const makePrediction = useCallback((inputData: number[], playerWeights: number[]): number[] => {
+  useEffect(() => {
+    initializePlayers();
+  }, [initializePlayers]);
+
+  const makePrediction = (inputData: number[], playerWeights: number[]): number[] => {
     if (!trainedModel) return [];
     
     const normalizedConcursoNumber = concursoNumber / 3184;
@@ -72,9 +72,9 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
       uniqueNumbers.add(num);
     }
     return Array.from(uniqueNumbers);
-  }, [trainedModel, concursoNumber]);
+  };
 
-  const gameLoop = useCallback(async () => {
+  const gameLoop = useCallback(() => {
     if (csvData.length === 0 || !trainedModel) return;
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
@@ -82,8 +82,6 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
 
     let totalMatches = 0;
     let totalRandomMatches = 0;
-    let newTrainingData: number[][] = [];
-    let newLabels: number[][] = [];
 
     const updatedPlayers = players.map(player => {
       const playerPredictions = makePrediction(currentBoardNumbers, player.weights);
@@ -98,9 +96,6 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
 
       if (matches >= 13) {
         addLog(`Jogador ${player.id} acertou ${matches} números!`, matches);
-        // Add successful predictions to training data
-        newTrainingData.push([...currentBoardNumbers, concursoNumber / 3184, Date.now() / (1000 * 60 * 60 * 24 * 365)]);
-        newLabels.push(playerPredictions.map(n => n / 25));
       }
 
       return {
@@ -127,24 +122,8 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
       totalPredictions: prev.totalPredictions + 1,
     }));
 
-    // Continuous learning
-    if (newTrainingData.length > 0) {
-      const updatedModel = await updateModel(trainedModel, newTrainingData, newLabels);
-      setTrainedModel(updatedModel);
-      addLog("Modelo atualizado com novos dados de treinamento");
-    }
-
-    // Save model periodically (e.g., every 10 rounds)
-    if (concursoNumber % 10 === 0) {
-      await saveModel(trainedModel);
-      toast({
-        title: "Modelo Salvo",
-        description: "O modelo foi salvo com sucesso para uso futuro.",
-      });
-    }
-
     setConcursoNumber(prev => prev + 1);
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, makePrediction, toast]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
 
   const evolveGeneration = useCallback(() => {
     setGeneration(prev => prev + 1);
@@ -154,20 +133,6 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
   const calculateDynamicReward = (matches: number): number => {
     return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
   };
-
-  useEffect(() => {
-    const loadSavedModel = async () => {
-      const savedModel = await loadModel();
-      if (savedModel) {
-        setTrainedModel(savedModel);
-        toast({
-          title: "Modelo Carregado",
-          description: "Um modelo salvo anteriormente foi carregado com sucesso.",
-        });
-      }
-    };
-    loadSavedModel();
-  }, [toast]);
 
   return {
     players,
@@ -183,7 +148,6 @@ export const useGameLogic = (csvData: number[][], initialModel: tf.LayersModel |
     neuralNetworkVisualization,
     modelMetrics,
     logs,
-    addLog,
-    trainedModel
+    addLog
   };
 };

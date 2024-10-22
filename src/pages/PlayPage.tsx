@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
-import { loadModel, saveModel } from '@/utils/continuousLearning';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
+  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
@@ -36,9 +36,8 @@ const PlayPage: React.FC = () => {
     neuralNetworkVisualization,
     modelMetrics,
     logs,
-    addLog,
-    trainedModel
-  } = useGameLogic(csvData, null);  // Pass null initially, we'll load the model in useEffect
+    addLog
+  } = useGameLogic(csvData, trainedModel);
 
   const loadCSV = async (file: File) => {
     try {
@@ -61,13 +60,14 @@ const PlayPage: React.FC = () => {
     }
   };
 
-  const loadModelFromFile = async (jsonFile: File, weightsFile: File) => {
+  const loadModel = async (jsonFile: File, weightsFile: File) => {
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      await saveModel(model);  // Save the loaded model to IndexedDB
+      setTrainedModel(model);
+      addLog("Modelo carregado com sucesso!");
       toast({
         title: "Modelo Carregado",
-        description: "O modelo foi carregado e salvo com sucesso.",
+        description: "O modelo foi carregado com sucesso.",
       });
     } catch (error) {
       addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -80,10 +80,10 @@ const PlayPage: React.FC = () => {
     }
   };
 
-  const saveModelToFile = async () => {
+  const saveModel = async () => {
     if (trainedModel) {
       try {
-        await trainedModel.save('downloads://modelo-sherlok');
+        await trainedModel.save('downloads://modelo-atual');
         addLog("Modelo salvo com sucesso!");
         toast({
           title: "Modelo Salvo",
@@ -159,7 +159,7 @@ const PlayPage: React.FC = () => {
       
       <div className="flex flex-wrap gap-4">
         <div className="flex-1">
-          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModelFromFile} onSaveModel={saveModelToFile} />
+          <DataUploader onCsvUpload={loadCSV} onModelUpload={loadModel} onSaveModel={saveModel} />
 
           <GameControls
             isPlaying={isPlaying}
