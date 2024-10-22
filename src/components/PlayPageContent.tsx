@@ -7,6 +7,7 @@ import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization'
 import ModelMetrics from '@/components/ModelMetrics';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useGameLogic } from '@/hooks/useGameLogic';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -19,7 +20,7 @@ interface PlayPageContentProps {
   onSaveModel: () => void;
   progress: number;
   generation: number;
-  gameLogic: ReturnType<typeof import('@/hooks/useGameLogic').useGameLogic>;
+  gameLogic: ReturnType<typeof useGameLogic>;
 }
 
 export const PlayPageContent: React.FC<PlayPageContentProps> = ({

@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import * as tf from '@tensorflow/tfjs';
-import DataUploader from '@/components/DataUploader';
-import GameControls from '@/components/GameControls';
-import GameBoard from '@/components/GameBoard';
-import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
-import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
-import ModelMetrics from '@/components/ModelMetrics';
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
@@ -39,10 +31,10 @@ const PlayPage: React.FC = () => {
       });
       setCsvData(data.map(d => d.bolas));
       setCsvDates(data.map(d => d.data));
-      addLog("CSV carregado e processado com sucesso!");
-      addLog(`Número de registros carregados: ${data.length}`);
+      gameLogic.addLog("CSV carregado e processado com sucesso!");
+      gameLogic.addLog(`Número de registros carregados: ${data.length}`);
     } catch (error) {
-      addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
 
@@ -50,13 +42,13 @@ const PlayPage: React.FC = () => {
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
       setTrainedModel(model);
-      addLog("Modelo carregado com sucesso!");
+      gameLogic.addLog("Modelo carregado com sucesso!");
       toast({
         title: "Modelo Carregado",
         description: "O modelo foi carregado com sucesso.",
       });
     } catch (error) {
-      addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       console.error("Detalhes do erro:", error);
       toast({
         title: "Erro ao Carregar Modelo",
@@ -70,13 +62,13 @@ const PlayPage: React.FC = () => {
     if (trainedModel) {
       try {
         await trainedModel.save('downloads://modelo-atual');
-        addLog("Modelo salvo com sucesso!");
+        gameLogic.addLog("Modelo salvo com sucesso!");
         toast({
           title: "Modelo Salvo",
           description: "O modelo atual foi salvo com sucesso.",
         });
       } catch (error) {
-        addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         console.error("Detalhes do erro:", error);
         toast({
           title: "Erro ao Salvar Modelo",
@@ -85,7 +77,7 @@ const PlayPage: React.FC = () => {
         });
       }
     } else {
-      addLog("Nenhum modelo para salvar.");
+      gameLogic.addLog("Nenhum modelo para salvar.");
       toast({
         title: "Nenhum Modelo",
         description: "Não há nenhum modelo carregado para salvar.",
@@ -96,29 +88,24 @@ const PlayPage: React.FC = () => {
 
   const playGame = () => {
     if (!trainedModel || csvData.length === 0) {
-      addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
+      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
       return;
     }
     setIsPlaying(true);
-    addLog("Jogo iniciado.");
-    gameLoop();
+    gameLogic.addLog("Jogo iniciado.");
+    gameLogic.gameLoop();
   };
 
   const pauseGame = () => {
     setIsPlaying(false);
-    addLog("Jogo pausado.");
+    gameLogic.addLog("Jogo pausado.");
   };
 
   const resetGame = () => {
     setIsPlaying(false);
     setProgress(0);
-    initializePlayers();
-    addLog("Jogo reiniciado.");
-  };
-
-  const toggleInfiniteMode = () => {
-    setIsInfiniteMode(!isInfiniteMode);
-    addLog(`Modo infinito ${!isInfiniteMode ? 'ativado' : 'desativado'}.`);
+    gameLogic.initializePlayers();
+    gameLogic.addLog("Jogo reiniciado.");
   };
 
   useEffect(() => {

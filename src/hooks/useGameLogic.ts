@@ -142,9 +142,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     try {
       const updatedModel = await updateModel(trainedModel, trainingData);
-      setTrainedModel(updatedModel);
-      setTrainingData([]); // Clear training data after update
+      // We can't directly set the trainedModel state here as it's passed as a prop
+      // Instead, we'll need to handle this update in the parent component
       addLog(`Modelo atualizado com ${trainingData.length} novos registros.`);
+      setTrainingData([]); // Clear training data after update
     } catch (error) {
       addLog(`Erro ao atualizar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
@@ -165,6 +166,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     return matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
   };
 
+  const toggleInfiniteMode = useCallback(() => {
+    setIsInfiniteMode(prev => !prev);
+    addLog(`Modo infinito ${isInfiniteMode ? 'desativado' : 'ativado'}.`);
+  }, [isInfiniteMode, addLog]);
+
   return {
     players,
     generation,
@@ -179,6 +185,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     neuralNetworkVisualization,
     modelMetrics,
     logs,
-    addLog
+    addLog,
+    toggleInfiniteMode
   };
 };
