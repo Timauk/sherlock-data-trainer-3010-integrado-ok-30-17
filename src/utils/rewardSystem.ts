@@ -11,11 +11,11 @@ export const calculateReward = (matches: number): number => {
   return -5;
 };
 
-export const logReward = (matches: number): string => {
+export const logReward = (matches: number, playerId: number): string => {
   const reward = calculateReward(matches);
   if (reward > 0) {
-    return `Premiação: +${reward} pontos por acertar ${matches} números!`;
+    return `Jogador ${playerId} - Premiação: +${reward} pontos por acertar ${matches} números!`;
   } else {
-    return `Penalidade: ${reward} pontos por acertar apenas ${matches} números.`;
+    return `Jogador ${playerId} - Penalidade: ${reward} pontos por acertar apenas ${matches} números.`;
   }
 };

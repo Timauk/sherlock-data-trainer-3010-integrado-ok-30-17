@@ -122,7 +122,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       const reward = calculateReward(matches);
       
       if (matches >= 11) {
-        addLog(logReward(matches), matches);
+        addLog(logReward(matches, player.id), matches);
       }
 
       return {
