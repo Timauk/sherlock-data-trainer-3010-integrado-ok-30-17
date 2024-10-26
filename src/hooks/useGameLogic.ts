@@ -4,6 +4,7 @@ import { updateModel } from '../utils/aiModel';
 import { useToast } from "@/hooks/use-toast";
 import { calculateReward, logReward } from '../utils/rewardSystem';
 import { createOffspring, selectBestPlayers } from '../utils/evolutionSystem';
+import { makePrediction } from '../utils/predictionUtils';
 import { Player, ModelVisualization } from '../types/gameTypes';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
@@ -76,49 +77,33 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setPlayers(newPlayers);
   }, []);
 
-  const makePrediction = (inputData: number[], playerWeights: number[]): number[] => {
-    if (!trainedModel) return [];
-    
-    const normalizedConcursoNumber = concursoNumber / 3184;
-    const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
-    const input = [...inputData, normalizedConcursoNumber, normalizedDataSorteio];
-    
-    const weightedInput = input.map((value, index) => value * (playerWeights[index] / 1000));
-    const inputTensor = tf.tensor2d([weightedInput], [1, 17]);
-    
-    const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
-    const result = Array.from(await predictions.data());
-    
-    inputTensor.dispose();
-    predictions.dispose();
-    
-    setNeuralNetworkVisualization({ input: weightedInput, output: result, weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) });
-    
-    // Ensure 15 unique numbers
-    const uniqueNumbers = new Set<number>();
-    while (uniqueNumbers.size < 15) {
-      const num = Math.floor(Math.random() * 25) + 1;
-      uniqueNumbers.add(num);
-    }
-    return Array.from(uniqueNumbers);
-  };
-
-  const gameLoop = useCallback(() => {
+  const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
     
-    // Atualiza os números e datas para análise lunar
     setNumbers(prev => [...prev, currentBoardNumbers].slice(-100));
     setDates(prev => [...prev, new Date()].slice(-100));
 
     let totalMatches = 0;
     let totalRandomMatches = 0;
 
-    const updatedPlayers = players.map(player => {
-      const playerPredictions = makePrediction(currentBoardNumbers, player.weights);
-      const matches = playerPredictions.filter(num => currentBoardNumbers.includes(num)).length;
+    const playerPredictions = await Promise.all(
+      players.map(player => 
+        makePrediction(
+          trainedModel, 
+          currentBoardNumbers, 
+          player.weights, 
+          concursoNumber,
+          setNeuralNetworkVisualization
+        )
+      )
+    );
+
+    const updatedPlayers = players.map((player, index) => {
+      const predictions = playerPredictions[index];
+      const matches = predictions.filter(num => currentBoardNumbers.includes(num)).length;
       const randomPredictions = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
       const randomMatches = randomPredictions.filter(num => currentBoardNumbers.includes(num)).length;
       
@@ -135,7 +120,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       return {
         ...player,
         score: player.score + reward,
-        predictions: playerPredictions,
+        predictions,
         fitness: matches
       };
     });
