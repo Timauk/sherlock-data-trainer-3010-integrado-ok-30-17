@@ -13,13 +13,11 @@ const calculateConsistencyBonus = (player: Player): number => {
   
   let consistentPredictions = 0;
   for (let i = 1; i < player.predictions.length; i++) {
-    if (!Array.isArray(player.predictions[i-1]) || !Array.isArray(player.predictions[i])) continue;
+    const prev = player.predictions[i - 1];
+    const curr = player.predictions[i];
     
-    const previousPredictions = player.predictions[i - 1] as number[];
-    const currentPredictions = player.predictions[i] as number[];
-    
-    if (Array.isArray(previousPredictions) && Array.isArray(currentPredictions)) {
-      const intersection = previousPredictions.filter(num => currentPredictions.includes(num));
+    if (Array.isArray(prev) && Array.isArray(curr)) {
+      const intersection = (prev as number[]).filter(num => (curr as number[]).includes(num));
       if (intersection.length >= 10) consistentPredictions++;
     }
   }
@@ -31,9 +29,9 @@ const calculateAdaptabilityScore = (player: Player): number => {
   if (player.predictions.length < 5) return 0;
   
   const recentPredictions = player.predictions.slice(-5);
-  if (!recentPredictions.every(Array.isArray)) return 0;
+  if (!recentPredictions.every(pred => Array.isArray(pred))) return 0;
   
-  const validPredictions = recentPredictions as number[][];
+  const validPredictions = recentPredictions.map(pred => pred as number[]);
   const uniqueNumbers = new Set(validPredictions.flat());
   
   return (uniqueNumbers.size / (25 * 0.6)) * 5; // 60% de cobertura dos números possíveis
