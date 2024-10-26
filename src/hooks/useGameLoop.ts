@@ -29,7 +29,7 @@ export const useGameLoop = (
     if (csvData.length === 0 || !trainedModel) return;
 
     // Increment concurso number
-    setConcursoNumber(prevNumber => prevNumber + 1);
+    setConcursoNumber(concursoNumber + 1);
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
