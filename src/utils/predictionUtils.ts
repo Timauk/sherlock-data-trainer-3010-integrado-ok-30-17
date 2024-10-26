@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { ModelVisualization } from '../types/gameTypes';
+import { analyzeAdvancedPatterns, enrichPredictionData } from './advancedDataAnalysis';
 
 interface LunarData {
   lunarPhase: string;
@@ -12,14 +13,15 @@ export async function makePrediction(
   playerWeights: number[],
   concursoNumber: number,
   setNeuralNetworkVisualization: (vis: ModelVisualization) => void,
-  lunarData?: LunarData
+  lunarData?: LunarData,
+  historicalData?: { numbers: number[][], dates: Date[] }
 ): Promise<number[]> {
   if (!trainedModel) return [];
   
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Include lunar phase data in prediction
+  // Include lunar phase data
   const lunarPhaseEncoding = {
     Nova: [1, 0, 0, 0],
     Crescente: [0, 1, 0, 0],
@@ -31,14 +33,23 @@ export async function makePrediction(
     lunarPhaseEncoding[lunarData.lunarPhase as keyof typeof lunarPhaseEncoding] : 
     [0, 0, 0, 0];
 
-  const input = [
+  let enrichedInput = [
     ...inputData, 
     normalizedConcursoNumber, 
     normalizedDataSorteio,
     ...lunarPhaseData
   ];
+
+  // Adiciona métricas avançadas se houver dados históricos
+  if (historicalData && historicalData.numbers.length > 0) {
+    const advancedMetrics = analyzeAdvancedPatterns(
+      historicalData.numbers,
+      historicalData.dates
+    );
+    enrichedInput = enrichPredictionData(enrichedInput, advancedMetrics);
+  }
   
-  const weightedInput = input.map((value, index) => 
+  const weightedInput = enrichedInput.map((value, index) => 
     value * (playerWeights[index] / 1000));
   
   const inputTensor = tf.tensor2d([weightedInput], [1, weightedInput.length]);
