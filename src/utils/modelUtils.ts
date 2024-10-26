@@ -9,12 +9,20 @@ export const updateModelWithNewData = async (
   if (!trainedModel || trainingData.length === 0) return trainedModel;
 
   try {
+    // Ensure model is compiled before training
+    trainedModel.compile({
+      optimizer: 'adam',
+      loss: 'meanSquaredError',
+      metrics: ['accuracy']
+    });
+
     const xs = tf.tensor2d(trainingData.map(row => row.slice(0, -15)));
     const ys = tf.tensor2d(trainingData.map(row => row.slice(-15)));
 
     await trainedModel.fit(xs, ys, {
       epochs: 1,
       batchSize: 32,
+      validationSplit: 0.1
     });
 
     xs.dispose();
