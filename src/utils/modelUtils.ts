@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from "@/components/ui/use-toast";
 
 export const updateModelWithNewData = async (
   trainedModel: tf.LayersModel,
@@ -21,6 +21,7 @@ export const updateModelWithNewData = async (
     ys.dispose();
 
     addLog(`Modelo atualizado com ${trainingData.length} novos registros.`);
+    const { toast } = useToast();
     toast({
       title: "Modelo Atualizado",
       description: "O modelo foi atualizado com sucesso com os novos dados.",

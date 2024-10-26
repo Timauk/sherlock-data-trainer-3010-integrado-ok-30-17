@@ -1,13 +1,13 @@
-import { useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { useGameState } from './useGameState';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
 import { makePrediction } from '@/utils/predictionUtils';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
-import { ModelVisualization } from '@/types/gameTypes';
+import { ModelVisualization, Player } from '@/types/gameTypes';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -37,6 +37,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
   const [frequencyData, setFrequencyData] = useState<{ [key: string]: number[] }>({});
+  const [updateInterval, setUpdateInterval] = useState(10);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -107,18 +108,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }
   }, [players, generation, trainedModel, gameCount, championData, toast, trainingData]);
 
-  const initializePlayers = useCallback(() => {
-    const newPlayers = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      score: 0,
-      predictions: [],
-      weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
-      fitness: 0,
-      generation: 1
-    }));
-    setPlayers(newPlayers);
-  }, []);
-
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
@@ -173,7 +162,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       ...updatedPlayers.map(player => ({
         generation,
         playerId: player.id,
-        score: player.score
+        score: player.score,
+        fitness: player.fitness
       }))
     ]);
 
@@ -191,9 +181,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     // Update model if necessary
     if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
-      updateModelWithNewData();
+      await updateModelWithNewData(trainedModel, trainingData, addLog);
+      setTrainingData([]); // Clear training data after update
     }
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, updateInterval]);
 
   const updateModelWithNewDataCallback = useCallback(async () => {
     if (!trainedModel || trainingData.length === 0) return;
@@ -232,11 +223,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
   }, [csvData]);
 
-  const toggleInfiniteMode = useCallback(() => {
-    setIsInfiniteMode(prev => !prev);
-    addLog(`Modo infinito ${isInfiniteMode ? 'desativado' : 'ativado'}.`);
-  }, [isInfiniteMode, addLog]);
-
   return {
     players,
     generation,
@@ -249,11 +235,23 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     neuralNetworkVisualization,
     modelMetrics,
     logs,
-    initializePlayers,
+    initializePlayers: useCallback(() => {
+      const newPlayers = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        score: 0,
+        predictions: [],
+        weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
+        fitness: 0,
+        generation: 1
+      }));
+      setPlayers(newPlayers);
+    }, []),
     gameLoop,
     evolveGeneration,
     addLog,
-    toggleInfiniteMode,
+    toggleInfiniteMode: useCallback(() => {
+      setIsInfiniteMode(prev => !prev);
+    }, []),
     dates,
     numbers,
     updateFrequencyData,
