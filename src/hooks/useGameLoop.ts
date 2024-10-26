@@ -20,7 +20,8 @@ export const useGameLoop = (
   setNumbers: React.Dispatch<React.SetStateAction<number[][]>>,
   setDates: React.Dispatch<React.SetStateAction<Date[]>>,
   setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
-  setBoardNumbers: (numbers: number[]) => void
+  setBoardNumbers: (numbers: number[]) => void,
+  showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
@@ -68,7 +69,7 @@ export const useGameLoop = (
     setTrainingData(currentTrainingData => [...currentTrainingData, [...currentBoardNumbers, ...updatedPlayers[0].predictions]]);
 
     if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
-      await updateModelWithNewData(trainedModel, trainingData, addLog);
+      await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
       setTrainingData([]);
     }
   }, [
@@ -86,7 +87,8 @@ export const useGameLoop = (
     setNumbers,
     setDates,
     setBoardNumbers,
-    setNeuralNetworkVisualization
+    setNeuralNetworkVisualization,
+    showToast
   ]);
 
   return gameLoop;

@@ -1,15 +1,14 @@
 import * as tf from '@tensorflow/tfjs';
-import { useToast } from "@/components/ui/use-toast";
 
 export const updateModelWithNewData = async (
   trainedModel: tf.LayersModel,
   trainingData: number[][],
-  addLog: (message: string) => void
+  addLog: (message: string) => void,
+  showToast?: (title: string, description: string) => void
 ) => {
   if (!trainedModel || trainingData.length === 0) return trainedModel;
 
   try {
-    // Ensure model is compiled before training
     trainedModel.compile({
       optimizer: 'adam',
       loss: 'meanSquaredError',
@@ -34,16 +33,17 @@ export const updateModelWithNewData = async (
     xs.dispose();
     ys.dispose();
 
-    addLog(`Modelo atualizado com ${trainingData.length} novos registros.`);
-    const { toast } = useToast();
-    toast({
-      title: "Modelo Atualizado",
-      description: "O modelo foi atualizado com sucesso com os novos dados.",
-    });
+    const message = `Modelo atualizado com ${trainingData.length} novos registros.`;
+    addLog(message);
+    
+    if (showToast) {
+      showToast("Modelo Atualizado", "O modelo foi atualizado com sucesso com os novos dados.");
+    }
 
     return trainedModel;
   } catch (error) {
-    addLog(`Erro ao atualizar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    const errorMessage = `Erro ao atualizar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+    addLog(errorMessage);
     console.error("Detalhes do erro:", error);
     return trainedModel;
   }
