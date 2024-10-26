@@ -16,9 +16,9 @@ export const useGameLoop = (
   addLog: (message: string, matches?: number) => void,
   updateInterval: number,
   trainingData: number[][],
-  setTrainingData: (data: number[][]) => void,
-  setNumbers: (numbers: number[][]) => void,
-  setDates: (dates: Date[]) => void,
+  setTrainingData: React.Dispatch<React.SetStateAction<number[][]>>,
+  setNumbers: React.Dispatch<React.SetStateAction<number[][]>>,
+  setDates: React.Dispatch<React.SetStateAction<Date[]>>,
   setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
   setBoardNumbers: (numbers: number[]) => void
 ) => {
@@ -27,8 +27,8 @@ export const useGameLoop = (
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
-    setNumbers(prev => [...prev, currentBoardNumbers].slice(-100) as number[][]);
-    setDates(prev => [...prev, new Date()].slice(-100) as Date[]);
+    setNumbers(currentNumbers => [...currentNumbers, currentBoardNumbers].slice(-100));
+    setDates(currentDates => [...currentDates, new Date()].slice(-100));
 
     const playerPredictions = await Promise.all(
       players.map(player => 
@@ -65,13 +65,29 @@ export const useGameLoop = (
       }))
     ]);
 
-    setTrainingData(prev => [...prev, [...currentBoardNumbers, ...updatedPlayers[0].predictions]] as number[][]);
+    setTrainingData(currentTrainingData => [...currentTrainingData, [...currentBoardNumbers, ...updatedPlayers[0].predictions]]);
 
     if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
       await updateModelWithNewData(trainedModel, trainingData, addLog);
       setTrainingData([]);
     }
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, updateInterval]);
+  }, [
+    players,
+    setPlayers,
+    csvData,
+    trainedModel,
+    concursoNumber,
+    setEvolutionData,
+    generation,
+    addLog,
+    updateInterval,
+    trainingData,
+    setTrainingData,
+    setNumbers,
+    setDates,
+    setBoardNumbers,
+    setNeuralNetworkVisualization
+  ]);
 
   return gameLoop;
 };
