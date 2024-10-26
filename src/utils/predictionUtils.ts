@@ -21,38 +21,17 @@ export async function makePrediction(
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Include lunar phase data
-  const lunarPhaseEncoding = {
-    Nova: [1, 0, 0, 0],
-    Crescente: [0, 1, 0, 0],
-    Cheia: [0, 0, 1, 0],
-    Minguante: [0, 0, 0, 1]
-  };
-  
-  const lunarPhaseData = lunarData ? 
-    lunarPhaseEncoding[lunarData.lunarPhase as keyof typeof lunarPhaseEncoding] : 
-    [0, 0, 0, 0];
-
+  // Ensure we only use the first 15 numbers plus concurso and data (total 17)
   let enrichedInput = [
-    ...inputData, 
+    ...inputData.slice(0, 15), 
     normalizedConcursoNumber, 
-    normalizedDataSorteio,
-    ...lunarPhaseData
+    normalizedDataSorteio
   ];
-
-  // Adiciona métricas avançadas se houver dados históricos
-  if (historicalData && historicalData.numbers.length > 0) {
-    const advancedMetrics = analyzeAdvancedPatterns(
-      historicalData.numbers,
-      historicalData.dates
-    );
-    enrichedInput = enrichPredictionData(enrichedInput, advancedMetrics);
-  }
   
   const weightedInput = enrichedInput.map((value, index) => 
     value * (playerWeights[index] / 1000));
   
-  const inputTensor = tf.tensor2d([weightedInput], [1, weightedInput.length]);
+  const inputTensor = tf.tensor2d([weightedInput]);
   
   const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
   const result = Array.from(await predictions.data());
