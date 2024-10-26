@@ -12,6 +12,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const { toast } = useToast();
   const { players, setPlayers, initializePlayers } = useGameInitialization();
   const [generation, setGeneration] = useState(1);
+  const [gameCount, setGameCount] = useState(0);
   const [championData, setChampionData] = useState<{
     player: Player;
     trainingData: number[][];
@@ -36,6 +37,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [isInfiniteMode, setIsInfiniteMode] = useState(false);
   const [concursoNumber, setConcursoNumber] = useState(0);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
+  const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -54,12 +56,15 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     trainingData,
     setTrainingData,
     setNumbers,
-    setDates
+    setDates,
+    setNeuralNetworkVisualization,
+    setBoardNumbers
   );
 
   const evolveGeneration = useCallback(async () => {
     const bestPlayers = selectBestPlayers(players);
-    // A cada 1000 jogos, clona o campeão e atualiza o modelo
+    setGameCount(prev => prev + 1);
+
     if (gameCount % 1000 === 0 && bestPlayers.length > 0) {
       const champion = bestPlayers[0];
       const clones = cloneChampion(champion, players.length);
@@ -73,13 +78,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
             championData.trainingData
           );
           
-          // Atualiza o modelo com o conhecimento do campeão
           toast({
             title: "Modelo Atualizado",
             description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
           });
           
-          // Armazena os dados do novo campeão
           setChampionData({
             player: champion,
             trainingData: trainingData
@@ -89,7 +92,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         }
       }
     } else {
-      // Evolução normal da geração
       const newGeneration = bestPlayers.map(player => ({
         ...player,
         generation: generation + 1
@@ -100,7 +102,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     setGeneration(prev => prev + 1);
     
-    // Atualiza dados de evolução
     setEvolutionData(prev => [
       ...prev,
       ...players.map(player => ({
@@ -123,7 +124,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     setFrequencyData(newFrequencyData);
     
-    // Update training data with frequency information
     if (trainedModel && players.length > 0) {
       const frequencyFeatures = Object.values(newFrequencyData).flat();
       setTrainingData(prev => {
@@ -161,6 +161,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     dates,
     numbers,
     updateFrequencyData,
-    isInfiniteMode
+    isInfiniteMode,
+    boardNumbers,
+    concursoNumber
   };
 };

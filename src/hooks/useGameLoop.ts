@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { Player } from '@/types/gameTypes';
+import { Player, ModelVisualization } from '@/types/gameTypes';
 import { makePrediction } from '@/utils/predictionUtils';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
@@ -19,20 +19,20 @@ export const useGameLoop = (
   setTrainingData: (data: number[][]) => void,
   setNumbers: (numbers: number[][]) => void,
   setDates: (dates: Date[]) => void,
+  setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
+  setBoardNumbers: (numbers: number[]) => void
 ) => {
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
-    setNumbers(prev => [...prev, currentBoardNumbers].slice(-100));
-    setDates(prev => [...prev, new Date()].slice(-100));
-
-    let totalMatches = 0;
-    let totalRandomMatches = 0;
+    setBoardNumbers(currentBoardNumbers);
+    setNumbers(prev => [...prev, currentBoardNumbers].slice(-100) as number[][]);
+    setDates(prev => [...prev, new Date()].slice(-100) as Date[]);
 
     const playerPredictions = await Promise.all(
       players.map(player => 
-        makePrediction(trainedModel, currentBoardNumbers, player.weights, concursoNumber)
+        makePrediction(trainedModel, currentBoardNumbers, player.weights, concursoNumber, setNeuralNetworkVisualization)
       )
     );
 
@@ -65,7 +65,7 @@ export const useGameLoop = (
       }))
     ]);
 
-    setTrainingData(prev => [...prev, [...currentBoardNumbers, ...updatedPlayers[0].predictions]]);
+    setTrainingData(prev => [...prev, [...currentBoardNumbers, ...updatedPlayers[0].predictions]] as number[][]);
 
     if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
       await updateModelWithNewData(trainedModel, trainingData, addLog);
