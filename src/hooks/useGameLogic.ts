@@ -167,6 +167,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     isInfiniteMode,
     boardNumbers,
     concursoNumber,
-    trainedModel // Add this line to include trainedModel in the return object
+    trainedModel,
+    gameCount // Adicionando gameCount ao retorno
   };
 };
