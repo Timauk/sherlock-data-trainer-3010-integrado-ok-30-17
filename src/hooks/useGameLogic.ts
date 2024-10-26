@@ -1,16 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { updateModel } from '../utils/aiModel';
-import { useToast } from "@/hooks/use-toast"
-
-interface Player {
-  id: number;
-  score: number;
-  predictions: number[];
-  weights: number[];
-  fitness: number;
-  generation: number;
-}
+import { useToast } from "@/hooks/use-toast";
+import { calculateReward, logReward } from '../utils/rewardSystem';
+import { createOffspring, selectBestPlayers } from '../utils/evolutionSystem';
+import { Player, ModelVisualization } from '../types/gameTypes';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -23,70 +17,20 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [updateInterval, setUpdateInterval] = useState(10);
   const { toast } = useToast();
 
-  const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<{
-    input: number[];
-    output: number[];
-    weights: number[][];
-  } | null>(null);
-
+  const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
   const [modelMetrics, setModelMetrics] = useState({
     accuracy: 0,
     randomAccuracy: 0,
     totalPredictions: 0,
   });
-
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const calculateDynamicReward = (matches: number): number => {
-    const baseReward = matches > 12 ? Math.pow(2, matches - 12) : -Math.pow(2, 12 - matches);
-    const consistencyBonus = matches >= 11 ? matches * 0.5 : 0; // Bônus por consistência
-    return baseReward + consistencyBonus;
-  };
-
-  const selectBestPlayers = () => {
-    // Ordena jogadores por fitness e seleciona os top 50%
-    const sortedPlayers = [...players].sort((a, b) => b.fitness - a.fitness);
-    const topHalf = sortedPlayers.slice(0, Math.ceil(players.length / 2));
-    
-    // Registra o melhor jogador da geração
-    if (topHalf.length > 0) {
-      addLog(`Melhor jogador da geração ${generation}: Score ${topHalf[0].score}`);
-      toast({
-        title: "Nova Geração",
-        description: `Melhor fitness: ${topHalf[0].fitness.toFixed(2)}`,
-      });
-    }
-    
-    return topHalf;
-  };
-
-  const createOffspring = (parent1: Player, parent2: Player): Player => {
-    // Crossover dos pesos
-    const childWeights = parent1.weights.map((weight, index) => {
-      return Math.random() > 0.5 ? weight : parent2.weights[index];
-    });
-
-    // Mutação
-    const mutatedWeights = childWeights.map(weight => {
-      return Math.random() < 0.1 ? weight + (Math.random() - 0.5) * 0.1 : weight;
-    });
-
-    return {
-      id: Math.random(),
-      score: 0,
-      predictions: [],
-      weights: mutatedWeights,
-      fitness: 0,
-      generation: generation + 1
-    };
-  };
-
   const evolveGeneration = useCallback(() => {
-    const bestPlayers = selectBestPlayers();
+    const bestPlayers = selectBestPlayers(players);
     const newGeneration: Player[] = [];
 
     // Elitismo: mantém os melhores jogadores
@@ -96,19 +40,27 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     while (newGeneration.length < players.length) {
       const parent1 = bestPlayers[Math.floor(Math.random() * bestPlayers.length)];
       const parent2 = bestPlayers[Math.floor(Math.random() * bestPlayers.length)];
-      const offspring = createOffspring(parent1, parent2);
+      const offspring = createOffspring(parent1, parent2, generation);
       newGeneration.push(offspring);
     }
 
     setGeneration(prev => prev + 1);
     setPlayers(newGeneration);
     
+    if (bestPlayers.length > 0) {
+      addLog(`Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
+      toast({
+        title: "Nova Geração",
+        description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
+      });
+    }
+
     // Atualiza o modelo com os dados dos melhores jogadores
-    if (trainedModel) {
+    if (trainedModel && bestPlayers.length > 0) {
       const bestPlayerData = bestPlayers[0].predictions;
       setTrainingData(prev => [...prev, bestPlayerData]);
     }
-  }, [players, generation, trainedModel]);
+  }, [players, generation, trainedModel, toast, addLog]);
 
   const initializePlayers = useCallback(() => {
     const newPlayers = Array.from({ length: 10 }, (_, i) => ({
@@ -167,17 +119,17 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       totalMatches += matches;
       totalRandomMatches += randomMatches;
 
-      const reward = calculateDynamicReward(matches);
-
-      if (matches >= 13) {
-        addLog(`Jogador ${player.id} acertou ${matches} números!`, matches);
+      const reward = calculateReward(matches);
+      
+      if (matches >= 11) {
+        addLog(logReward(matches), matches);
       }
 
       return {
         ...player,
         score: player.score + reward,
         predictions: playerPredictions,
-        fitness: matches // Atualiza a fitness com base nos acertos
+        fitness: matches
       };
     });
 
@@ -207,7 +159,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
       updateModelWithNewData();
     }
-  }, [players, csvData, concursoNumber, generation, trainedModel, addLog, updateInterval]);
+  }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
 
   const updateModelWithNewData = useCallback(async () => {
     if (!trainedModel || trainingData.length === 0) return;
@@ -244,13 +196,12 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     boardNumbers,
     concursoNumber,
     isInfiniteMode,
-    setIsInfiniteMode,
-    initializePlayers,
-    gameLoop,
-    evolveGeneration,
     neuralNetworkVisualization,
     modelMetrics,
     logs,
+    initializePlayers,
+    gameLoop,
+    evolveGeneration,
     addLog,
     toggleInfiniteMode
   };
