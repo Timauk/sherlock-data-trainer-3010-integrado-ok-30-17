@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface FrequencyAnalysisProps {
   numbers: number[][];
@@ -51,6 +52,14 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({ numbers, onFreque
     }
   }, [numbers, onFrequencyUpdate]);
 
+  const prepareChartData = (range: number) => {
+    const data = calculateFrequency(range);
+    return data.map(item => ({
+      number: item.number,
+      frequência: parseFloat(item.percentage)
+    }));
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -68,24 +77,42 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({ numbers, onFreque
 
           {ranges.map(range => (
             <TabsContent key={range} value={range.toString()}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Frequência</TableHead>
-                    <TableHead>Porcentagem</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {calculateFrequency(range).map(({ number, frequency, percentage }) => (
-                    <TableRow key={number}>
-                      <TableCell>{number}</TableCell>
-                      <TableCell>{frequency}</TableCell>
-                      <TableCell>{percentage}%</TableCell>
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={prepareChartData(range)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="number" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="frequência" 
+                      stroke="#8884d8" 
+                      name="Frequência (%)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Número</TableHead>
+                      <TableHead>Frequência</TableHead>
+                      <TableHead>Porcentagem</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {calculateFrequency(range).map(({ number, frequency, percentage }) => (
+                      <TableRow key={number}>
+                        <TableCell>{number}</TableCell>
+                        <TableCell>{frequency}</TableCell>
+                        <TableCell>{percentage}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </TabsContent>
           ))}
         </Tabs>
