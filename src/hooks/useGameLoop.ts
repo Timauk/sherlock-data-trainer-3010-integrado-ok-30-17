@@ -44,7 +44,7 @@ export const useGameLoop = (
 
     let totalMatches = 0;
     let randomMatches = 0;
-    const totalPredictions = players.length;
+    const totalPredictions = players.length * (concursoNumber + 1); // Accumulate total predictions
 
     const updatedPlayers = players.map((player, index) => {
       const predictions = playerPredictions[index];
@@ -71,10 +71,10 @@ export const useGameLoop = (
       };
     });
 
-    // Update metrics
+    // Update metrics with accumulated total predictions
     setModelMetrics({
-      accuracy: totalMatches / (totalPredictions * 15),
-      randomAccuracy: randomMatches / (totalPredictions * 15),
+      accuracy: totalMatches / (players.length * 15),
+      randomAccuracy: randomMatches / (players.length * 15),
       totalPredictions: totalPredictions
     });
 
