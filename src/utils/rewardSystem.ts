@@ -14,8 +14,8 @@ export const calculateReward = (matches: number): number => {
 export const logReward = (matches: number, playerId: number): string => {
   const reward = calculateReward(matches);
   if (reward > 0) {
-    return `Jogador ${playerId} - Premiação: +${reward} pontos por acertar ${matches} números!`;
+    return `[Jogador #${playerId}] Premiação: +${reward} pontos por acertar ${matches} números!`;
   } else {
-    return `Jogador ${playerId} - Penalidade: ${reward} pontos por acertar apenas ${matches} números.`;
+    return `[Jogador #${playerId}] Penalidade: ${reward} pontos por acertar apenas ${matches} números.`;
   }
 };
