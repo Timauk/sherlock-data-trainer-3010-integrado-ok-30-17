@@ -24,6 +24,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     totalPredictions: 0,
   });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
+  const [dates, setDates] = useState<Date[]>([]);
+  const [numbers, setNumbers] = useState<number[][]>([]);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -85,7 +87,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     const inputTensor = tf.tensor2d([weightedInput], [1, 17]);
     
     const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
-    const result = Array.from(predictions.dataSync());
+    const result = Array.from(await predictions.data());
     
     inputTensor.dispose();
     predictions.dispose();
@@ -106,6 +108,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
+    
+    // Atualiza os números e datas para análise lunar
+    setNumbers(prev => [...prev, currentBoardNumbers].slice(-100));
+    setDates(prev => [...prev, new Date()].slice(-100));
 
     let totalMatches = 0;
     let totalRandomMatches = 0;
@@ -204,6 +210,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     gameLoop,
     evolveGeneration,
     addLog,
-    toggleInfiniteMode
+    toggleInfiniteMode,
+    dates,
+    numbers,
   };
 };

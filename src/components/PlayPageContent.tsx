@@ -5,6 +5,7 @@ import GameBoard from '@/components/GameBoard';
 import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
 import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
 import ModelMetrics from '@/components/ModelMetrics';
+import LunarAnalysis from '@/components/LunarAnalysis';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -62,6 +63,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
           accuracy={gameLogic.modelMetrics.accuracy}
           randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
           totalPredictions={gameLogic.modelMetrics.totalPredictions}
+        />
+
+        <LunarAnalysis 
+          dates={gameLogic.dates} 
+          numbers={gameLogic.numbers}
+          recentResults={100}
         />
 
         <GameBoard
