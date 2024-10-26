@@ -13,10 +13,10 @@ const calculateConsistencyBonus = (player: Player): number => {
   
   let consistentPredictions = 0;
   for (let i = 1; i < player.predictions.length; i++) {
-    const previousSet = new Set(player.predictions[i - 1]);
-    const currentSet = new Set(player.predictions[i]);
-    const intersection = new Set([...previousSet].filter(x => currentSet.has(x)));
-    if (intersection.size >= 10) consistentPredictions++;
+    const previousPredictions = player.predictions[i - 1];
+    const currentPredictions = player.predictions[i];
+    const intersection = previousPredictions.filter(num => currentPredictions.includes(num));
+    if (intersection.length >= 10) consistentPredictions++;
   }
   
   return (consistentPredictions / (player.predictions.length - 1)) * 5;

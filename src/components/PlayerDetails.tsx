@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface PlayerDetailsProps {
-  player: {
+  player?: {
     id: number;
     score: number;
     predictions: number[];
@@ -20,6 +20,16 @@ interface PlayerDetailsProps {
 }
 
 const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, historicalPerformance = [] }) => {
+  if (!player) {
+    return (
+      <Card className="w-full mb-4">
+        <CardHeader>
+          <CardTitle>Nenhum Jogador Selecionado</CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   const maxPossibleScore = 15;
   const fitnessPercentage = (player.fitness / maxPossibleScore) * 100;
   
