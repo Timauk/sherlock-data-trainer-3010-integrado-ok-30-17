@@ -80,7 +80,17 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     setGeneration(prev => prev + 1);
     
-    // Log messages and toast notifications
+    // Atualiza dados de evolução
+    setEvolutionData(prev => [
+      ...prev,
+      ...players.map(player => ({
+        generation,
+        playerId: player.id,
+        score: player.score,
+        fitness: player.fitness
+      }))
+    ]);
+
     if (bestPlayers.length > 0) {
       addLog(`Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
       toast({
@@ -227,6 +237,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     generation,
     gameCount,
     championData,
+    evolutionData,
     boardNumbers,
     concursoNumber,
     isInfiniteMode,

@@ -2,10 +2,15 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface EvolutionChartProps {
-  data: any[];
+  data: Array<{
+    generation: number;
+    playerId: number;
+    score: number;
+    fitness: number;
+  }>;
 }
 
-const EvolutionChart: React.FC<EvolutionChartProps> = ({ data }) => {
+const EvolutionChart: React.FC<EvolutionChartProps> = ({ data = [] }) => {
   const playerIds = [...new Set(data.map(item => item.playerId))];
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a4de6c', '#d0ed57'];
 

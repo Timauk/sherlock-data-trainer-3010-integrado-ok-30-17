@@ -7,10 +7,20 @@ interface GameBoardProps {
   boardNumbers: number[];
   concursoNumber: number;
   players: { id: number; score: number; predictions: number[] }[];
-  evolutionData: any[];
+  evolutionData: Array<{
+    generation: number;
+    playerId: number;
+    score: number;
+    fitness: number;
+  }>;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ boardNumbers, concursoNumber, players, evolutionData }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ 
+  boardNumbers, 
+  concursoNumber, 
+  players, 
+  evolutionData = [] 
+}) => {
   return (
     <div>
       <BoardDisplay numbers={boardNumbers} concursoNumber={concursoNumber} />
