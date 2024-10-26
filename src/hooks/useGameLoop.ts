@@ -21,14 +21,19 @@ export const useGameLoop = (
   setDates: React.Dispatch<React.SetStateAction<Date[]>>,
   setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
   setBoardNumbers: (numbers: number[]) => void,
-  setModelMetrics: (metrics: { accuracy: number; randomAccuracy: number; totalPredictions: number }) => void,
+  setModelMetrics: (metrics: { 
+    accuracy: number; 
+    randomAccuracy: number; 
+    totalPredictions: number;
+    perGameAccuracy: number;
+    perGameRandomAccuracy: number;
+  }) => void,
   setConcursoNumber: (num: number) => void,
   showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
-    // Increment concurso number
     setConcursoNumber(concursoNumber + 1);
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
@@ -44,25 +49,23 @@ export const useGameLoop = (
 
     let totalMatches = 0;
     let randomMatches = 0;
-    const totalPredictions = players.length * (concursoNumber + 1); // Accumulate total predictions
+    let currentGameMatches = 0;
+    let currentGameRandomMatches = 0;
+    const totalPredictions = players.length * (concursoNumber + 1);
 
     const updatedPlayers = players.map((player, index) => {
       const predictions = playerPredictions[index];
       const matches = predictions.filter(num => currentBoardNumbers.includes(num)).length;
       totalMatches += matches;
+      currentGameMatches += matches;
       
-      // Generate random prediction for comparison
       const randomPrediction = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
       const randomMatch = randomPrediction.filter(num => currentBoardNumbers.includes(num)).length;
       randomMatches += randomMatch;
+      currentGameRandomMatches += randomMatch;
 
       const reward = calculateReward(matches);
       
-      if (matches >= 11) {
-        const logMessage = logReward(matches, player.id);
-        addLog(logMessage, matches);
-      }
-
       return {
         ...player,
         score: player.score + reward,
@@ -71,11 +74,12 @@ export const useGameLoop = (
       };
     });
 
-    // Update metrics with accumulated total predictions
     setModelMetrics({
       accuracy: totalMatches / (players.length * 15),
       randomAccuracy: randomMatches / (players.length * 15),
-      totalPredictions: totalPredictions
+      totalPredictions: totalPredictions,
+      perGameAccuracy: currentGameMatches / (players.length * 15),
+      perGameRandomAccuracy: currentGameRandomMatches / (players.length * 15)
     });
 
     setPlayers(updatedPlayers);
