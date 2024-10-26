@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon } from 'lucide-react';
 
 interface ModelMetricsProps {
@@ -23,13 +23,17 @@ const ModelMetrics: React.FC<ModelMetricsProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Métricas do Modelo
-          <Tooltip>
-            <InfoIcon className="h-4 w-4 text-muted-foreground" />
-            <span>
-              Precisão total: média de todos os jogos
-              Precisão por partida: média da partida atual
-            </span>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <InfoIcon className="h-4 w-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Precisão total: média de todos os jogos</p>
+                <p>Precisão por partida: média da partida atual</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
       </CardHeader>
       <CardContent>

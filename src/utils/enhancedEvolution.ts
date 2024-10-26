@@ -13,8 +13,8 @@ const calculateConsistencyBonus = (player: Player): number => {
   
   let consistentPredictions = 0;
   for (let i = 1; i < player.predictions.length; i++) {
-    const previousPredictions = player.predictions[i - 1];
-    const currentPredictions = player.predictions[i];
+    const previousPredictions = player.predictions[i - 1] as number[];
+    const currentPredictions = player.predictions[i] as number[];
     const intersection = previousPredictions.filter(num => currentPredictions.includes(num));
     if (intersection.length >= 10) consistentPredictions++;
   }
@@ -25,10 +25,10 @@ const calculateConsistencyBonus = (player: Player): number => {
 const calculateAdaptabilityScore = (player: Player): number => {
   if (player.predictions.length < 5) return 0;
   
-  const recentPredictions = player.predictions.slice(-5);
-  const uniqueNumbers = new Set(recentPredictions.flat()).size;
+  const recentPredictions = player.predictions.slice(-5) as number[][];
+  const uniqueNumbers = new Set(recentPredictions.flat());
   
-  return (uniqueNumbers / (25 * 0.6)) * 5; // 60% de cobertura dos números possíveis
+  return (uniqueNumbers.size / (25 * 0.6)) * 5; // 60% de cobertura dos números possíveis
 };
 
 export const createMutatedClone = (player: Player, mutationRate: number = 0.1): Player => {
