@@ -4,6 +4,7 @@ import { Player, ModelVisualization } from '@/types/gameTypes';
 import { makePrediction } from '@/utils/predictionUtils';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
+import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
 
 export const useGameLoop = (
   players: Player[],
@@ -38,12 +39,35 @@ export const useGameLoop = (
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
-    setNumbers(currentNumbers => [...currentNumbers, currentBoardNumbers].slice(-100));
-    setDates(currentDates => [...currentDates, new Date()].slice(-100));
+    
+    // Add lunar phase analysis
+    const currentDate = new Date();
+    const lunarPhase = getLunarPhase(currentDate);
+    const lunarPatterns = analyzeLunarPatterns([currentDate], [currentBoardNumbers]);
+    
+    // Update historical data with new information
+    setNumbers(currentNumbers => {
+      const newNumbers = [...currentNumbers, currentBoardNumbers].slice(-100);
+      // Analyze frequency patterns
+      const frequencyMap = new Map<number, number>();
+      newNumbers.forEach(nums => {
+        nums.forEach(n => frequencyMap.set(n, (frequencyMap.get(n) || 0) + 1));
+      });
+      return newNumbers;
+    });
+    
+    setDates(currentDates => [...currentDates, currentDate].slice(-100));
 
     const playerPredictions = await Promise.all(
       players.map(player => 
-        makePrediction(trainedModel, currentBoardNumbers, player.weights, concursoNumber, setNeuralNetworkVisualization)
+        makePrediction(
+          trainedModel, 
+          currentBoardNumbers, 
+          player.weights, 
+          concursoNumber,
+          setNeuralNetworkVisualization,
+          { lunarPhase, lunarPatterns } // Pass lunar data to prediction
+        )
       )
     );
 
@@ -66,6 +90,18 @@ export const useGameLoop = (
 
       const reward = calculateReward(matches);
       
+      // Log significant achievements
+      if (matches >= 11) {
+        const logMessage = logReward(matches, player.id);
+        addLog(logMessage, matches);
+        
+        // Notify about exceptional performance
+        if (matches >= 13) {
+          showToast?.("Desempenho Excepcional!", 
+            `Jogador ${player.id} acertou ${matches} números!`);
+        }
+      }
+
       return {
         ...player,
         score: player.score + reward,
@@ -93,9 +129,20 @@ export const useGameLoop = (
       }))
     ]);
 
-    setTrainingData(currentTrainingData => [...currentTrainingData, [...currentBoardNumbers, ...updatedPlayers[0].predictions]]);
+    // Enhanced training data with lunar and frequency information
+    const enhancedTrainingData = [...currentBoardNumbers, 
+      ...updatedPlayers[0].predictions,
+      lunarPhase === 'Cheia' ? 1 : 0,
+      lunarPhase === 'Nova' ? 1 : 0,
+      lunarPhase === 'Crescente' ? 1 : 0,
+      lunarPhase === 'Minguante' ? 1 : 0
+    ];
 
-    if (concursoNumber % updateInterval === 0 && trainingData.length > 0) {
+    setTrainingData(currentTrainingData => 
+      [...currentTrainingData, enhancedTrainingData]);
+
+    // Update model more frequently for better learning
+    if (concursoNumber % Math.min(updateInterval, 50) === 0 && trainingData.length > 0) {
       await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
       setTrainingData([]);
     }
