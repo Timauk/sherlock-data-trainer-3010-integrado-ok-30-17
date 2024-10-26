@@ -58,7 +58,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setNumbers,
     setDates,
     setNeuralNetworkVisualization,
-    setBoardNumbers
+    setBoardNumbers,
+    setModelMetrics,
+    (title, description) => toast({ title, description })
   );
 
   const evolveGeneration = useCallback(async () => {

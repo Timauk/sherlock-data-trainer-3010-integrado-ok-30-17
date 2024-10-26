@@ -21,6 +21,7 @@ export const useGameLoop = (
   setDates: React.Dispatch<React.SetStateAction<Date[]>>,
   setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
   setBoardNumbers: (numbers: number[]) => void,
+  setModelMetrics: (metrics: { accuracy: number; randomAccuracy: number; totalPredictions: number }) => void,
   showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
@@ -37,9 +38,20 @@ export const useGameLoop = (
       )
     );
 
+    let totalMatches = 0;
+    let randomMatches = 0;
+    const totalPredictions = players.length;
+
     const updatedPlayers = players.map((player, index) => {
       const predictions = playerPredictions[index];
       const matches = predictions.filter(num => currentBoardNumbers.includes(num)).length;
+      totalMatches += matches;
+      
+      // Generate random prediction for comparison
+      const randomPrediction = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
+      const randomMatch = randomPrediction.filter(num => currentBoardNumbers.includes(num)).length;
+      randomMatches += randomMatch;
+
       const reward = calculateReward(matches);
       
       if (matches >= 11) {
@@ -53,6 +65,13 @@ export const useGameLoop = (
         predictions,
         fitness: matches
       };
+    });
+
+    // Update metrics
+    setModelMetrics({
+      accuracy: totalMatches / (totalPredictions * 15),
+      randomAccuracy: randomMatches / (totalPredictions * 15),
+      totalPredictions: totalPredictions
     });
 
     setPlayers(updatedPlayers);
@@ -88,6 +107,7 @@ export const useGameLoop = (
     setDates,
     setBoardNumbers,
     setNeuralNetworkVisualization,
+    setModelMetrics,
     showToast
   ]);
 
