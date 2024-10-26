@@ -1,15 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { updateModel } from '../utils/aiModel';
 import { useToast } from "@/hooks/use-toast";
-import { calculateReward, logReward } from '../utils/rewardSystem';
-import { createOffspring, selectBestPlayers } from '../utils/evolutionSystem';
-import { makePrediction } from '../utils/predictionUtils';
 import { Player, ModelVisualization } from '../types/gameTypes';
+import { cloneChampion, updateModelWithChampionKnowledge } from '../utils/playerEvolution';
+import { calculateReward, logReward } from '../utils/rewardSystem';
+import { makePrediction } from '../utils/predictionUtils';
+import { selectBestPlayers } from '../utils/evolutionSystem';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [generation, setGeneration] = useState(1);
+  const [gameCount, setGameCount] = useState(0);
+  const [championData, setChampionData] = useState<{player: Player, trainingData: number[][]}>();
   const [evolutionData, setEvolutionData] = useState<any[]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [concursoNumber, setConcursoNumber] = useState(0);
@@ -33,24 +35,52 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const evolveGeneration = useCallback(() => {
+  const evolveGeneration = useCallback(async () => {
     const bestPlayers = selectBestPlayers(players);
-    const newGeneration: Player[] = [];
+    setGameCount(prev => prev + 1);
 
-    // Elitismo: mantém os melhores jogadores
-    newGeneration.push(...bestPlayers.slice(0, 2));
-
-    // Cria nova geração através de crossover e mutação
-    while (newGeneration.length < players.length) {
-      const parent1 = bestPlayers[Math.floor(Math.random() * bestPlayers.length)];
-      const parent2 = bestPlayers[Math.floor(Math.random() * bestPlayers.length)];
-      const offspring = createOffspring(parent1, parent2, generation);
-      newGeneration.push(offspring);
+    // A cada 1000 jogos, clona o campeão e atualiza o modelo
+    if (gameCount % 1000 === 0 && bestPlayers.length > 0) {
+      const champion = bestPlayers[0];
+      const clones = cloneChampion(champion, players.length);
+      setPlayers(clones);
+      
+      if (trainedModel && championData) {
+        try {
+          const updatedModel = await updateModelWithChampionKnowledge(
+            trainedModel,
+            champion,
+            championData.trainingData
+          );
+          
+          // Atualiza o modelo com o conhecimento do campeão
+          toast({
+            title: "Modelo Atualizado",
+            description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
+          });
+          
+          // Armazena os dados do novo campeão
+          setChampionData({
+            player: champion,
+            trainingData: trainingData
+          });
+        } catch (error) {
+          console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
+        }
+      }
+    } else {
+      // Evolução normal da geração
+      const newGeneration = bestPlayers.map(player => ({
+        ...player,
+        generation: generation + 1
+      }));
+      
+      setPlayers(newGeneration);
     }
 
     setGeneration(prev => prev + 1);
-    setPlayers(newGeneration);
     
+    // Log messages and toast notifications
     if (bestPlayers.length > 0) {
       addLog(`Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
       toast({
@@ -58,13 +88,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
       });
     }
-
-    // Atualiza o modelo com os dados dos melhores jogadores
-    if (trainedModel && bestPlayers.length > 0) {
-      const bestPlayerData = bestPlayers[0].predictions;
-      setTrainingData(prev => [...prev, bestPlayerData]);
-    }
-  }, [players, generation, trainedModel, toast, addLog]);
+  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData]);
 
   const initializePlayers = useCallback(() => {
     const newPlayers = Array.from({ length: 10 }, (_, i) => ({
@@ -201,7 +225,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   return {
     players,
     generation,
-    evolutionData,
+    gameCount,
+    championData,
     boardNumbers,
     concursoNumber,
     isInfiniteMode,
