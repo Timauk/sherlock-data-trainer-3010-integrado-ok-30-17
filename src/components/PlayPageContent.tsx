@@ -7,6 +7,7 @@ import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization'
 import ModelMetrics from '@/components/ModelMetrics';
 import LunarAnalysis from '@/components/LunarAnalysis';
 import FrequencyAnalysis from '@/components/FrequencyAnalysis';
+import ChampionPredictions from '@/components/ChampionPredictions';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -38,6 +39,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
   generation,
   gameLogic
 }) => {
+  // Encontra o campeão (jogador com maior fitness)
+  const champion = gameLogic.players.reduce((prev, current) => 
+    (current.fitness > prev.fitness) ? current : prev, 
+    gameLogic.players[0]
+  );
+
   return (
     <div className="flex flex-wrap gap-4">
       <div className="flex-1">
@@ -59,6 +66,13 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
           <h3 className="text-lg font-semibold mb-2">Progresso da Geração {generation}</h3>
           <Progress value={progress} className="w-full" />
         </div>
+
+        <ChampionPredictions
+          champion={champion}
+          trainedModel={gameLogic.trainedModel}
+          lastConcursoNumbers={gameLogic.boardNumbers}
+          onSaveModel={onSaveModel}
+        />
 
         <ModelMetrics
           accuracy={gameLogic.modelMetrics.accuracy}
