@@ -1,25 +1,32 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
-import { Player, ModelVisualization } from '../types/gameTypes';
-import { cloneChampion, updateModelWithChampionKnowledge } from '../utils/playerEvolution';
-import { calculateReward, logReward } from '../utils/rewardSystem';
-import { makePrediction } from '../utils/predictionUtils';
-import { selectBestPlayers } from '../utils/evolutionSystem';
+import { useGameState } from './useGameState';
+import { updateModelWithNewData } from '@/utils/modelUtils';
+import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
+import { calculateReward, logReward } from '@/utils/rewardSystem';
+import { makePrediction } from '@/utils/predictionUtils';
+import { selectBestPlayers } from '@/utils/evolutionSystem';
+import { ModelVisualization } from '@/types/gameTypes';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [generation, setGeneration] = useState(1);
-  const [gameCount, setGameCount] = useState(0);
-  const [championData, setChampionData] = useState<{player: Player, trainingData: number[][]}>();
-  const [evolutionData, setEvolutionData] = useState<any[]>([]);
-  const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
-  const [concursoNumber, setConcursoNumber] = useState(0);
-  const [isInfiniteMode, setIsInfiniteMode] = useState(false);
-  const [trainingData, setTrainingData] = useState<number[][]>([]);
-  const [updateInterval, setUpdateInterval] = useState(10);
   const { toast } = useToast();
+  const gameState = useGameState();
+  const {
+    players, setPlayers,
+    generation, setGeneration,
+    gameCount, setGameCount,
+    evolutionData, setEvolutionData,
+    boardNumbers, setBoardNumbers,
+    concursoNumber, setConcursoNumber,
+    isInfiniteMode, setIsInfiniteMode,
+    trainingData, setTrainingData
+  } = gameState;
 
+  const [championData, setChampionData] = useState<{
+    player: Player;
+    trainingData: number[][];
+  }>();
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
   const [modelMetrics, setModelMetrics] = useState({
     accuracy: 0,
@@ -188,17 +195,15 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }
   }, [players, csvData, concursoNumber, generation, trainedModel, addLog]);
 
-  const updateModelWithNewData = useCallback(async () => {
+  const updateModelWithNewDataCallback = useCallback(async () => {
     if (!trainedModel || trainingData.length === 0) return;
-
+    
     try {
-      const updatedModel = await updateModel(trainedModel, trainingData);
-      // We can't directly set the trainedModel state here as it's passed as a prop
-      // Instead, we'll need to handle this update in the parent component
-      addLog(`Modelo atualizado com ${trainingData.length} novos registros.`);
+      const updatedModel = await updateModelWithNewData(trainedModel, trainingData, addLog);
       setTrainingData([]); // Clear training data after update
     } catch (error) {
       addLog(`Erro ao atualizar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error("Detalhes do erro:", error);
     }
   }, [trainedModel, trainingData, addLog]);
 
