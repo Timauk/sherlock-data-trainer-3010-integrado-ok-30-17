@@ -27,6 +27,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
+  const [frequencyData, setFrequencyData] = useState<{ [key: string]: number[] }>({});
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -167,6 +168,22 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }
   }, [trainedModel, trainingData, addLog]);
 
+  const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
+    setFrequencyData(newFrequencyData);
+    
+    // Update training data with frequency information
+    if (trainedModel && players.length > 0) {
+      const frequencyFeatures = Object.values(newFrequencyData).flat();
+      setTrainingData(prev => {
+        const lastEntry = prev[prev.length - 1];
+        if (lastEntry) {
+          return [...prev.slice(0, -1), [...lastEntry, ...frequencyFeatures]];
+        }
+        return prev;
+      });
+    }
+  }, [trainedModel, players]);
+
   useEffect(() => {
     initializePlayers();
   }, [initializePlayers]);
@@ -198,5 +215,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     toggleInfiniteMode,
     dates,
     numbers,
+    updateFrequencyData,
   };
 };
