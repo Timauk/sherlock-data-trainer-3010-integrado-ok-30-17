@@ -16,7 +16,13 @@ export const updateModelWithNewData = async (
       metrics: ['accuracy']
     });
 
-    const xs = tf.tensor2d(trainingData.map(row => row.slice(0, -15)));
+    // Reshape the input data to match expected shape [*,17]
+    const processedData = trainingData.map(row => {
+      // Take only first 17 elements to match expected input shape
+      return row.slice(0, 17);
+    });
+
+    const xs = tf.tensor2d(processedData);
     const ys = tf.tensor2d(trainingData.map(row => row.slice(-15)));
 
     await trainedModel.fit(xs, ys, {
