@@ -22,10 +22,14 @@ export const useGameLoop = (
   setNeuralNetworkVisualization: (vis: ModelVisualization | null) => void,
   setBoardNumbers: (numbers: number[]) => void,
   setModelMetrics: (metrics: { accuracy: number; randomAccuracy: number; totalPredictions: number }) => void,
+  setConcursoNumber: (num: number) => void,
   showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
+
+    // Increment concurso number
+    setConcursoNumber(prevNumber => prevNumber + 1);
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
@@ -108,6 +112,7 @@ export const useGameLoop = (
     setBoardNumbers,
     setNeuralNetworkVisualization,
     setModelMetrics,
+    setConcursoNumber,
     showToast
   ]);
 

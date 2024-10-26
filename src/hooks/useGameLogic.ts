@@ -60,6 +60,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setNeuralNetworkVisualization,
     setBoardNumbers,
     setModelMetrics,
+    setConcursoNumber,
     (title, description) => toast({ title, description })
   );
 
