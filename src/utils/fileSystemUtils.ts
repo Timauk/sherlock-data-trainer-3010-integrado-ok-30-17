@@ -42,15 +42,10 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using values() instead of entries() for directory iteration
-    const entries = await Promise.all(
-      Array.from(await directory.values())
-        .filter(async (handle) => (await handle).kind === 'file')
-    );
-    
-    for (const handle of entries) {
-      if (handle.name.endsWith('.json')) {
-        files.push(handle);
+    // Using entries() for directory iteration with proper typing
+    for await (const entry of directory.values()) {
+      if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
+        files.push(entry);
       }
     }
 
