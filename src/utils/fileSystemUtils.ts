@@ -1,49 +1,41 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { useToast } from "@/hooks/use-toast";
 
-const ensureCheckpointsDir = () => {
-  const checkpointsDir = path.join(process.cwd(), 'Checkpoints');
-  if (!fs.existsSync(checkpointsDir)) {
-    fs.mkdirSync(checkpointsDir, { recursive: true });
-  }
-  return checkpointsDir;
+const CHECKPOINTS_KEY = 'game_checkpoints';
+
+const getCheckpoints = (): any[] => {
+  const stored = localStorage.getItem(CHECKPOINTS_KEY);
+  return stored ? JSON.parse(stored) : [];
 };
 
 export const saveCheckpoint = async (data: any) => {
-  const checkpointsDir = ensureCheckpointsDir();
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filePath = path.join(checkpointsDir, `checkpoint-${timestamp}.json`);
+  const checkpoints = getCheckpoints();
+  const timestamp = new Date().toISOString();
+  const checkpoint = {
+    id: timestamp,
+    timestamp,
+    data
+  };
   
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  return filePath;
+  checkpoints.push(checkpoint);
+  localStorage.setItem(CHECKPOINTS_KEY, JSON.stringify(checkpoints));
+  
+  return `checkpoint-${timestamp}`;
 };
 
 export const loadLastCheckpoint = () => {
-  const checkpointsDir = ensureCheckpointsDir();
-  const files = fs.readdirSync(checkpointsDir);
+  const checkpoints = getCheckpoints();
+  if (checkpoints.length === 0) return null;
   
-  if (files.length === 0) return null;
-  
-  const lastFile = files
-    .filter(f => f.endsWith('.json'))
-    .sort()
-    .reverse()[0];
-    
-  if (!lastFile) return null;
-  
-  const filePath = path.join(checkpointsDir, lastFile);
-  const data = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(data);
+  return checkpoints[checkpoints.length - 1].data;
 };
 
 export const createSelectDirectory = (toast: ReturnType<typeof useToast>['toast']) => async (): Promise<string> => {
-  const checkpointsDir = ensureCheckpointsDir();
+  const virtualDir = '/Checkpoints';
   
   toast({
-    title: "Diretório Configurado",
-    description: `Os checkpoints serão salvos em: ${checkpointsDir}`,
+    title: "Armazenamento Configurado",
+    description: `Os checkpoints serão salvos localmente no navegador`,
   });
 
-  return checkpointsDir;
+  return virtualDir;
 };

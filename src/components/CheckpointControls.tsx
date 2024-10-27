@@ -21,16 +21,15 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const gameState = {
         timestamp: new Date().toISOString(),
-        // Adicione aqui os dados do jogo que você quer salvar
         path: savePath,
-        // outros dados...
+        // Adicione aqui os dados do jogo que você quer salvar
       };
 
-      const savedPath = await saveCheckpoint(gameState);
+      const savedId = await saveCheckpoint(gameState);
       
       toast({
         title: "Checkpoint Salvo",
-        description: `Arquivo salvo em: ${savedPath}`,
+        description: `Checkpoint salvo com sucesso: ${savedId}`,
       });
 
     } catch (error) {
@@ -63,7 +62,7 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   return (
     <div className="space-y-4">
       <div className="p-2 bg-secondary rounded-md">
-        <p className="text-sm">Diretório de salvamento: {savePath}</p>
+        <p className="text-sm">Armazenamento local do navegador</p>
       </div>
 
       <Button 
