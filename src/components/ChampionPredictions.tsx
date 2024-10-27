@@ -4,13 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Player } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
-import { predictNumbers } from '@/utils/tfUtils';
 
 interface ChampionPredictionsProps {
   champion: Player | undefined;
   trainedModel: tf.LayersModel | null;
   lastConcursoNumbers: number[];
-  onSaveModel: () => void;
 }
 
 const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
@@ -36,36 +34,40 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       const nextConcurso = Math.max(...champion.predictions.map(p => 
         typeof p === 'number' ? p : 0)) + 1;
 
+      // Prepara os dados de entrada
+      const inputTensor = tf.tensor2d([lastConcursoNumbers.map(n => n / 25)]);
+      
       for (let i = 0; i < 8; i++) {
-        // Normaliza os números de entrada usando o histórico do campeão
-        const normalizedInput = lastConcursoNumbers.map(n => n / 25);
-        
         // Faz a previsão usando o modelo treinado
-        const prediction = await predictNumbers(trainedModel, normalizedInput);
+        const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
         const predictionArray = Array.from(await prediction.data());
         
-        // Seleciona os 15 números mais prováveis baseado no histórico do campeão
-        const numbers = predictionArray
-          .map((prob, idx) => ({ 
-            value: idx + 1,
-            prob: prob * champion.weights[idx % champion.weights.length] 
-          }))
-          .sort((a, b) => b.prob - a.prob)
+        // Aplica os pesos do campeão
+        const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
+          number: idx + 1,
+          weight: predictionArray[idx % predictionArray.length] * 
+                 (champion.weights[idx % champion.weights.length] / 1000)
+        }));
+        
+        // Ordena por peso e seleciona os 15 maiores
+        const selectedNumbers = weightedNumbers
+          .sort((a, b) => b.weight - a.weight)
           .slice(0, 15)
-          .map(n => n.value)
+          .map(n => n.number)
           .sort((a, b) => a - b);
-
-        // Calcula estimativa de acerto baseada no histórico do campeão
+        
+        // Calcula a estimativa de acerto
         const estimatedAccuracy = (champion.fitness / 15) * 100;
         
         newPredictions.push({
-          numbers,
+          numbers: selectedNumbers,
           estimatedAccuracy: Math.min(estimatedAccuracy, 93.33)
         });
 
         prediction.dispose();
       }
 
+      inputTensor.dispose();
       setPredictions(newPredictions);
       
       toast({
@@ -82,14 +84,11 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     }
   };
 
-  const nextConcurso = Math.max(...(champion?.predictions.map(p => 
-    typeof p === 'number' ? p : 0) || [0])) + 1;
-
   return (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Previsões do Campeão - Próximo Concurso #{nextConcurso}</span>
+          <span>Previsões do Campeão</span>
           <Button onClick={generatePredictions} className="bg-green-600 hover:bg-green-700">
             Gerar 8 Jogos
           </Button>
