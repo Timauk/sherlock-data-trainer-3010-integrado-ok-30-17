@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, Save, RotateCcw, Timer } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import CheckpointControls from './CheckpointControls';
 
 interface DataUploaderProps {
   onCsvUpload: (file: File) => void;
@@ -14,7 +15,6 @@ interface DataUploaderProps {
 const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload, onSaveModel }) => {
   const jsonFileRef = useRef<HTMLInputElement>(null);
   const weightsFileRef = useRef<HTMLInputElement>(null);
-  const directoryInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilCheckpoint, setTimeUntilCheckpoint] = useState(1800);
   const [savePath, setSavePath] = useState(localStorage.getItem('checkpointPath') || '');
   const { toast } = useToast();
@@ -32,29 +32,6 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
 
     return () => clearInterval(timer);
   }, []);
-
-  const handleDirectorySelect = async () => {
-    try {
-      // @ts-ignore - directory picker API is not yet in TypeScript types
-      const dirHandle = await window.showDirectoryPicker();
-      const path = dirHandle.name;
-      setSavePath(path);
-      localStorage.setItem('checkpointPath', path);
-      
-      toast({
-        title: "Diretório Selecionado",
-        description: `Pasta selecionada: ${path}`,
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') {
-        toast({
-          title: "Erro ao Selecionar Diretório",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    }
-  };
 
   const handleAutoSave = async () => {
     if (!savePath) {
@@ -82,7 +59,6 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
       setTimeout(() => {
         window.location.reload();
       }, 2000);
-
     } catch (error) {
       toast({
         title: "Erro ao Salvar",
@@ -155,43 +131,12 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
           </Button>
         </TabsContent>
 
-        <TabsContent value="checkpoint" className="space-y-4">
-          <Button 
-            onClick={handleDirectorySelect}
-            className="w-full"
-          >
-            Configurar Diretório de Salvamento
-          </Button>
-          
-          {savePath && (
-            <div className="p-2 bg-secondary rounded-md">
-              <p className="text-sm">Diretório atual: {savePath}</p>
-            </div>
-          )}
-
-          <Button 
-            onClick={handleAutoSave}
-            className="w-full"
-            disabled={!savePath}
-          >
-            <Save className="mr-2 h-4 w-4" /> Salvar Checkpoint Manual
-          </Button>
-
-          <Button 
-            onClick={() => {
-              const lastCheckpoint = localStorage.getItem('gameCheckpoint');
-              if (lastCheckpoint) {
-                toast({
-                  title: "Carregando Checkpoint",
-                  description: "Restaurando último estado salvo...",
-                });
-                window.location.reload();
-              }
-            }}
-            className="w-full"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" /> Carregar Último Checkpoint
-          </Button>
+        <TabsContent value="checkpoint">
+          <CheckpointControls
+            savePath={savePath}
+            onSavePathChange={setSavePath}
+            onAutoSave={handleAutoSave}
+          />
         </TabsContent>
       </Tabs>
     </div>
