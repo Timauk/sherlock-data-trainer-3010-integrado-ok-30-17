@@ -34,6 +34,12 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
         description: "Restaurando último estado salvo...",
       });
       window.location.reload();
+    } else {
+      toast({
+        title: "Nenhum Checkpoint",
+        description: "Não há checkpoint salvo para carregar.",
+        variant: "destructive"
+      });
     }
   };
 
