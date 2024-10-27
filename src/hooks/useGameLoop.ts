@@ -30,13 +30,14 @@ export const useGameLoop = (
     perGameRandomAccuracy: number;
   }) => void,
   setConcursoNumber: (num: number) => void,
+  setGameCount: React.Dispatch<React.SetStateAction<number>>,
   showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
     setConcursoNumber(concursoNumber + 1);
-    setGameCount(prev => prev + 1); // Increment game count in each loop
+    setGameCount(prev => prev + 1);
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
@@ -67,7 +68,7 @@ export const useGameLoop = (
           player.weights, 
           concursoNumber,
           setNeuralNetworkVisualization,
-          { lunarPhase, lunarPatterns } // Pass lunar data to prediction
+          { lunarPhase, lunarPatterns }
         )
       )
     );
@@ -147,6 +148,7 @@ export const useGameLoop = (
       await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
       setTrainingData([]);
     }
+
   }, [
     players,
     setPlayers,
@@ -165,6 +167,7 @@ export const useGameLoop = (
     setNeuralNetworkVisualization,
     setModelMetrics,
     setConcursoNumber,
+    setGameCount,
     showToast
   ]);
 

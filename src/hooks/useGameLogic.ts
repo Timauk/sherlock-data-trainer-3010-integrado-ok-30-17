@@ -61,6 +61,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setBoardNumbers,
     setModelMetrics,
     setConcursoNumber,
+    setGameCount,
     (title, description) => toast({ title, description })
   );
 
@@ -168,6 +169,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     boardNumbers,
     concursoNumber,
     trainedModel,
-    gameCount // Adicionando gameCount ao retorno
+    gameCount
   };
 };
