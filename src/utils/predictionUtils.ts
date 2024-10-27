@@ -21,7 +21,6 @@ export async function makePrediction(
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Ensure we only use the first 15 numbers plus concurso and data (total 17)
   let enrichedInput = [
     ...inputData.slice(0, 15), 
     normalizedConcursoNumber, 
@@ -45,17 +44,26 @@ export async function makePrediction(
     weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) 
   });
   
-  // Ensure 15 unique numbers with weighted random selection
-  const uniqueNumbers = new Set<number>();
-  const weightedNumbers = result.map((weight, index) => ({
-    number: index + 1,
-    weight: weight
+  // Generate numbers from 1 to 25
+  const weightedNumbers = Array.from({ length: 25 }, (_, i) => ({
+    number: i + 1,
+    weight: result[i % result.length] // Use modulo to handle array length differences
   })).sort((a, b) => b.weight - a.weight);
   
-  while (uniqueNumbers.size < 15) {
-    const selectedNumber = weightedNumbers[uniqueNumbers.size].number;
-    uniqueNumbers.add(selectedNumber);
+  // Select 15 unique numbers
+  const uniqueNumbers = new Set<number>();
+  let index = 0;
+  
+  while (uniqueNumbers.size < 15 && index < weightedNumbers.length) {
+    uniqueNumbers.add(weightedNumbers[index].number);
+    index++;
   }
   
-  return Array.from(uniqueNumbers);
+  // If we still need more numbers (unlikely), add random ones
+  while (uniqueNumbers.size < 15) {
+    const randomNum = Math.floor(Math.random() * 25) + 1;
+    uniqueNumbers.add(randomNum);
+  }
+  
+  return Array.from(uniqueNumbers).sort((a, b) => a - b);
 }
