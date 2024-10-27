@@ -11,7 +11,7 @@ export const useGameDirectory = () => {
         toast({
           title: "Aviso",
           description: "Seu navegador não suporta seleção de pasta. Os dados serão salvos apenas localmente.",
-          variant: "warning"
+          variant: "default"
         });
         return null;
       }
