@@ -6,6 +6,14 @@ interface ToastProps {
   variant?: "default" | "destructive";
 }
 
+interface ToastFunction {
+  (props: ToastProps): void;
+}
+
+interface ToastFunctions {
+  toast: ToastFunction;
+}
+
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
 const getSaveDirectory = async () => {
@@ -67,12 +75,6 @@ export const loadLastCheckpoint = async () => {
     return null;
   }
 };
-
-type ToastFunction = (props: ToastProps) => void;
-
-interface ToastFunctions {
-  toast: ToastFunction;
-}
 
 export const createSelectDirectory = (toastFns: ToastFunctions) => async (): Promise<string> => {
   try {
