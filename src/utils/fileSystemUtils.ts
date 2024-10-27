@@ -1,5 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
-import { type Toast } from "@/components/ui/toast";
+import { type ToasterToast } from "@/components/ui/toast";
 
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
@@ -37,9 +37,8 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using for...of with async/await for directory iteration
-    const entries = directory.entries();
-    for await (const [name, handle] of entries) {
+    // Using async iteration for directory entries
+    for await (const [name, handle] of directory) {
       if (handle.kind === 'file' && name.endsWith('.json')) {
         files.push(handle as FileSystemFileHandle);
       }
@@ -62,7 +61,7 @@ export const loadLastCheckpoint = async () => {
 };
 
 type ToastFunction = {
-  toast: (props: Toast) => void;
+  toast: (props: ToasterToast) => void;
 };
 
 export const createSelectDirectory = (toastFns: ToastFunction) => async (): Promise<string> => {
