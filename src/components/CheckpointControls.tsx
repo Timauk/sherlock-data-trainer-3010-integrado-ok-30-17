@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, FolderOpen } from 'lucide-react';
 import { saveCheckpoint, loadLastCheckpoint } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,11 +25,11 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
         // Adicione aqui os dados do jogo que você quer salvar
       };
 
-      const savedId = await saveCheckpoint(gameState);
+      const savedFile = await saveCheckpoint(gameState);
       
       toast({
         title: "Checkpoint Salvo",
-        description: `Checkpoint salvo com sucesso: ${savedId}`,
+        description: `Arquivo salvo: ${savedFile}`,
       });
 
     } catch (error) {
@@ -41,19 +41,27 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     }
   };
 
-  const handleLoadCheckpoint = () => {
-    const checkpoint = loadLastCheckpoint();
-    if (checkpoint) {
+  const handleLoadCheckpoint = async () => {
+    try {
+      const checkpoint = await loadLastCheckpoint();
+      if (checkpoint) {
+        toast({
+          title: "Carregando Checkpoint",
+          description: "Restaurando último estado salvo...",
+        });
+        // Implemente aqui a lógica para restaurar o estado do jogo
+        window.location.reload();
+      } else {
+        toast({
+          title: "Nenhum Checkpoint",
+          description: "Não há checkpoint salvo para carregar.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Carregando Checkpoint",
-        description: "Restaurando último estado salvo...",
-      });
-      // Implemente aqui a lógica para restaurar o estado do jogo
-      window.location.reload();
-    } else {
-      toast({
-        title: "Nenhum Checkpoint",
-        description: "Não há checkpoint salvo para carregar.",
+        title: "Erro ao Carregar",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
     }
@@ -62,12 +70,13 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   return (
     <div className="space-y-4">
       <div className="p-2 bg-secondary rounded-md">
-        <p className="text-sm">Armazenamento local do navegador</p>
+        <p className="text-sm">Diretório de salvamento: {savePath || "Nenhum diretório selecionado"}</p>
       </div>
 
       <Button 
         onClick={handleSaveCheckpoint}
         className="w-full"
+        disabled={!savePath}
       >
         <Save className="mr-2 h-4 w-4" /> Salvar Checkpoint Manual
       </Button>
@@ -75,6 +84,7 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
       <Button 
         onClick={handleLoadCheckpoint}
         className="w-full"
+        disabled={!savePath}
       >
         <RotateCcw className="mr-2 h-4 w-4" /> Carregar Último Checkpoint
       </Button>

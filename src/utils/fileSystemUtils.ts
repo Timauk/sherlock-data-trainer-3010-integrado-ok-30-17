@@ -1,41 +1,83 @@
 import { useToast } from "@/hooks/use-toast";
 
-const CHECKPOINTS_KEY = 'game_checkpoints';
+let saveDirectory: FileSystemDirectoryHandle | null = null;
 
-const getCheckpoints = (): any[] => {
-  const stored = localStorage.getItem(CHECKPOINTS_KEY);
-  return stored ? JSON.parse(stored) : [];
+const getSaveDirectory = async () => {
+  if (!('showDirectoryPicker' in window)) {
+    throw new Error('Seu navegador não suporta a seleção de diretórios.');
+  }
+  return saveDirectory;
 };
 
 export const saveCheckpoint = async (data: any) => {
-  const checkpoints = getCheckpoints();
-  const timestamp = new Date().toISOString();
-  const checkpoint = {
-    id: timestamp,
-    timestamp,
-    data
-  };
-  
-  checkpoints.push(checkpoint);
-  localStorage.setItem(CHECKPOINTS_KEY, JSON.stringify(checkpoints));
-  
-  return `checkpoint-${timestamp}`;
+  try {
+    const directory = await getSaveDirectory();
+    if (!directory) throw new Error('Nenhum diretório selecionado');
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `checkpoint-${timestamp}.json`;
+    
+    const fileHandle = await directory.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+    
+    return fileName;
+  } catch (error) {
+    console.error('Erro ao salvar checkpoint:', error);
+    throw error;
+  }
 };
 
-export const loadLastCheckpoint = () => {
-  const checkpoints = getCheckpoints();
-  if (checkpoints.length === 0) return null;
-  
-  return checkpoints[checkpoints.length - 1].data;
+export const loadLastCheckpoint = async () => {
+  try {
+    const directory = await getSaveDirectory();
+    if (!directory) return null;
+
+    const files = [];
+    for await (const entry of directory.values()) {
+      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+        files.push(entry);
+      }
+    }
+
+    if (files.length === 0) return null;
+
+    const lastFile = files.sort((a, b) => b.name.localeCompare(a.name))[0];
+    const file = await lastFile.getFile();
+    const content = await file.text();
+    
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Erro ao carregar checkpoint:', error);
+    return null;
+  }
 };
 
 export const createSelectDirectory = (toast: ReturnType<typeof useToast>['toast']) => async (): Promise<string> => {
-  const virtualDir = '/Checkpoints';
-  
-  toast({
-    title: "Armazenamento Configurado",
-    description: `Os checkpoints serão salvos localmente no navegador`,
-  });
+  try {
+    if (!('showDirectoryPicker' in window)) {
+      throw new Error('Seu navegador não suporta a seleção de diretórios.');
+    }
 
-  return virtualDir;
+    saveDirectory = await window.showDirectoryPicker({
+      mode: 'readwrite',
+    });
+
+    const dirName = saveDirectory.name;
+    toast({
+      title: "Diretório Configurado",
+      description: `Os checkpoints serão salvos em: ${dirName}`,
+    });
+
+    return dirName;
+  } catch (error) {
+    console.error('Erro ao selecionar diretório:', error);
+    toast({
+      title: "Erro",
+      description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
+      variant: "destructive"
+    });
+    throw error;
+  }
 };
