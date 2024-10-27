@@ -6,6 +6,8 @@ interface ToastProps {
   variant?: "default" | "destructive";
 }
 
+type ToastFunction = (props: ToastProps) => void;
+
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
 const getSaveDirectory = async () => {
@@ -42,9 +44,9 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using manual iteration since entries() might not be available
-    const entries = await directory.values();
-    for await (const entry of entries) {
+    // Using entries() with proper type assertion
+    const entries = directory.entries();
+    for await (const [, entry] of entries) {
       if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
         files.push(entry);
       }
@@ -66,7 +68,7 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toast: (props: ToastProps) => void) => async (): Promise<string> => {
+export const createSelectDirectory = (toast: ToastFunction) => async (): Promise<string> => {
   try {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('Seu navegador não suporta a seleção de diretórios.');
