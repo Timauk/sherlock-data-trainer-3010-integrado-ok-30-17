@@ -34,16 +34,20 @@ export const loadLastCheckpoint = async () => {
     const directory = await getSaveDirectory();
     if (!directory) return null;
 
-    const files = [];
-    for await (const entry of directory.values()) {
-      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-        files.push(entry);
+    // Use async iterator for directory entries
+    const files: FileSystemHandle[] = [];
+    for await (const entry of directory.entries()) {
+      if (entry[1].kind === 'file' && entry[0].endsWith('.json')) {
+        files.push(entry[1]);
       }
     }
 
     if (files.length === 0) return null;
 
-    const lastFile = files.sort((a, b) => b.name.localeCompare(a.name))[0];
+    // Sort files by name (which contains timestamp)
+    const lastFile = files
+      .sort((a, b) => b.name.localeCompare(a.name))[0] as FileSystemFileHandle;
+    
     const file = await lastFile.getFile();
     const content = await file.text();
     
@@ -54,7 +58,7 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toast: ReturnType<typeof useToast>['toast']) => async (): Promise<string> => {
+export const createSelectDirectory = (toast: ReturnType<typeof useToast>) => async (): Promise<string> => {
   try {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('Seu navegador não suporta a seleção de diretórios.');
