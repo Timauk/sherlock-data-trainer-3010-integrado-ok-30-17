@@ -3,8 +3,10 @@ import { useTheme } from 'next-themes';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
+import { useGameDirectory } from '@/hooks/useGameDirectory';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import { PlayPageContent } from '@/components/PlayPageContent';
+import GameInitializer from '@/components/GameInitializer';
 import { Slider } from "@/components/ui/slider";
 import { saveGame, loadGame } from '@/utils/saveSystem';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,12 +20,13 @@ const PlayPage: React.FC = () => {
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
   const [gameCount, setGameCount] = useState(0);
   const [concursoNumber, setConcursoNumber] = useState(0);
-  const { theme, setTheme } = useTheme();
-  const { toast } = useToast();
-
-  const gameLogic = useGameLogic(csvData, trainedModel);
   const [autoSaveInterval, setAutoSaveInterval] = useState(5);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+
+  const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
+  const gameLogic = useGameLogic(csvData, trainedModel);
+  const { saveDirectory, selectDirectory } = useGameDirectory();
 
   const loadCSV = useCallback(async (file: File) => {
     try {
@@ -94,6 +97,15 @@ const PlayPage: React.FC = () => {
   }, [trainedModel, toast]);
 
   const performAutoSave = useCallback(async () => {
+    if (!saveDirectory && !localStorage) {
+      toast({
+        title: "Erro",
+        description: "Nenhum local de salvamento disponível",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await saveGame(
         gameLogic.players,
@@ -102,7 +114,7 @@ const PlayPage: React.FC = () => {
         gameLogic.evolutionData,
         trainedModel,
         concursoNumber,
-        {}  // frequencyData temporariamente vazio
+        {}
       );
       setLastSaveTime(new Date());
       toast({
@@ -116,11 +128,15 @@ const PlayPage: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [gameLogic, trainedModel, gameCount, concursoNumber, toast]);
+  }, [gameLogic, trainedModel, gameCount, concursoNumber, saveDirectory, toast]);
 
   const playGame = useCallback(() => {
-    setIsPlaying(true);
-  }, []);
+    if (!saveDirectory && 'showDirectoryPicker' in window) {
+      selectDirectory().then(() => setIsPlaying(true));
+    } else {
+      setIsPlaying(true);
+    }
+  }, [saveDirectory, selectDirectory]);
 
   const pauseGame = useCallback(() => {
     setIsPlaying(false);
@@ -167,6 +183,11 @@ const PlayPage: React.FC = () => {
     <div className="p-6">
       <PlayPageHeader />
       
+      <GameInitializer 
+        onSelectDirectory={selectDirectory}
+        onStart={playGame}
+      />
+
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Configurações de Autosave</CardTitle>
