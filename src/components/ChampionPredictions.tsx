@@ -35,18 +35,23 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     try {
       // Primeiro salva o modelo
       await onSaveModel();
-      toast({
-        title: "Modelo Salvo",
-        description: "O modelo foi salvo com sucesso antes de gerar as previsões."
-      });
-
+      
       const newPredictions = [];
       for (let i = 0; i < 5; i++) {
-        const prediction = await predictNumbers(trainedModel, lastConcursoNumbers);
-        const numbers = Array.from(await prediction.data())
-          .map((n, idx) => ({ value: Math.round(n * 24) + 1, original: idx }))
-          .sort((a, b) => a.value - b.value)
-          .map(n => n.value);
+        // Normaliza os números de entrada
+        const normalizedInput = lastConcursoNumbers.map(n => n / 25);
+        
+        // Faz a previsão
+        const prediction = await predictNumbers(trainedModel, normalizedInput);
+        const predictionArray = Array.from(await prediction.data());
+        
+        // Desnormaliza e ordena os números
+        const numbers = predictionArray
+          .map((prob, idx) => ({ value: Math.round(prob * 25) + 1, prob }))
+          .sort((a, b) => b.prob - a.prob) // Ordena por probabilidade
+          .slice(0, 15) // Pega os 15 mais prováveis
+          .map(n => n.value)
+          .sort((a, b) => a - b); // Ordena numericamente
 
         // Calcula estimativa de acerto baseada no histórico do campeão
         const estimatedAccuracy = (champion.fitness / 15) * 100;
@@ -66,6 +71,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         description: "5 jogos foram gerados com base no conhecimento do campeão!"
       });
     } catch (error) {
+      console.error("Erro ao gerar previsões:", error);
       toast({
         title: "Erro",
         description: "Erro ao gerar previsões: " + (error instanceof Error ? error.message : "Erro desconhecido"),
@@ -88,7 +94,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         {predictions.length > 0 ? (
           <div className="space-y-4">
             {predictions.map((pred, idx) => (
-              <div key={idx} className="p-4 bg-gray-100 rounded-lg">
+              <div key={idx} className="p-4 bg-gray-100 rounded-lg dark:bg-gray-800">
                 <div className="font-semibold mb-2">Jogo {idx + 1}</div>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {pred.numbers.map((num, numIdx) => (
@@ -97,14 +103,14 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
                     </span>
                   ))}
                 </div>
-                <div className="text-sm text-gray-600">
-                  Estimativa para 14 acertos: {pred.estimatedAccuracy.toFixed(2)}%
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Estimativa de Acertos: {pred.estimatedAccuracy.toFixed(2)}%
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-500">
+          <div className="text-center text-gray-500 dark:text-gray-400">
             Clique no botão para gerar previsões baseadas no último concurso
           </div>
         )}
