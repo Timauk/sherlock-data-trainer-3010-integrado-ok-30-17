@@ -7,10 +7,14 @@ interface GameSave {
   generation: number;
   gameCount: number;
   evolutionData: any[];
-  modelWeights: number[][][];
+  modelWeights: number[][];
   concursoNumber: number;
   frequencyData: { [key: string]: number[] };
 }
+
+const isFileSystemSupported = () => {
+  return 'showDirectoryPicker' in window;
+};
 
 export const saveGame = async (
   players: Player[],
@@ -23,7 +27,7 @@ export const saveGame = async (
 ): Promise<void> => {
   try {
     const modelWeights = model 
-      ? model.getWeights().map(w => Array.from(w.dataSync())).map(w => Array.isArray(w) ? w : [w])
+      ? model.getWeights().map(w => Array.from(w.dataSync()))
       : [];
 
     const save: GameSave = {
@@ -37,18 +41,20 @@ export const saveGame = async (
       frequencyData
     };
 
+    // Sempre salva no localStorage
     localStorage.setItem('gameCheckpoint', JSON.stringify(save));
     
-    // Também salva em arquivo usando a API File System Access
-    try {
-      const handle = await window.showDirectoryPicker();
-      const fileHandle = await handle.getFileHandle('checkpoint.json', { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(JSON.stringify(save, null, 2));
-      await writable.close();
-    } catch (error) {
-      console.error('Erro ao salvar arquivo:', error);
-      // Fallback para localStorage apenas
+    // Tenta salvar no sistema de arquivos se suportado
+    if (isFileSystemSupported()) {
+      try {
+        const handle = await (window as any).showDirectoryPicker();
+        const fileHandle = await handle.getFileHandle('checkpoint.json', { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(save, null, 2));
+        await writable.close();
+      } catch (error) {
+        console.error('Erro ao salvar arquivo:', error);
+      }
     }
   } catch (error) {
     console.error('Erro ao salvar checkpoint:', error);
@@ -58,34 +64,34 @@ export const saveGame = async (
 
 export const loadGame = async (model: tf.LayersModel | null): Promise<GameSave | null> => {
   try {
-    // Tenta carregar do arquivo primeiro
-    try {
-      const handle = await window.showDirectoryPicker();
-      const fileHandle = await handle.getFileHandle('checkpoint.json');
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-      const save: GameSave = JSON.parse(content);
-      
-      if (model && save.modelWeights.length > 0) {
-        const weights = save.modelWeights.map(w => tf.tensor(w));
-        model.setWeights(weights);
+    let save: GameSave | null = null;
+
+    // Tenta carregar do sistema de arquivos primeiro
+    if (isFileSystemSupported()) {
+      try {
+        const handle = await (window as any).showDirectoryPicker();
+        const fileHandle = await handle.getFileHandle('checkpoint.json');
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+        save = JSON.parse(content);
+      } catch (error) {
+        console.error('Erro ao carregar do sistema de arquivos:', error);
       }
-      
-      return save;
-    } catch (error) {
-      // Fallback para localStorage
+    }
+
+    // Se não conseguiu carregar do arquivo, tenta do localStorage
+    if (!save) {
       const savedData = localStorage.getItem('gameCheckpoint');
       if (!savedData) return null;
-      
-      const save: GameSave = JSON.parse(savedData);
-      
-      if (model && save.modelWeights.length > 0) {
-        const weights = save.modelWeights.map(w => tf.tensor(w));
-        model.setWeights(weights);
-      }
-      
-      return save;
+      save = JSON.parse(savedData);
     }
+
+    if (model && save.modelWeights.length > 0) {
+      const weights = save.modelWeights.map(w => tf.tensor(w));
+      model.setWeights(weights);
+    }
+
+    return save;
   } catch (error) {
     console.error('Erro ao carregar checkpoint:', error);
     return null;

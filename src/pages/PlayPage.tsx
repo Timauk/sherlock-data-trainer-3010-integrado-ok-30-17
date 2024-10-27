@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
@@ -12,19 +12,87 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
+  const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const [gameCount, setGameCount] = useState(0);
+  const [concursoNumber, setConcursoNumber] = useState(0);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   const gameLogic = useGameLogic(csvData, trainedModel);
-
-  const [autoSaveInterval, setAutoSaveInterval] = useState(5); // minutos
+  const [autoSaveInterval, setAutoSaveInterval] = useState(5);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
 
-  // Função para realizar o autosave
+  const loadCSV = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.trim().split('\n').slice(1);
+      const data = lines.map(line => {
+        const values = line.split(',');
+        return {
+          concurso: parseInt(values[0], 10),
+          data: new Date(values[1].split('/').reverse().join('-')),
+          bolas: values.slice(2).map(Number)
+        };
+      });
+      setCsvData(data.map(d => d.bolas));
+      setCsvDates(data.map(d => d.data));
+      toast({
+        title: "CSV Carregado",
+        description: `${data.length} registros processados com sucesso.`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao Carregar CSV",
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
+    try {
+      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
+      setTrainedModel(model);
+      toast({
+        title: "Modelo Carregado",
+        description: "O modelo foi carregado com sucesso."
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao Carregar Modelo",
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  const saveModel = useCallback(async () => {
+    if (!trainedModel) {
+      toast({
+        title: "Erro",
+        description: "Nenhum modelo para salvar",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      await trainedModel.save('downloads://modelo-atual');
+      toast({
+        title: "Modelo Salvo",
+        description: "Modelo salvo com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao Salvar",
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: "destructive"
+      });
+    }
+  }, [trainedModel, toast]);
+
   const performAutoSave = useCallback(async () => {
     try {
       await saveGame(
@@ -34,45 +102,62 @@ const PlayPage: React.FC = () => {
         gameLogic.evolutionData,
         trainedModel,
         concursoNumber,
-        gameLogic.frequencyData
+        {}  // frequencyData temporariamente vazio
       );
       setLastSaveTime(new Date());
       toast({
         title: "Checkpoint Salvo",
-        description: `Progresso salvo com sucesso às ${new Date().toLocaleTimeString()}`,
+        description: `Progresso salvo com sucesso às ${new Date().toLocaleTimeString()}`
       });
     } catch (error) {
       toast({
         title: "Erro ao Salvar",
         description: "Não foi possível salvar o checkpoint",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   }, [gameLogic, trainedModel, gameCount, concursoNumber, toast]);
 
-  // Carregar save ao iniciar
+  const playGame = useCallback(() => {
+    setIsPlaying(true);
+  }, []);
+
+  const pauseGame = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const resetGame = useCallback(() => {
+    setIsPlaying(false);
+    setProgress(0);
+    gameLogic.initializePlayers();
+  }, [gameLogic]);
+
+  const handleSpeedChange = useCallback((value: number[]) => {
+    const newSpeed = 2000 - value[0];
+    setGameSpeed(newSpeed);
+    toast({
+      title: "Velocidade Ajustada",
+      description: `${newSpeed}ms por jogada`
+    });
+  }, [toast]);
+
   useEffect(() => {
     const loadSavedGame = async () => {
       const savedGame = await loadGame(trainedModel);
       if (savedGame) {
-        setPlayers(savedGame.players);
-        setGeneration(savedGame.generation);
+        gameLogic.initializePlayers();
         setGameCount(savedGame.gameCount);
-        setEvolutionData(savedGame.evolutionData);
         setConcursoNumber(savedGame.concursoNumber);
         setLastSaveTime(new Date(savedGame.timestamp));
-        
         toast({
           title: "Checkpoint Carregado",
-          description: "Progresso anterior restaurado com sucesso!",
+          description: "Progresso anterior restaurado com sucesso!"
         });
       }
     };
-    
     loadSavedGame();
-  }, [trainedModel]);
+  }, [trainedModel, gameLogic, toast]);
 
-  // Configurar autosave
   useEffect(() => {
     const interval = setInterval(performAutoSave, autoSaveInterval * 60 * 1000);
     return () => clearInterval(interval);
@@ -123,6 +208,7 @@ const PlayPage: React.FC = () => {
           Intervalo atual: {gameSpeed}ms
         </p>
       </div>
+
       <PlayPageContent
         isPlaying={isPlaying}
         onPlay={playGame}
