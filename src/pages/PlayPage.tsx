@@ -5,7 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import { PlayPageContent } from '@/components/PlayPageContent';
-import { Slider } from "@/components/ui/slider"
+import { Slider } from "@/components/ui/slider";
+import { saveGame, loadGame } from '@/utils/saveSystem';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,129 +21,94 @@ const PlayPage: React.FC = () => {
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
-  const loadCSV = useCallback(async (file: File) => {
-    try {
-      const text = await file.text();
-      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
-      const data = lines.map(line => {
-        const values = line.split(',');
-        return {
-          concurso: parseInt(values[0], 10),
-          data: new Date(values[1].split('/').reverse().join('-')),
-          bolas: values.slice(2).map(Number)
-        };
-      });
-      setCsvData(data.map(d => d.bolas));
-      setCsvDates(data.map(d => d.data));
-      gameLogic.addLog("CSV carregado e processado com sucesso!");
-      gameLogic.addLog(`Número de registros carregados: ${data.length}`);
-    } catch (error) {
-      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
-  }, [gameLogic]);
+  const [autoSaveInterval, setAutoSaveInterval] = useState(5); // minutos
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
 
-  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
+  // Função para realizar o autosave
+  const performAutoSave = useCallback(async () => {
     try {
-      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      setTrainedModel(model);
-      gameLogic.addLog("Modelo carregado com sucesso!");
+      await saveGame(
+        gameLogic.players,
+        gameLogic.generation,
+        gameCount,
+        gameLogic.evolutionData,
+        trainedModel,
+        concursoNumber,
+        gameLogic.frequencyData
+      );
+      setLastSaveTime(new Date());
       toast({
-        title: "Modelo Carregado",
-        description: "O modelo foi carregado com sucesso.",
+        title: "Checkpoint Salvo",
+        description: `Progresso salvo com sucesso às ${new Date().toLocaleTimeString()}`,
       });
     } catch (error) {
-      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      console.error("Detalhes do erro:", error);
       toast({
-        title: "Erro ao Carregar Modelo",
-        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar o checkpoint",
         variant: "destructive",
       });
     }
-  }, [gameLogic, toast]);
+  }, [gameLogic, trainedModel, gameCount, concursoNumber, toast]);
 
-  const saveModel = useCallback(async () => {
-    if (trainedModel) {
-      try {
-        await trainedModel.save('downloads://modelo-atual');
-        gameLogic.addLog("Modelo salvo com sucesso!");
+  // Carregar save ao iniciar
+  useEffect(() => {
+    const loadSavedGame = async () => {
+      const savedGame = await loadGame(trainedModel);
+      if (savedGame) {
+        setPlayers(savedGame.players);
+        setGeneration(savedGame.generation);
+        setGameCount(savedGame.gameCount);
+        setEvolutionData(savedGame.evolutionData);
+        setConcursoNumber(savedGame.concursoNumber);
+        setLastSaveTime(new Date(savedGame.timestamp));
+        
         toast({
-          title: "Modelo Salvo",
-          description: "O modelo atual foi salvo com sucesso.",
-        });
-      } catch (error) {
-        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        console.error("Detalhes do erro:", error);
-        toast({
-          title: "Erro ao Salvar Modelo",
-          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
-          variant: "destructive",
+          title: "Checkpoint Carregado",
+          description: "Progresso anterior restaurado com sucesso!",
         });
       }
-    } else {
-      gameLogic.addLog("Nenhum modelo para salvar.");
-      toast({
-        title: "Nenhum Modelo",
-        description: "Não há nenhum modelo carregado para salvar.",
-        variant: "destructive",
-      });
-    }
-  }, [trainedModel, gameLogic, toast]);
+    };
+    
+    loadSavedGame();
+  }, [trainedModel]);
 
-  const playGame = useCallback(() => {
-    if (!trainedModel || csvData.length === 0) {
-      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
-      return;
-    }
-    setIsPlaying(true);
-    gameLogic.addLog("Jogo iniciado.");
-    gameLogic.gameLoop();
-  }, [trainedModel, csvData, gameLogic]);
-
-  const pauseGame = useCallback(() => {
-    setIsPlaying(false);
-    gameLogic.addLog("Jogo pausado.");
-  }, [gameLogic]);
-
-  const resetGame = useCallback(() => {
-    setIsPlaying(false);
-    setProgress(0);
-    gameLogic.initializePlayers();
-    gameLogic.addLog("Jogo reiniciado.");
-  }, [gameLogic]);
-
+  // Configurar autosave
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    if (isPlaying) {
-      intervalId = setInterval(() => {
-        gameLogic.gameLoop();
-        setProgress((prevProgress) => {
-          const newProgress = prevProgress + (100 / csvData.length);
-          if (newProgress >= 100) {
-            if (!gameLogic.isManualMode) {
-              gameLogic.evolveGeneration();
-            }
-            return gameLogic.isInfiniteMode ? 0 : 100;
-          }
-          return newProgress;
-        });
-      }, gameSpeed);
-    }
-    return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed]);
-
-  const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
-    setGameSpeed(newSpeed);
-    toast({
-      title: "Velocidade Ajustada",
-      description: `${newSpeed}ms por jogada`,
-    });
-  };
+    const interval = setInterval(performAutoSave, autoSaveInterval * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [autoSaveInterval, performAutoSave]);
 
   return (
     <div className="p-6">
       <PlayPageHeader />
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Configurações de Autosave</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-2">
+                Intervalo de Autosave: {autoSaveInterval} minutos
+              </p>
+              <Slider
+                defaultValue={[autoSaveInterval]}
+                min={1}
+                max={60}
+                step={1}
+                onValueChange={(value) => setAutoSaveInterval(value[0])}
+              />
+            </div>
+            {lastSaveTime && (
+              <p className="text-sm text-muted-foreground">
+                Último save: {lastSaveTime.toLocaleString()}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="mb-4 p-4 bg-background rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-2">Controle de Velocidade</h3>
         <Slider
