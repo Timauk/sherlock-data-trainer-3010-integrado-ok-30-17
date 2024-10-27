@@ -37,28 +37,34 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       await onSaveModel();
       
       const newPredictions = [];
-      for (let i = 0; i < 5; i++) {
-        // Normaliza os números de entrada
+      const nextConcurso = Math.max(...champion.predictions.map(p => 
+        typeof p === 'number' ? p : 0)) + 1;
+
+      for (let i = 0; i < 8; i++) {
+        // Normaliza os números de entrada usando o histórico do campeão
         const normalizedInput = lastConcursoNumbers.map(n => n / 25);
         
-        // Faz a previsão
+        // Faz a previsão usando o modelo treinado
         const prediction = await predictNumbers(trainedModel, normalizedInput);
         const predictionArray = Array.from(await prediction.data());
         
-        // Desnormaliza e ordena os números
+        // Seleciona os 15 números mais prováveis baseado no histórico do campeão
         const numbers = predictionArray
-          .map((prob, idx) => ({ value: Math.round(prob * 25) + 1, prob }))
-          .sort((a, b) => b.prob - a.prob) // Ordena por probabilidade
-          .slice(0, 15) // Pega os 15 mais prováveis
+          .map((prob, idx) => ({ 
+            value: idx + 1,
+            prob: prob * champion.weights[idx % champion.weights.length] 
+          }))
+          .sort((a, b) => b.prob - a.prob)
+          .slice(0, 15)
           .map(n => n.value)
-          .sort((a, b) => a - b); // Ordena numericamente
+          .sort((a, b) => a - b);
 
         // Calcula estimativa de acerto baseada no histórico do campeão
         const estimatedAccuracy = (champion.fitness / 15) * 100;
         
         newPredictions.push({
           numbers,
-          estimatedAccuracy: Math.min(estimatedAccuracy, 93.33) // Máximo de 14/15 = 93.33%
+          estimatedAccuracy: Math.min(estimatedAccuracy, 93.33)
         });
 
         prediction.dispose();
@@ -68,7 +74,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       
       toast({
         title: "Previsões Geradas",
-        description: "5 jogos foram gerados com base no conhecimento do campeão!"
+        description: `8 jogos foram gerados para o concurso ${nextConcurso}!`
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
@@ -80,13 +86,16 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     }
   };
 
+  const nextConcurso = Math.max(...(champion?.predictions.map(p => 
+    typeof p === 'number' ? p : 0) || [0])) + 1;
+
   return (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Previsões do Campeão</span>
+          <span>Previsões do Campeão - Próximo Concurso #{nextConcurso}</span>
           <Button onClick={generatePredictions} className="bg-green-600 hover:bg-green-700">
-            Gerar 5 Jogos
+            Gerar 8 Jogos
           </Button>
         </CardTitle>
       </CardHeader>
@@ -111,7 +120,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
           </div>
         ) : (
           <div className="text-center text-gray-500 dark:text-gray-400">
-            Clique no botão para gerar previsões baseadas no último concurso
+            Clique no botão para gerar 8 previsões para o próximo concurso
           </div>
         )}
       </CardContent>
