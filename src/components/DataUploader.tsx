@@ -4,7 +4,6 @@ import { Upload, Save, RotateCcw, Timer } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface DataUploaderProps {
   onCsvUpload: (file: File) => void;
@@ -15,7 +14,8 @@ interface DataUploaderProps {
 const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload, onSaveModel }) => {
   const jsonFileRef = useRef<HTMLInputElement>(null);
   const weightsFileRef = useRef<HTMLInputElement>(null);
-  const [timeUntilCheckpoint, setTimeUntilCheckpoint] = useState(1800); // 30 minutes in seconds
+  const directoryInputRef = useRef<HTMLInputElement>(null);
+  const [timeUntilCheckpoint, setTimeUntilCheckpoint] = useState(1800);
   const [savePath, setSavePath] = useState(localStorage.getItem('checkpointPath') || '');
   const { toast } = useToast();
 
@@ -24,7 +24,7 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
       setTimeUntilCheckpoint((prev) => {
         if (prev <= 1) {
           handleAutoSave();
-          return 1800; // Reset to 30 minutes
+          return 1800;
         }
         return prev - 1;
       });
@@ -33,27 +33,47 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
     return () => clearInterval(timer);
   }, []);
 
-  const handleAutoSave = async () => {
+  const handleDirectorySelect = async () => {
     try {
-      if (!savePath) {
+      // @ts-ignore - directory picker API is not yet in TypeScript types
+      const dirHandle = await window.showDirectoryPicker();
+      const path = dirHandle.name;
+      setSavePath(path);
+      localStorage.setItem('checkpointPath', path);
+      
+      toast({
+        title: "Diretório Selecionado",
+        description: `Pasta selecionada: ${path}`,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
         toast({
-          title: "Erro no Checkpoint",
-          description: "Por favor, configure o diretório de salvamento primeiro!",
+          title: "Erro ao Selecionar Diretório",
+          description: error.message,
           variant: "destructive"
         });
-        return;
       }
+    }
+  };
 
-      // Salva o estado atual
+  const handleAutoSave = async () => {
+    if (!savePath) {
+      toast({
+        title: "Erro no Checkpoint",
+        description: "Por favor, configure o diretório de salvamento primeiro!",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
       const gameState = {
-        // Capture todo o estado necessário aqui
         timestamp: new Date().toISOString(),
         path: savePath
       };
 
       localStorage.setItem('gameCheckpoint', JSON.stringify(gameState));
       
-      // Força um reload da página após salvar
       toast({
         title: "Checkpoint Salvo",
         description: "Recarregando página para limpar memória...",
@@ -136,30 +156,18 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
         </TabsContent>
 
         <TabsContent value="checkpoint" className="space-y-4">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full mb-4">
-                Configurar Diretório de Salvamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Configurar Salvamento</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  value={savePath}
-                  onChange={(e) => {
-                    setSavePath(e.target.value);
-                    localStorage.setItem('checkpointPath', e.target.value);
-                  }}
-                  placeholder="Caminho para salvar checkpoints"
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={handleDirectorySelect}
+            className="w-full"
+          >
+            Configurar Diretório de Salvamento
+          </Button>
+          
+          {savePath && (
+            <div className="p-2 bg-secondary rounded-md">
+              <p className="text-sm">Diretório atual: {savePath}</p>
+            </div>
+          )}
 
           <Button 
             onClick={handleAutoSave}
@@ -177,7 +185,6 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload,
                   title: "Carregando Checkpoint",
                   description: "Restaurando último estado salvo...",
                 });
-                // Implementar lógica de carregamento aqui
                 window.location.reload();
               }
             }}
