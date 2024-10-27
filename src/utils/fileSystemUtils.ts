@@ -6,14 +6,6 @@ interface ToastProps {
   variant?: "default" | "destructive";
 }
 
-interface ToastFunction {
-  (props: ToastProps): void;
-}
-
-interface ToastFunctions {
-  toast: ToastFunction;
-}
-
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
 const getSaveDirectory = async () => {
@@ -50,10 +42,11 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using async iteration for directory entries
-    for await (const [, fileHandle] of directory.entries()) {
-      if (fileHandle instanceof FileSystemFileHandle && fileHandle.name.endsWith('.json')) {
-        files.push(fileHandle);
+    // Using manual iteration since entries() might not be available
+    const entries = await directory.values();
+    for await (const entry of entries) {
+      if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
+        files.push(entry);
       }
     }
 
@@ -73,7 +66,7 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toastFns: { toast: (props: ToastProps) => void }) => async (): Promise<string> => {
+export const createSelectDirectory = (toast: (props: ToastProps) => void) => async (): Promise<string> => {
   try {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('Seu navegador não suporta a seleção de diretórios.');
@@ -84,7 +77,7 @@ export const createSelectDirectory = (toastFns: { toast: (props: ToastProps) => 
     });
 
     const dirName = saveDirectory.name;
-    toastFns.toast({
+    toast({
       title: "Diretório Configurado",
       description: `Os checkpoints serão salvos em: ${dirName}`,
     });
@@ -92,7 +85,7 @@ export const createSelectDirectory = (toastFns: { toast: (props: ToastProps) => 
     return dirName;
   } catch (error) {
     console.error('Erro ao selecionar diretório:', error);
-    toastFns.toast({
+    toast({
       title: "Erro",
       description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
       variant: "destructive"
