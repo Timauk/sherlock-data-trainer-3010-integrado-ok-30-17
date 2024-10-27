@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw } from 'lucide-react';
-import { createSelectDirectory } from '@/utils/fileSystemUtils';
+import { saveCheckpoint, loadLastCheckpoint } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CheckpointControlsProps {
@@ -16,23 +16,40 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
-  const selectDirectory = React.useMemo(() => createSelectDirectory(toast), [toast]);
 
-  const handleDirectorySelect = async () => {
-    const selectedPath = await selectDirectory();
-    if (selectedPath) {
-      onSavePathChange(selectedPath);
-      localStorage.setItem('checkpointPath', selectedPath);
+  const handleSaveCheckpoint = async () => {
+    try {
+      const gameState = {
+        timestamp: new Date().toISOString(),
+        // Adicione aqui os dados do jogo que você quer salvar
+        path: savePath,
+        // outros dados...
+      };
+
+      const savedPath = await saveCheckpoint(gameState);
+      
+      toast({
+        title: "Checkpoint Salvo",
+        description: `Arquivo salvo em: ${savedPath}`,
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erro ao Salvar",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
     }
   };
 
   const handleLoadCheckpoint = () => {
-    const lastCheckpoint = localStorage.getItem('gameCheckpoint');
-    if (lastCheckpoint) {
+    const checkpoint = loadLastCheckpoint();
+    if (checkpoint) {
       toast({
         title: "Carregando Checkpoint",
         description: "Restaurando último estado salvo...",
       });
+      // Implemente aqui a lógica para restaurar o estado do jogo
       window.location.reload();
     } else {
       toast({
@@ -45,23 +62,13 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
 
   return (
     <div className="space-y-4">
-      <Button 
-        onClick={handleDirectorySelect}
-        className="w-full"
-      >
-        Configurar Diretório de Salvamento
-      </Button>
-      
-      {savePath && (
-        <div className="p-2 bg-secondary rounded-md">
-          <p className="text-sm">Diretório atual: {savePath}</p>
-        </div>
-      )}
+      <div className="p-2 bg-secondary rounded-md">
+        <p className="text-sm">Diretório de salvamento: {savePath}</p>
+      </div>
 
       <Button 
-        onClick={onAutoSave}
+        onClick={handleSaveCheckpoint}
         className="w-full"
-        disabled={!savePath}
       >
         <Save className="mr-2 h-4 w-4" /> Salvar Checkpoint Manual
       </Button>
