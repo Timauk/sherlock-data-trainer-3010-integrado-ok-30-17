@@ -82,9 +82,17 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
             onThemeToggle={onThemeToggle}
           />
 
-          <Button onClick={gameLogic.toggleInfiniteMode}>
-            {gameLogic.isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={gameLogic.toggleInfiniteMode}>
+              {gameLogic.isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
+            </Button>
+            <Button 
+              onClick={gameLogic.toggleManualMode}
+              variant={gameLogic.isManualMode ? "destructive" : "outline"}
+            >
+              {gameLogic.isManualMode ? 'Desativar' : 'Ativar'} Modo Manual
+            </Button>
+          </div>
 
           <EvolutionStats
             gameCount={gameLogic.gameCount}
@@ -173,3 +181,5 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
     </div>
   );
 };
+
+export default PlayPageContent;

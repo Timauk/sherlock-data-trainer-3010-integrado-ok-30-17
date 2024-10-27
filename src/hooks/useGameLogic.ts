@@ -38,6 +38,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [concursoNumber, setConcursoNumber] = useState(0);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
+  const [isManualMode, setIsManualMode] = useState(false);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
@@ -140,6 +141,19 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }
   }, [trainedModel, players]);
 
+  const toggleManualMode = useCallback(() => {
+    setIsManualMode(prev => {
+      const newMode = !prev;
+      toast({
+        title: newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
+        description: newMode ? 
+          "A clonagem automática está desativada. Suas alterações serão mantidas." : 
+          "A clonagem automática está ativada novamente.",
+      });
+      return newMode;
+    });
+  }, []);
+
   useEffect(() => {
     initializePlayers();
   }, [initializePlayers]);
@@ -169,6 +183,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     boardNumbers,
     concursoNumber,
     trainedModel,
-    gameCount
+    gameCount,
+    isManualMode,
+    toggleManualMode,
   };
 };

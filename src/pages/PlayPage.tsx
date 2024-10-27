@@ -5,10 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import { PlayPageContent } from '@/components/PlayPageContent';
+import { Slider } from "@/components/ui/slider"
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
@@ -116,19 +118,44 @@ const PlayPage: React.FC = () => {
         setProgress((prevProgress) => {
           const newProgress = prevProgress + (100 / csvData.length);
           if (newProgress >= 100) {
-            gameLogic.evolveGeneration();
+            if (!gameLogic.isManualMode) {
+              gameLogic.evolveGeneration();
+            }
             return gameLogic.isInfiniteMode ? 0 : 100;
           }
           return newProgress;
         });
-      }, 1000);
+      }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+
+  const handleSpeedChange = (value: number[]) => {
+    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
+    setGameSpeed(newSpeed);
+    toast({
+      title: "Velocidade Ajustada",
+      description: `${newSpeed}ms por jogada`,
+    });
+  };
 
   return (
     <div className="p-6">
       <PlayPageHeader />
+      <div className="mb-4 p-4 bg-background rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-2">Controle de Velocidade</h3>
+        <Slider
+          defaultValue={[1000]}
+          max={1900}
+          min={100}
+          step={100}
+          onValueChange={handleSpeedChange}
+          className="w-full"
+        />
+        <p className="text-sm text-muted-foreground mt-1">
+          Intervalo atual: {gameSpeed}ms
+        </p>
+      </div>
       <PlayPageContent
         isPlaying={isPlaying}
         onPlay={playGame}
