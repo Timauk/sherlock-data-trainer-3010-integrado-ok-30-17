@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw, FolderOpen } from 'lucide-react';
-import { saveCheckpoint, loadLastCheckpoint } from '@/utils/fileSystemUtils';
+import { saveCheckpoint, loadLastCheckpoint, createSelectDirectory } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CheckpointControlsProps {
@@ -16,13 +16,22 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
+  const selectDirectory = createSelectDirectory(toast);
+
+  const handleSelectDirectory = async () => {
+    try {
+      const dirName = await selectDirectory();
+      onSavePathChange(dirName);
+    } catch (error) {
+      console.error('Erro ao selecionar diretório:', error);
+    }
+  };
 
   const handleSaveCheckpoint = async () => {
     try {
       const gameState = {
         timestamp: new Date().toISOString(),
         path: savePath,
-        // Adicione aqui os dados do jogo que você quer salvar
       };
 
       const savedFile = await saveCheckpoint(gameState);
@@ -49,7 +58,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
           title: "Carregando Checkpoint",
           description: "Restaurando último estado salvo...",
         });
-        // Implemente aqui a lógica para restaurar o estado do jogo
         window.location.reload();
       } else {
         toast({
@@ -72,6 +80,13 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
       <div className="p-2 bg-secondary rounded-md">
         <p className="text-sm">Diretório de salvamento: {savePath || "Nenhum diretório selecionado"}</p>
       </div>
+
+      <Button 
+        onClick={handleSelectDirectory}
+        className="w-full"
+      >
+        <FolderOpen className="mr-2 h-4 w-4" /> Selecionar Diretório
+      </Button>
 
       <Button 
         onClick={handleSaveCheckpoint}
