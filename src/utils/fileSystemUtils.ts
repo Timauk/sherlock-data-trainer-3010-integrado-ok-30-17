@@ -44,9 +44,8 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using entries() with proper type assertion
-    const entries = directory.entries();
-    for await (const [, entry] of entries) {
+    // Using values() instead of entries() for better browser compatibility
+    for await (const entry of await directory.values()) {
       if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
         files.push(entry);
       }
