@@ -1,4 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
+import { type Toast } from "@/components/ui/toast";
 
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
@@ -34,11 +35,13 @@ export const loadLastCheckpoint = async () => {
     const directory = await getSaveDirectory();
     if (!directory) return null;
 
-    // Use async iterator for directory entries
-    const files: FileSystemHandle[] = [];
-    for await (const entry of directory.entries()) {
-      if (entry[1].kind === 'file' && entry[0].endsWith('.json')) {
-        files.push(entry[1]);
+    const files: FileSystemFileHandle[] = [];
+    
+    // Using for...of with async/await for directory iteration
+    const entries = directory.entries();
+    for await (const [name, handle] of entries) {
+      if (handle.kind === 'file' && name.endsWith('.json')) {
+        files.push(handle as FileSystemFileHandle);
       }
     }
 
@@ -46,7 +49,7 @@ export const loadLastCheckpoint = async () => {
 
     // Sort files by name (which contains timestamp)
     const lastFile = files
-      .sort((a, b) => b.name.localeCompare(a.name))[0] as FileSystemFileHandle;
+      .sort((a, b) => b.name.localeCompare(a.name))[0];
     
     const file = await lastFile.getFile();
     const content = await file.text();
@@ -58,7 +61,11 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toast: ReturnType<typeof useToast>) => async (): Promise<string> => {
+type ToastFunction = {
+  toast: (props: Toast) => void;
+};
+
+export const createSelectDirectory = (toastFns: ToastFunction) => async (): Promise<string> => {
   try {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('Seu navegador não suporta a seleção de diretórios.');
@@ -69,7 +76,7 @@ export const createSelectDirectory = (toast: ReturnType<typeof useToast>) => asy
     });
 
     const dirName = saveDirectory.name;
-    toast({
+    toastFns.toast({
       title: "Diretório Configurado",
       description: `Os checkpoints serão salvos em: ${dirName}`,
     });
@@ -77,7 +84,7 @@ export const createSelectDirectory = (toast: ReturnType<typeof useToast>) => asy
     return dirName;
   } catch (error) {
     console.error('Erro ao selecionar diretório:', error);
-    toast({
+    toastFns.toast({
       title: "Erro",
       description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
       variant: "destructive"
