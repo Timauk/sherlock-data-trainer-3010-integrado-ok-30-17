@@ -1,6 +1,6 @@
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
-export const selectDirectory = async (): Promise<string | null> => {
+export const createSelectDirectory = (toast: ReturnType<typeof useToast>['toast']) => async (): Promise<string | null> => {
   try {
     // Check if the File System Access API is supported
     if (!('showDirectoryPicker' in window)) {

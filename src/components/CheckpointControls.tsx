@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw } from 'lucide-react';
-import { selectDirectory } from '@/utils/fileSystemUtils';
+import { createSelectDirectory } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CheckpointControlsProps {
@@ -16,6 +16,7 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
+  const selectDirectory = React.useMemo(() => createSelectDirectory(toast), [toast]);
 
   const handleDirectorySelect = async () => {
     const selectedPath = await selectDirectory();
