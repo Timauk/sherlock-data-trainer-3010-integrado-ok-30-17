@@ -2,12 +2,11 @@ import React from 'react';
 import BoardDisplay from './BoardDisplay';
 import PlayerList from './PlayerList';
 import EvolutionChart from './EvolutionChart';
-import { Player } from '@/types/gameTypes';
 
 interface GameBoardProps {
   boardNumbers: number[];
   concursoNumber: number;
-  players: Player[];
+  players: { id: number; score: number; predictions: number[] }[];
   evolutionData: Array<{
     generation: number;
     playerId: number;
