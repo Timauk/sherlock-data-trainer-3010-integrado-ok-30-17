@@ -36,6 +36,7 @@ export const useGameLoop = (
     if (csvData.length === 0 || !trainedModel) return;
 
     setConcursoNumber(concursoNumber + 1);
+    setGameCount(prev => prev + 1); // Increment game count in each loop
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
