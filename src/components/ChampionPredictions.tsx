@@ -16,8 +16,7 @@ interface ChampionPredictionsProps {
 const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
   champion,
   trainedModel,
-  lastConcursoNumbers,
-  onSaveModel
+  lastConcursoNumbers
 }) => {
   const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number }>>([]);
   const { toast } = useToast();
@@ -33,9 +32,6 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     }
 
     try {
-      // Primeiro salva o modelo
-      await onSaveModel();
-      
       const newPredictions = [];
       const nextConcurso = Math.max(...champion.predictions.map(p => 
         typeof p === 'number' ? p : 0)) + 1;
