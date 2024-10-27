@@ -117,7 +117,6 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
             champion={champion}
             trainedModel={gameLogic.trainedModel}
             lastConcursoNumbers={gameLogic.boardNumbers}
-            onSaveModel={onSaveModel}
           />
         </div>
       </div>
