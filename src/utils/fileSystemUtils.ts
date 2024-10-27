@@ -1,12 +1,10 @@
 import { useToast } from "@/hooks/use-toast";
 
-type ToastFunction = {
-  (props: {
-    title: string;
-    description: string;
-    variant?: "default" | "destructive";
-  }): void;
-};
+type ToastFunction = (props: {
+  title: string;
+  description: string;
+  variant?: "default" | "destructive";
+}) => void;
 
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
@@ -44,10 +42,10 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using proper async iteration
-    for await (const [, handle] of directory.entries()) {
-      if (handle instanceof FileSystemFileHandle && handle.name.endsWith('.json')) {
-        files.push(handle);
+    // Using proper async iteration with values()
+    for await (const entry of directory.values()) {
+      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+        files.push(entry);
       }
     }
 
