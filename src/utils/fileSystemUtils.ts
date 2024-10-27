@@ -51,10 +51,7 @@ export const loadLastCheckpoint = async () => {
     const files: FileSystemFileHandle[] = [];
     
     // Using async iteration for directory entries
-    const entries = directory[Symbol.asyncIterator]();
-    let entry;
-    while ((entry = await entries.next()).done === false) {
-      const fileHandle = entry.value[1];
+    for await (const [, fileHandle] of directory.entries()) {
       if (fileHandle instanceof FileSystemFileHandle && fileHandle.name.endsWith('.json')) {
         files.push(fileHandle);
       }
@@ -76,7 +73,7 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toastFns: ToastFunctions) => async (): Promise<string> => {
+export const createSelectDirectory = (toastFns: { toast: (props: ToastProps) => void }) => async (): Promise<string> => {
   try {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('Seu navegador não suporta a seleção de diretórios.');
