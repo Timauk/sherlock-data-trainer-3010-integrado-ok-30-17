@@ -1,30 +1,14 @@
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
-type ToastFunction = typeof toast;
-
-let saveDirectory: FileSystemDirectoryHandle | null = null;
-
-const getSaveDirectory = async () => {
-  if (!('showDirectoryPicker' in window)) {
-    throw new Error('Seu navegador não suporta a seleção de diretórios.');
-  }
-  return saveDirectory;
-};
+type ToastFunction = ReturnType<typeof useToast>;
 
 export const saveCheckpoint = async (data: any) => {
   try {
-    const directory = await getSaveDirectory();
-    if (!directory) throw new Error('Nenhum diretório selecionado');
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `checkpoint-${timestamp}.json`;
+    const key = `checkpoint-${timestamp}`;
     
-    const fileHandle = await directory.getFileHandle(fileName, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(data, null, 2));
-    await writable.close();
-    
-    return fileName;
+    localStorage.setItem(key, JSON.stringify(data));
+    return key;
   } catch (error) {
     console.error('Erro ao salvar checkpoint:', error);
     throw error;
@@ -33,29 +17,17 @@ export const saveCheckpoint = async (data: any) => {
 
 export const loadLastCheckpoint = async () => {
   try {
-    const directory = await getSaveDirectory();
-    if (!directory) return null;
+    const keys = Object.keys(localStorage)
+      .filter(key => key.startsWith('checkpoint-'))
+      .sort()
+      .reverse();
 
-    const files: FileSystemFileHandle[] = [];
-    
-    // Using async iteration with FileSystemDirectoryHandle
-    for await (const entry of directory) {
-      const fileHandle = entry[1];
-      if (fileHandle instanceof FileSystemFileHandle && fileHandle.name.endsWith('.json')) {
-        files.push(fileHandle);
-      }
-    }
+    if (keys.length === 0) return null;
 
-    if (files.length === 0) return null;
-
-    // Sort files by name (which contains timestamp)
-    const lastFile = files
-      .sort((a, b) => b.name.localeCompare(a.name))[0];
+    const lastKey = keys[0];
+    const data = localStorage.getItem(lastKey);
     
-    const file = await lastFile.getFile();
-    const content = await file.text();
-    
-    return JSON.parse(content);
+    return data ? JSON.parse(data) : null;
   } catch (error) {
     console.error('Erro ao carregar checkpoint:', error);
     return null;
@@ -65,23 +37,14 @@ export const loadLastCheckpoint = async () => {
 export const createSelectDirectory = (toastFn: ToastFunction) => {
   return async (): Promise<string> => {
     try {
-      if (!('showDirectoryPicker' in window)) {
-        throw new Error('Seu navegador não suporta a seleção de diretórios.');
-      }
-
-      saveDirectory = await window.showDirectoryPicker({
-        mode: 'readwrite',
-      });
-
-      const dirName = saveDirectory.name;
+      const defaultPath = 'local-storage';
       toastFn({
-        title: "Diretório Configurado",
-        description: `Os checkpoints serão salvos em: ${dirName}`,
+        title: "Local Storage Configurado",
+        description: "Os checkpoints serão salvos localmente no navegador",
       });
-
-      return dirName;
+      return defaultPath;
     } catch (error) {
-      console.error('Erro ao selecionar diretório:', error);
+      console.error('Erro ao configurar armazenamento:', error);
       if (error instanceof Error) {
         toastFn({
           title: "Erro",
