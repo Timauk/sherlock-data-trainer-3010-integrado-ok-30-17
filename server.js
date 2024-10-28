@@ -21,13 +21,27 @@ if (!fs.existsSync(checkpointsDir)) {
   fs.mkdirSync(checkpointsDir);
 }
 
-// Salvar checkpoint
+// Salvar checkpoint com dados detalhados
 app.post('/api/checkpoint', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `checkpoint-${timestamp}.json`;
   const filepath = path.join(checkpointsDir, filename);
 
-  fs.writeFileSync(filepath, JSON.stringify(req.body, null, 2));
+  // Adiciona informações extras ao checkpoint
+  const checkpointData = {
+    ...req.body,
+    saveTime: timestamp,
+    systemInfo: {
+      totalMemory: process.memoryUsage().heapTotal,
+      freeMemory: process.memoryUsage().heapUsed,
+      uptime: process.uptime()
+    },
+    checkpointType: 'auto',
+    checkpointNumber: fs.readdirSync(checkpointsDir).length + 1
+  };
+
+  fs.writeFileSync(filepath, JSON.stringify(checkpointData, null, 2));
+  console.log(`Checkpoint salvo: ${filename}`);
   res.json({ message: 'Checkpoint salvo com sucesso', filename });
 });
 
@@ -51,6 +65,29 @@ app.get('/api/checkpoint/latest', (req, res) => {
   }
 });
 
+// Listar todos os checkpoints
+app.get('/api/checkpoints', (req, res) => {
+  try {
+    const files = fs.readdirSync(checkpointsDir);
+    const checkpoints = files
+      .filter(f => f.startsWith('checkpoint-'))
+      .map(filename => {
+        const filepath = path.join(checkpointsDir, filename);
+        const stats = fs.statSync(filepath);
+        return {
+          filename,
+          created: stats.birthtime,
+          size: stats.size
+        };
+      });
+    
+    res.json(checkpoints);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao listar checkpoints', error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`Checkpoints sendo salvos em: ${checkpointsDir}`);
 });
