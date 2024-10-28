@@ -15,7 +15,7 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onSavePathChange,
   onAutoSave,
 }) => {
-  const toast = useToast();
+  const { toast } = useToast();
   const selectDirectory = createSelectDirectory({ toast });
 
   const handleSelectDirectory = async () => {
@@ -36,13 +36,13 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
 
       const savedFile = await saveCheckpoint(gameState);
       
-      toast.toast({
+      toast({
         title: "Checkpoint Salvo",
         description: `Arquivo salvo: ${savedFile}`,
       });
 
     } catch (error) {
-      toast.toast({
+      toast({
         title: "Erro ao Salvar",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
@@ -54,20 +54,20 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const checkpoint = await loadLastCheckpoint();
       if (checkpoint) {
-        toast.toast({
+        toast({
           title: "Carregando Checkpoint",
           description: "Restaurando último estado salvo...",
         });
         window.location.reload();
       } else {
-        toast.toast({
+        toast({
           title: "Nenhum Checkpoint",
           description: "Não há checkpoint salvo para carregar.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      toast.toast({
+      toast({
         title: "Erro ao Carregar",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"

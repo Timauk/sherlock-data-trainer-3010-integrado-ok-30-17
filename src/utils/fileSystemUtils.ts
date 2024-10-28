@@ -1,5 +1,7 @@
 type ToastFunction = {
-  toast: (props: { title: string; description: string; variant?: "default" | "destructive" }) => void;
+  toast: {
+    (props: { title: string; description: string; variant?: "default" | "destructive" }): void;
+  };
 };
 
 export const saveCheckpoint = async (data: any) => {
