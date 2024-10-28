@@ -76,11 +76,11 @@ const GameControls: React.FC<GameControlsProps> = ({
     setPlayerCount(count);
     if (onPlayersChange) {
       onPlayersChange(count);
+      toast({
+        title: "Número de Jogadores Atualizado",
+        description: `Agora usando ${count} jogadores.`,
+      });
     }
-    toast({
-      title: "Número de Jogadores Atualizado",
-      description: `${count} jogadores serão usados na próxima geração.`,
-    });
   };
 
   return (
@@ -114,7 +114,7 @@ const GameControls: React.FC<GameControlsProps> = ({
           Número de Jogadores: {playerCount}
         </label>
         <Slider
-          defaultValue={[10]}
+          value={[playerCount]}
           min={10}
           max={200}
           step={10}
