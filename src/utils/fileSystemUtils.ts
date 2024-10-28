@@ -1,4 +1,4 @@
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 type ToastFunction = typeof toast;
 
@@ -39,10 +39,10 @@ export const loadLastCheckpoint = async () => {
     const files: FileSystemFileHandle[] = [];
     
     // Using async iteration with FileSystemDirectoryHandle
-    const entries = directory.entries();
-    for await (const [_, entry] of entries) {
-      if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
-        files.push(entry);
+    for await (const entry of directory) {
+      const fileHandle = entry[1];
+      if (fileHandle instanceof FileSystemFileHandle && fileHandle.name.endsWith('.json')) {
+        files.push(fileHandle);
       }
     }
 
@@ -82,11 +82,13 @@ export const createSelectDirectory = (toastFn: ToastFunction) => {
       return dirName;
     } catch (error) {
       console.error('Erro ao selecionar diretório:', error);
-      toastFn({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
-        variant: "destructive"
-      });
+      if (error instanceof Error) {
+        toastFn({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
       throw error;
     }
   };
