@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Moon, Cpu, Zap } from 'lucide-react';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
+import { Slider } from "@/components/ui/slider";
 
 interface GameControlsProps {
   isPlaying: boolean;
@@ -10,6 +11,7 @@ interface GameControlsProps {
   onPause: () => void;
   onReset: () => void;
   onThemeToggle: () => void;
+  onPlayersChange?: (count: number) => void;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -17,9 +19,11 @@ const GameControls: React.FC<GameControlsProps> = ({
   onPlay,
   onPause,
   onReset,
-  onThemeToggle
+  onThemeToggle,
+  onPlayersChange
 }) => {
   const [gpuEnabled, setGpuEnabled] = useState(false);
+  const [playerCount, setPlayerCount] = useState(10);
   const { toast } = useToast();
 
   const toggleGPU = async () => {
@@ -67,29 +71,59 @@ const GameControls: React.FC<GameControlsProps> = ({
     checkGPU();
   }, []);
 
+  const handlePlayerCountChange = (value: number[]) => {
+    const count = value[0];
+    setPlayerCount(count);
+    if (onPlayersChange) {
+      onPlayersChange(count);
+    }
+    toast({
+      title: "Número de Jogadores Atualizado",
+      description: `${count} jogadores serão usados na próxima geração.`,
+    });
+  };
+
   return (
-    <div className="flex space-x-2 mb-4">
-      <Button onClick={onPlay} disabled={isPlaying}>
-        <Play className="mr-2 h-4 w-4" /> Iniciar
-      </Button>
-      <Button onClick={onPause} disabled={!isPlaying}>
-        <Pause className="mr-2 h-4 w-4" /> Pausar
-      </Button>
-      <Button onClick={onReset}>
-        <RotateCcw className="mr-2 h-4 w-4" /> Reiniciar
-      </Button>
-      <Button onClick={onThemeToggle}>
-        <Moon className="mr-2 h-4 w-4" /> Alternar Tema
-      </Button>
-      <Button 
-        onClick={toggleGPU}
-        variant={gpuEnabled ? "destructive" : "default"}
-        className="relative group"
-      >
-        <Cpu className="mr-2 h-4 w-4" />
-        <Zap className={`absolute left-2 h-4 w-4 transition-opacity ${gpuEnabled ? 'opacity-100' : 'opacity-0'}`} />
-        {gpuEnabled ? 'GPU Ativada' : 'Ativar GPU'}
-      </Button>
+    <div className="space-y-4">
+      <div className="flex space-x-2">
+        <Button onClick={onPlay} disabled={isPlaying}>
+          <Play className="mr-2 h-4 w-4" /> Iniciar
+        </Button>
+        <Button onClick={onPause} disabled={!isPlaying}>
+          <Pause className="mr-2 h-4 w-4" /> Pausar
+        </Button>
+        <Button onClick={onReset}>
+          <RotateCcw className="mr-2 h-4 w-4" /> Reiniciar
+        </Button>
+        <Button onClick={onThemeToggle}>
+          <Moon className="mr-2 h-4 w-4" /> Alternar Tema
+        </Button>
+        <Button 
+          onClick={toggleGPU}
+          variant={gpuEnabled ? "destructive" : "default"}
+          className="relative group"
+        >
+          <Cpu className="mr-2 h-4 w-4" />
+          <Zap className={`absolute left-2 h-4 w-4 transition-opacity ${gpuEnabled ? 'opacity-100' : 'opacity-0'}`} />
+          {gpuEnabled ? 'GPU Ativada' : 'Ativar GPU'}
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          Número de Jogadores: {playerCount}
+        </label>
+        <Slider
+          defaultValue={[10]}
+          min={10}
+          max={200}
+          step={10}
+          onValueChange={handlePlayerCountChange}
+        />
+        <p className="text-sm text-muted-foreground">
+          Para uma GPU RTX 3060 12GB, recomenda-se até 150 jogadores para melhor performance.
+        </p>
+      </div>
     </div>
   );
 };

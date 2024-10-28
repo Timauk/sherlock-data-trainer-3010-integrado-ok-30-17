@@ -1,184 +1,194 @@
-import React from 'react';
-import DataUploader from '@/components/DataUploader';
-import GameControls from '@/components/GameControls';
-import GameBoard from '@/components/GameBoard';
-import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
-import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
-import ModelMetrics from '@/components/ModelMetrics';
-import LunarAnalysis from '@/components/LunarAnalysis';
-import FrequencyAnalysis from '@/components/FrequencyAnalysis';
-import ChampionPredictions from '@/components/ChampionPredictions';
-import EvolutionStats from '@/components/EvolutionStats';
-import PlayerDetails from '@/components/PlayerDetails';
-import AdvancedAnalysis from '@/components/AdvancedAnalysis';
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useTheme } from 'next-themes';
+import * as tf from '@tensorflow/tfjs';
+import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayPageHeader } from '@/components/PlayPageHeader';
+import { PlayPageContent } from '@/components/PlayPageContent';
+import { Slider } from "@/components/ui/slider";
+import GameStatusChecklist from './GameStatusChecklist';
+import GameControls from '@/components/GameControls';
 
-interface PlayPageContentProps {
-  isPlaying: boolean;
-  onPlay: () => void;
-  onPause: () => void;
-  onReset: () => void;
-  onThemeToggle: () => void;
-  onCsvUpload: (file: File) => void;
-  onModelUpload: (jsonFile: File, weightsFile: File) => void;
-  onSaveModel: () => void;
-  progress: number;
-  generation: number;
-  gameLogic: ReturnType<typeof useGameLogic>;
-}
+const PlayPage: React.FC = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
+  const [csvData, setCsvData] = useState<number[][]>([]);
+  const [csvDates, setCsvDates] = useState<Date[]>([]);
+  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
 
-export const PlayPageContent: React.FC<PlayPageContentProps> = ({
-  isPlaying,
-  onPlay,
-  onPause,
-  onReset,
-  onThemeToggle,
-  onCsvUpload,
-  onModelUpload,
-  onSaveModel,
-  progress,
-  generation,
-  gameLogic
-}) => {
-  const champion = gameLogic.players.reduce((prev, current) => 
-    (current.fitness > prev.fitness) ? current : prev, 
-    gameLogic.players[0]
-  );
+  const gameLogic = useGameLogic(csvData, trainedModel);
 
-  const generationStats = gameLogic.evolutionData.reduce((acc, curr) => {
-    const genData = acc.find(g => g.generation === curr.generation);
-    if (genData) {
-      genData.scores.push(curr.score);
-    } else {
-      acc.push({ generation: curr.generation, scores: [curr.score] });
+  const loadCSV = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
+      const data = lines.map(line => {
+        const values = line.split(',');
+        return {
+          concurso: parseInt(values[0], 10),
+          data: new Date(values[1].split('/').reverse().join('-')),
+          bolas: values.slice(2).map(Number)
+        };
+      });
+      setCsvData(data.map(d => d.bolas));
+      setCsvDates(data.map(d => d.data));
+      gameLogic.addLog("CSV carregado e processado com sucesso!");
+      gameLogic.addLog(`Número de registros carregados: ${data.length}`);
+    } catch (error) {
+      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
-    return acc;
-  }, [] as Array<{ generation: number; scores: number[] }>)
-  .map(gen => ({
-    generation: gen.generation,
-    averageScore: gen.scores.reduce((a, b) => a + b, 0) / gen.scores.length,
-    bestScore: Math.max(...gen.scores),
-    worstScore: Math.min(...gen.scores)
-  }));
+  }, [gameLogic]);
+
+  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
+    try {
+      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
+      setTrainedModel(model);
+      gameLogic.addLog("Modelo carregado com sucesso!");
+      toast({
+        title: "Modelo Carregado",
+        description: "O modelo foi carregado com sucesso.",
+      });
+    } catch (error) {
+      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error("Detalhes do erro:", error);
+      toast({
+        title: "Erro ao Carregar Modelo",
+        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
+        variant: "destructive",
+      });
+    }
+  }, [gameLogic, toast]);
+
+  const saveModel = useCallback(async () => {
+    if (trainedModel) {
+      try {
+        await trainedModel.save('downloads://modelo-atual');
+        gameLogic.addLog("Modelo salvo com sucesso!");
+        toast({
+          title: "Modelo Salvo",
+          description: "O modelo atual foi salvo com sucesso.",
+        });
+      } catch (error) {
+        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        console.error("Detalhes do erro:", error);
+        toast({
+          title: "Erro ao Salvar Modelo",
+          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      gameLogic.addLog("Nenhum modelo para salvar.");
+      toast({
+        title: "Nenhum Modelo",
+        description: "Não há nenhum modelo carregado para salvar.",
+        variant: "destructive",
+      });
+    }
+  }, [trainedModel, gameLogic, toast]);
+
+  const playGame = useCallback(() => {
+    if (!trainedModel || csvData.length === 0) {
+      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
+      return;
+    }
+    setIsPlaying(true);
+    gameLogic.addLog("Jogo iniciado.");
+    gameLogic.gameLoop();
+  }, [trainedModel, csvData, gameLogic]);
+
+  const pauseGame = useCallback(() => {
+    setIsPlaying(false);
+    gameLogic.addLog("Jogo pausado.");
+  }, [gameLogic]);
+
+  const resetGame = useCallback(() => {
+    setIsPlaying(false);
+    setProgress(0);
+    gameLogic.initializePlayers();
+    gameLogic.addLog("Jogo reiniciado.");
+  }, [gameLogic]);
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (isPlaying) {
+      intervalId = setInterval(() => {
+        gameLogic.gameLoop();
+        setProgress((prevProgress) => {
+          const newProgress = prevProgress + (100 / csvData.length);
+          if (newProgress >= 100) {
+            if (!gameLogic.isManualMode) {
+              gameLogic.evolveGeneration();
+            }
+            return gameLogic.isInfiniteMode ? 0 : 100;
+          }
+          return newProgress;
+        });
+      }, gameSpeed);
+    }
+    return () => clearInterval(intervalId);
+  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+
+  const handleSpeedChange = (value: number[]) => {
+    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
+    setGameSpeed(newSpeed);
+    toast({
+      title: "Velocidade Ajustada",
+      description: `${newSpeed}ms por jogada`,
+    });
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="space-y-4">
-          <DataUploader 
-            onCsvUpload={onCsvUpload} 
-            onModelUpload={onModelUpload} 
-            onSaveModel={onSaveModel} 
-          />
-
-          <GameControls
-            isPlaying={isPlaying}
-            onPlay={onPlay}
-            onPause={onPause}
-            onReset={onReset}
-            onThemeToggle={onThemeToggle}
-          />
-
-          <div className="flex gap-2">
-            <Button onClick={gameLogic.toggleInfiniteMode}>
-              {gameLogic.isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
-            </Button>
-            <Button 
-              onClick={gameLogic.toggleManualMode}
-              variant={gameLogic.isManualMode ? "destructive" : "outline"}
-            >
-              {gameLogic.isManualMode ? 'Desativar' : 'Ativar'} Modo Manual
-            </Button>
-          </div>
-
-          <EvolutionStats
-            gameCount={gameLogic.gameCount}
-            nextCloneAt={1000}
-            generationStats={generationStats}
-          />
-        </div>
-
-        <div className="space-y-4">
-          <PlayerDetails 
-            player={champion}
-            historicalPerformance={gameLogic.evolutionData
-              .filter(data => data.playerId === champion.id)
-              .map(data => ({
-                generation: data.generation,
-                score: data.score,
-                matches: data.fitness
-              }))}
-          />
-
-          <ChampionPredictions
-            champion={champion}
-            trainedModel={gameLogic.trainedModel}
-            lastConcursoNumbers={gameLogic.boardNumbers}
-          />
-        </div>
+    <div className="p-6">
+      <PlayPageHeader />
+      <GameStatusChecklist
+        csvLoaded={gameLogic.numbers.length > 0}
+        modelAccuracy={gameLogic.modelMetrics.accuracy * 100}
+        championFitness={gameLogic.players.reduce((prev, current) => 
+          (current.fitness > prev.fitness) ? current : prev, 
+          gameLogic.players[0]
+        )?.fitness || 0}
+      />
+      <div className="mb-4 p-4 bg-background rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-2">Controle de Velocidade</h3>
+        <Slider
+          defaultValue={[1000]}
+          max={1900}
+          min={100}
+          step={100}
+          onValueChange={handleSpeedChange}
+          className="w-full"
+        />
+        <p className="text-sm text-muted-foreground mt-1">
+          Intervalo atual: {gameSpeed}ms
+        </p>
       </div>
-
-      <Tabs defaultValue="game" className="w-full">
-        <TabsList>
-          <TabsTrigger value="game">Jogo</TabsTrigger>
-          <TabsTrigger value="analysis">Análise</TabsTrigger>
-          <TabsTrigger value="neural">Rede Neural</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="game">
-          <div className="space-y-4">
-            <GameBoard
-              boardNumbers={gameLogic.boardNumbers}
-              concursoNumber={gameLogic.concursoNumber}
-              players={gameLogic.players}
-              evolutionData={gameLogic.evolutionData}
-            />
-            
-            <EnhancedLogDisplay logs={gameLogic.logs} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analysis">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <LunarAnalysis 
-              dates={gameLogic.dates} 
-              numbers={gameLogic.numbers}
-              recentResults={100}
-            />
-            
-            <FrequencyAnalysis 
-              numbers={gameLogic.numbers}
-              onFrequencyUpdate={gameLogic.updateFrequencyData}
-            />
-
-            <AdvancedAnalysis
-              numbers={gameLogic.numbers}
-              dates={gameLogic.dates}
-            />
-
-            <ModelMetrics
-              accuracy={gameLogic.modelMetrics.accuracy}
-              randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
-              totalPredictions={gameLogic.modelMetrics.totalPredictions}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="neural">
-          <div className="space-y-4">
-            <NeuralNetworkVisualization 
-              layers={[15, 64, 32, 15]} 
-              inputData={gameLogic.neuralNetworkVisualization?.input}
-              outputData={gameLogic.neuralNetworkVisualization?.output}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <PlayPageContent
+        isPlaying={isPlaying}
+        onPlay={playGame}
+        onPause={pauseGame}
+        onReset={resetGame}
+        onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onCsvUpload={loadCSV}
+        onModelUpload={loadModel}
+        onSaveModel={saveModel}
+        progress={progress}
+        generation={gameLogic.generation}
+        gameLogic={gameLogic}
+        onPlayersChange={(count) => gameLogic.setPlayers(Array.from({ length: count }, (_, i) => ({
+          id: i + 1,
+          score: 0,
+          predictions: [],
+          weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
+          fitness: 0,
+          generation: 1
+        })))}
+      />
     </div>
   );
 };
 
-export default PlayPageContent;
+export default PlayPage;
