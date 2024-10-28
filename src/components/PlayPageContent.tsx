@@ -12,7 +12,6 @@ import EvolutionStats from '@/components/EvolutionStats';
 import PlayerDetails from '@/components/PlayerDetails';
 import AdvancedAnalysis from '@/components/AdvancedAnalysis';
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -45,6 +44,8 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   gameLogic,
   onPlayersChange
 }) => {
+  const selectedPlayer = gameLogic.players[0] || null;
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -88,37 +89,52 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         <TabsContent value="analysis">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <NeuralNetworkVisualization
-              visualization={gameLogic.neuralNetworkVisualization}
+              data={gameLogic.neuralNetworkVisualization}
             />
-            <ModelMetrics metrics={gameLogic.modelMetrics} />
-            <LunarAnalysis data={gameLogic.lunarData} />
-            <FrequencyAnalysis numbers={gameLogic.numbers} dates={gameLogic.dates} />
+            <ModelMetrics
+              accuracy={gameLogic.modelMetrics.accuracy}
+              randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
+              totalPredictions={gameLogic.modelMetrics.totalPredictions}
+              perGameAccuracy={gameLogic.modelMetrics.perGameAccuracy || 0}
+              perGameRandomAccuracy={gameLogic.modelMetrics.perGameRandomAccuracy || 0}
+            />
+            <LunarAnalysis
+              phase={gameLogic.lunarData?.phase || 'unknown'}
+              patterns={gameLogic.lunarData?.patterns || {}}
+            />
+            <FrequencyAnalysis
+              numberData={gameLogic.numbers}
+              dateData={gameLogic.dates}
+            />
           </div>
         </TabsContent>
 
         <TabsContent value="predictions">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ChampionPredictions
-              champion={gameLogic.players[0]}
+              champion={selectedPlayer}
               trainedModel={gameLogic.trainedModel}
               lastConcursoNumbers={gameLogic.boardNumbers}
             />
             <EvolutionStats
-              generation={generation}
-              players={gameLogic.players}
-              evolutionData={gameLogic.evolutionData}
+              currentGeneration={generation}
+              playerStats={gameLogic.players}
+              evolutionHistory={gameLogic.evolutionData}
             />
           </div>
         </TabsContent>
 
         <TabsContent value="advanced">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PlayerDetails players={gameLogic.players} />
+            <PlayerDetails
+              player={selectedPlayer}
+              historicalPerformance={gameLogic.evolutionData.filter(d => d.playerId === selectedPlayer?.id)}
+            />
             <AdvancedAnalysis
-              players={gameLogic.players}
-              numbers={gameLogic.numbers}
-              dates={gameLogic.dates}
-              modelMetrics={gameLogic.modelMetrics}
+              playerData={gameLogic.players}
+              gameNumbers={gameLogic.numbers}
+              gameDates={gameLogic.dates}
+              metrics={gameLogic.modelMetrics}
             />
           </div>
         </TabsContent>
