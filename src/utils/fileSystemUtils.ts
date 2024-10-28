@@ -1,4 +1,4 @@
-import { useToast } from "@/hooks/use-toast";
+import { Toast } from "@/components/ui/toast";
 
 type ToastFunction = (props: {
   title: string;
@@ -42,10 +42,11 @@ export const loadLastCheckpoint = async () => {
 
     const files: FileSystemFileHandle[] = [];
     
-    // Using proper async iteration with values()
-    for await (const entry of directory.values()) {
-      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-        files.push(entry);
+    // Using FileSystemDirectoryHandle.keys() which is supported
+    for await (const key of directory.keys()) {
+      const handle = await directory.getFileHandle(key);
+      if (handle && handle.name.endsWith('.json')) {
+        files.push(handle);
       }
     }
 
@@ -65,30 +66,32 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toast: ToastFunction) => async (): Promise<string> => {
-  try {
-    if (!('showDirectoryPicker' in window)) {
-      throw new Error('Seu navegador não suporta a seleção de diretórios.');
+export const createSelectDirectory = (toast: ToastFunction) => {
+  return async (): Promise<string> => {
+    try {
+      if (!('showDirectoryPicker' in window)) {
+        throw new Error('Seu navegador não suporta a seleção de diretórios.');
+      }
+
+      saveDirectory = await window.showDirectoryPicker({
+        mode: 'readwrite',
+      });
+
+      const dirName = saveDirectory.name;
+      toast({
+        title: "Diretório Configurado",
+        description: `Os checkpoints serão salvos em: ${dirName}`,
+      });
+
+      return dirName;
+    } catch (error) {
+      console.error('Erro ao selecionar diretório:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
+        variant: "destructive"
+      });
+      throw error;
     }
-
-    saveDirectory = await window.showDirectoryPicker({
-      mode: 'readwrite',
-    });
-
-    const dirName = saveDirectory.name;
-    toast({
-      title: "Diretório Configurado",
-      description: `Os checkpoints serão salvos em: ${dirName}`,
-    });
-
-    return dirName;
-  } catch (error) {
-    console.error('Erro ao selecionar diretório:', error);
-    toast({
-      title: "Erro",
-      description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
-      variant: "destructive"
-    });
-    throw error;
-  }
+  };
 };
