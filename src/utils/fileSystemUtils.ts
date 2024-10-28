@@ -1,6 +1,6 @@
-import { useToast } from "@/components/ui/use-toast";
-
-type ToastFunction = ReturnType<typeof useToast>;
+type ToastFunction = {
+  toast: (props: { title: string; description: string; variant?: "default" | "destructive" }) => void;
+};
 
 export const saveCheckpoint = async (data: any) => {
   try {
@@ -38,7 +38,7 @@ export const createSelectDirectory = (toastFn: ToastFunction) => {
   return async (): Promise<string> => {
     try {
       const defaultPath = 'local-storage';
-      toastFn({
+      toastFn.toast({
         title: "Local Storage Configurado",
         description: "Os checkpoints serão salvos localmente no navegador",
       });
@@ -46,7 +46,7 @@ export const createSelectDirectory = (toastFn: ToastFunction) => {
     } catch (error) {
       console.error('Erro ao configurar armazenamento:', error);
       if (error instanceof Error) {
-        toastFn({
+        toastFn.toast({
           title: "Erro",
           description: error.message,
           variant: "destructive"
