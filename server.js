@@ -11,23 +11,20 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = 3001;
 
-// Habilita CORS e JSON parsing
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Aumentado para comportar mais dados
 
-// Cria pasta de checkpoints se não existir
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 if (!fs.existsSync(checkpointsDir)) {
   fs.mkdirSync(checkpointsDir);
 }
 
-// Salvar checkpoint com dados detalhados
 app.post('/api/checkpoint', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `checkpoint-${timestamp}.json`;
   const filepath = path.join(checkpointsDir, filename);
 
-  // Adiciona informações extras ao checkpoint
+  // Dados expandidos do checkpoint
   const checkpointData = {
     ...req.body,
     saveTime: timestamp,
@@ -36,16 +33,31 @@ app.post('/api/checkpoint', (req, res) => {
       freeMemory: process.memoryUsage().heapUsed,
       uptime: process.uptime()
     },
-    checkpointType: 'auto',
+    gameState: {
+      players: req.body.players || [],
+      evolutionData: req.body.evolutionData || [],
+      generation: req.body.generation || 0,
+      modelState: req.body.modelState || null,
+      trainingHistory: req.body.trainingHistory || [],
+      frequencyAnalysis: req.body.frequencyAnalysis || {},
+      lunarAnalysis: req.body.lunarAnalysis || {},
+      predictions: req.body.predictions || [],
+      scores: req.body.scores || [],
+      championData: req.body.championData || null
+    },
+    checkpointType: req.body.checkpointType || 'auto',
     checkpointNumber: fs.readdirSync(checkpointsDir).length + 1
   };
 
   fs.writeFileSync(filepath, JSON.stringify(checkpointData, null, 2));
-  console.log(`Checkpoint salvo: ${filename}`);
-  res.json({ message: 'Checkpoint salvo com sucesso', filename });
+  console.log(`Checkpoint completo salvo: ${filename}`);
+  res.json({ 
+    message: 'Checkpoint salvo com sucesso', 
+    filename,
+    savedData: Object.keys(checkpointData.gameState)
+  });
 });
 
-// Carregar último checkpoint
 app.get('/api/checkpoint/latest', (req, res) => {
   try {
     const files = fs.readdirSync(checkpointsDir);
@@ -55,7 +67,6 @@ app.get('/api/checkpoint/latest', (req, res) => {
       return res.status(404).json({ message: 'Nenhum checkpoint encontrado' });
     }
 
-    // Pega o arquivo mais recente
     const latestFile = checkpoints.sort().reverse()[0];
     const data = fs.readFileSync(path.join(checkpointsDir, latestFile));
     
@@ -65,7 +76,6 @@ app.get('/api/checkpoint/latest', (req, res) => {
   }
 });
 
-// Listar todos os checkpoints
 app.get('/api/checkpoints', (req, res) => {
   try {
     const files = fs.readdirSync(checkpointsDir);
@@ -74,10 +84,14 @@ app.get('/api/checkpoints', (req, res) => {
       .map(filename => {
         const filepath = path.join(checkpointsDir, filename);
         const stats = fs.statSync(filepath);
+        const data = JSON.parse(fs.readFileSync(filepath));
         return {
           filename,
           created: stats.birthtime,
-          size: stats.size
+          size: stats.size,
+          generation: data.gameState?.generation || 0,
+          players: data.gameState?.players?.length || 0,
+          hasModelState: !!data.gameState?.modelState
         };
       });
     
