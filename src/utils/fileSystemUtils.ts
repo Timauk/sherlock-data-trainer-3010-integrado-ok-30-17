@@ -1,10 +1,6 @@
-type ToastFunction = {
-  (props: {
-    title: string;
-    description: string;
-    variant?: "default" | "destructive";
-  }): void;
-};
+import { toast } from "@/components/ui/use-toast";
+
+type ToastFunction = typeof toast;
 
 let saveDirectory: FileSystemDirectoryHandle | null = null;
 
@@ -43,9 +39,8 @@ export const loadLastCheckpoint = async () => {
     const files: FileSystemFileHandle[] = [];
     
     // Using async iteration with FileSystemDirectoryHandle
-    const entries = await directory.entries();
-    for await (const [_, entry] of entries) {
-      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+    for await (const entry of directory.values()) {
+      if (entry instanceof FileSystemFileHandle && entry.name.endsWith('.json')) {
         files.push(entry);
       }
     }
@@ -66,7 +61,7 @@ export const loadLastCheckpoint = async () => {
   }
 };
 
-export const createSelectDirectory = (toast: ToastFunction) => {
+export const createSelectDirectory = (toastFn: ToastFunction) => {
   return async (): Promise<string> => {
     try {
       if (!('showDirectoryPicker' in window)) {
@@ -78,7 +73,7 @@ export const createSelectDirectory = (toast: ToastFunction) => {
       });
 
       const dirName = saveDirectory.name;
-      toast({
+      toastFn({
         title: "Diretório Configurado",
         description: `Os checkpoints serão salvos em: ${dirName}`,
       });
@@ -86,7 +81,7 @@ export const createSelectDirectory = (toast: ToastFunction) => {
       return dirName;
     } catch (error) {
       console.error('Erro ao selecionar diretório:', error);
-      toast({
+      toastFn({
         title: "Erro",
         description: error instanceof Error ? error.message : "Erro ao selecionar diretório",
         variant: "destructive"
