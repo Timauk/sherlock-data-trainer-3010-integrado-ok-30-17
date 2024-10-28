@@ -45,6 +45,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   onPlayersChange
 }) => {
   const selectedPlayer = gameLogic.players[0] || null;
+  const nextCloneAt = 1000; // Example value, adjust as needed
   
   return (
     <div className="space-y-4">
@@ -101,12 +102,12 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
               perGameRandomAccuracy={0}
             />
             <LunarAnalysis
-              lunarPhase="unknown"
-              lunarPatterns={{}}
+              dates={gameLogic.dates}
+              numbers={gameLogic.numbers}
             />
             <FrequencyAnalysis
               numbers={gameLogic.numbers}
-              dates={gameLogic.dates}
+              onFrequencyUpdate={(freq) => console.log('Frequency updated:', freq)}
             />
           </div>
         </TabsContent>
@@ -119,12 +120,13 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
               lastConcursoNumbers={gameLogic.boardNumbers}
             />
             <EvolutionStats
-              generation={generation}
-              players={gameLogic.players}
-              evolutionData={gameLogic.evolutionData.map(data => ({
+              gameCount={gameLogic.gameCount}
+              nextCloneAt={nextCloneAt}
+              generationStats={gameLogic.evolutionData.map(data => ({
                 generation: data.generation,
-                score: data.score,
-                matches: data.fitness
+                averageScore: data.score,
+                bestScore: data.score + data.fitness,
+                worstScore: data.score - data.fitness
               }))}
             />
           </div>
