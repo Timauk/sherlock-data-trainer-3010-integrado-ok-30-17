@@ -45,7 +45,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   onPlayersChange
 }) => {
   const selectedPlayer = gameLogic.players[0] || null;
-  const nextCloneAt = 1000; // Example value, adjust as needed
+  const nextCloneAt = 1000;
   
   return (
     <div className="space-y-4">
