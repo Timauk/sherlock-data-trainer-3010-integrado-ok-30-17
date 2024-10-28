@@ -71,9 +71,9 @@ const GameStatusChecklist: React.FC<GameStatusChecklistProps> = ({
                   <HelpCircle className="w-4 h-4 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Acurácia do modelo: {modelAccuracy.toFixed(2)}%<br/>
-                     Verde: >100 jogos<br/>
-                     Amarelo: >50 jogos<br/>
+                  <p>Acurácia do modelo: {modelAccuracy.toFixed(2)}%{'\n'}
+                     Verde: mais de 100 jogos{'\n'}
+                     Amarelo: mais de 50 jogos{'\n'}
                      Vermelho: menos de 50 jogos</p>
                 </TooltipContent>
               </Tooltip>
@@ -89,9 +89,9 @@ const GameStatusChecklist: React.FC<GameStatusChecklistProps> = ({
                   <HelpCircle className="w-4 h-4 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Fitness atual: {championFitness.toFixed(2)}<br/>
-                     Verde: >10 acertos<br/>
-                     Amarelo: >5 acertos<br/>
+                  <p>Fitness atual: {championFitness.toFixed(2)}{'\n'}
+                     Verde: mais de 10 acertos{'\n'}
+                     Amarelo: mais de 5 acertos{'\n'}
                      Vermelho: menos de 5 acertos</p>
                 </TooltipContent>
               </Tooltip>
