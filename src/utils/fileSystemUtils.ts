@@ -6,11 +6,16 @@ type ToastFunction = {
 
 export const saveCheckpoint = async (data: any) => {
   try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const key = `checkpoint-${timestamp}`;
+    const response = await fetch('http://localhost:3001/api/checkpoint', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
     
-    localStorage.setItem(key, JSON.stringify(data));
-    return key;
+    const result = await response.json();
+    return result.filename;
   } catch (error) {
     console.error('Erro ao salvar checkpoint:', error);
     throw error;
@@ -19,17 +24,12 @@ export const saveCheckpoint = async (data: any) => {
 
 export const loadLastCheckpoint = async () => {
   try {
-    const keys = Object.keys(localStorage)
-      .filter(key => key.startsWith('checkpoint-'))
-      .sort()
-      .reverse();
-
-    if (keys.length === 0) return null;
-
-    const lastKey = keys[0];
-    const data = localStorage.getItem(lastKey);
-    
-    return data ? JSON.parse(data) : null;
+    const response = await fetch('http://localhost:3001/api/checkpoint/latest');
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error('Erro ao carregar checkpoint');
+    }
+    return await response.json();
   } catch (error) {
     console.error('Erro ao carregar checkpoint:', error);
     return null;
@@ -39,10 +39,10 @@ export const loadLastCheckpoint = async () => {
 export const createSelectDirectory = (toastFn: ToastFunction) => {
   return async (): Promise<string> => {
     try {
-      const defaultPath = 'local-storage';
+      const defaultPath = './checkpoints';
       toastFn.toast({
-        title: "Local Storage Configurado",
-        description: "Os checkpoints serão salvos localmente no navegador",
+        title: "Servidor Local Configurado",
+        description: "Os checkpoints serão salvos na pasta 'checkpoints' do servidor",
       });
       return defaultPath;
     } catch (error) {
