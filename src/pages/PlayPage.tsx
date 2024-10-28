@@ -6,7 +6,7 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
-import GameStatusChecklist from './GameStatusChecklist';
+import GameStatusChecklist from '@/components/GameStatusChecklist';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -175,3 +175,4 @@ const PlayPage: React.FC = () => {
 };
 
 export default PlayPage;
+

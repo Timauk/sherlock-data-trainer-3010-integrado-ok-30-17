@@ -89,22 +89,24 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         <TabsContent value="analysis">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <NeuralNetworkVisualization
-              data={gameLogic.neuralNetworkVisualization}
+              layers={[17, 64, 32, 15]}
+              inputData={gameLogic.neuralNetworkVisualization?.input}
+              outputData={gameLogic.neuralNetworkVisualization?.output}
             />
             <ModelMetrics
               accuracy={gameLogic.modelMetrics.accuracy}
               randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
               totalPredictions={gameLogic.modelMetrics.totalPredictions}
-              perGameAccuracy={gameLogic.modelMetrics.perGameAccuracy || 0}
-              perGameRandomAccuracy={gameLogic.modelMetrics.perGameRandomAccuracy || 0}
+              perGameAccuracy={0}
+              perGameRandomAccuracy={0}
             />
             <LunarAnalysis
-              phase={gameLogic.lunarData?.phase || 'unknown'}
-              patterns={gameLogic.lunarData?.patterns || {}}
+              lunarPhase="unknown"
+              lunarPatterns={{}}
             />
             <FrequencyAnalysis
-              numberData={gameLogic.numbers}
-              dateData={gameLogic.dates}
+              numbers={gameLogic.numbers}
+              dates={gameLogic.dates}
             />
           </div>
         </TabsContent>
@@ -117,9 +119,13 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
               lastConcursoNumbers={gameLogic.boardNumbers}
             />
             <EvolutionStats
-              currentGeneration={generation}
-              playerStats={gameLogic.players}
-              evolutionHistory={gameLogic.evolutionData}
+              generation={generation}
+              players={gameLogic.players}
+              evolutionData={gameLogic.evolutionData.map(data => ({
+                generation: data.generation,
+                score: data.score,
+                matches: data.fitness
+              }))}
             />
           </div>
         </TabsContent>
@@ -128,13 +134,15 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PlayerDetails
               player={selectedPlayer}
-              historicalPerformance={gameLogic.evolutionData.filter(d => d.playerId === selectedPlayer?.id)}
+              historicalPerformance={gameLogic.evolutionData.map(data => ({
+                generation: data.generation,
+                score: data.score,
+                matches: data.fitness
+              }))}
             />
             <AdvancedAnalysis
-              playerData={gameLogic.players}
-              gameNumbers={gameLogic.numbers}
-              gameDates={gameLogic.dates}
-              metrics={gameLogic.modelMetrics}
+              numbers={gameLogic.numbers}
+              dates={gameLogic.dates}
             />
           </div>
         </TabsContent>
