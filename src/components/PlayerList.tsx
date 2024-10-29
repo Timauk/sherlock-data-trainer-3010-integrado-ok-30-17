@@ -55,10 +55,20 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
     }
   };
 
+  const formatPredictions = (predictions: number[]) => {
+    return predictions.length > 0 
+      ? predictions.map(n => n.toString().padStart(2, '0')).join(', ')
+      : 'Aguardando próxima rodada';
+  };
+
+  const calculateMatches = (player: Player, boardNumbers: number[]) => {
+    if (!player.predictions.length || !boardNumbers.length) return 0;
+    return player.predictions.filter(num => boardNumbers.includes(num)).length;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
       {players.map(player => {
-        const matchCount = player.predictions.filter(num => player.predictions.includes(num)).length;
         const isTopPlayer = player.score === maxScore;
         
         return (
@@ -80,9 +90,15 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-sm">Previsões: {player.predictions.join(', ')}</p>
-                  <p className="text-sm">Acertos: {matchCount}</p>
-                  <p className="text-sm">Fitness: {player.fitness.toFixed(2)}</p>
+                  <p className="text-sm">
+                    <span className="font-medium">Previsões:</span> {formatPredictions(player.predictions)}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Acertos:</span> {player.fitness}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}
+                  </p>
                 </div>
               </div>
             </DialogTrigger>

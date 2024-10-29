@@ -27,8 +27,14 @@ export async function makePrediction(
     normalizedDataSorteio
   ];
   
+  // Adiciona aleatoriedade aos pesos do jogador
+  const randomizedWeights = playerWeights.map(weight => {
+    const randomFactor = 1 + (Math.random() - 0.5) * 0.2; // ±10% de variação
+    return weight * randomFactor;
+  });
+  
   const weightedInput = enrichedInput.map((value, index) => 
-    value * (playerWeights[index] / 1000));
+    value * (randomizedWeights[index] / 1000));
   
   const inputTensor = tf.tensor2d([weightedInput]);
   
@@ -44,13 +50,13 @@ export async function makePrediction(
     weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) 
   });
   
-  // Generate numbers from 1 to 25
+  // Adiciona aleatoriedade na seleção dos números
   const weightedNumbers = Array.from({ length: 25 }, (_, i) => ({
     number: i + 1,
-    weight: result[i % result.length] // Use modulo to handle array length differences
+    weight: result[i % result.length] * (1 + (Math.random() - 0.5) * 0.3) // ±15% de variação
   })).sort((a, b) => b.weight - a.weight);
   
-  // Select 15 unique numbers
+  // Seleciona 15 números únicos
   const uniqueNumbers = new Set<number>();
   let index = 0;
   
@@ -59,7 +65,7 @@ export async function makePrediction(
     index++;
   }
   
-  // If we still need more numbers (unlikely), add random ones
+  // Se ainda precisar de mais números, adiciona aleatoriamente
   while (uniqueNumbers.size < 15) {
     const randomNum = Math.floor(Math.random() * 25) + 1;
     uniqueNumbers.add(randomNum);
