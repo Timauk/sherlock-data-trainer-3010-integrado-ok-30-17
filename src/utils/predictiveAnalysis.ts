@@ -144,12 +144,18 @@ const calculateCorrelation = (
   num1: number,
   num2: number
 ): number => {
+  type BinaryValue = 0 | 1;
+  
   // Convert boolean presence to binary values (0 or 1)
-  const occurrences1 = numbers.map(draw => draw.includes(num1) ? (1 as const) : (0 as const));
-  const occurrences2 = numbers.map(draw => draw.includes(num2) ? (1 as const) : (0 as const));
+  const occurrences1: BinaryValue[] = numbers.map(draw => 
+    draw.includes(num1) ? 1 as BinaryValue : 0 as BinaryValue
+  );
+  const occurrences2: BinaryValue[] = numbers.map(draw => 
+    draw.includes(num2) ? 1 as BinaryValue : 0 as BinaryValue
+  );
 
-  const mean1 = occurrences1.reduce((a, b) => a + b) / occurrences1.length;
-  const mean2 = occurrences2.reduce((a, b) => a + b) / occurrences2.length;
+  const mean1 = occurrences1.reduce((a, b) => a + b, 0) / occurrences1.length;
+  const mean2 = occurrences2.reduce((a, b) => a + b, 0) / occurrences2.length;
 
   let numerator = 0;
   let denominator1 = 0;
