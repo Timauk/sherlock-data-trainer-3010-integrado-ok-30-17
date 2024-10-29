@@ -44,26 +44,18 @@ export async function makePrediction(
     weights: trainedModel.getWeights().map(w => Array.from(w.dataSync())) 
   });
   
-  // Generate numbers from 1 to 25
+  // Generate all numbers with their weights
   const weightedNumbers = Array.from({ length: 25 }, (_, i) => ({
     number: i + 1,
-    weight: result[i % result.length] // Use modulo to handle array length differences
-  })).sort((a, b) => b.weight - a.weight);
+    weight: result[i % result.length] + (Math.random() * 0.1) // Add small random factor to break ties
+  }));
   
-  // Select 15 unique numbers
-  const uniqueNumbers = new Set<number>();
-  let index = 0;
+  // Sort by weight and take top 15 unique numbers
+  const selectedNumbers = weightedNumbers
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 15)
+    .map(item => item.number)
+    .sort((a, b) => a - b);
   
-  while (uniqueNumbers.size < 15 && index < weightedNumbers.length) {
-    uniqueNumbers.add(weightedNumbers[index].number);
-    index++;
-  }
-  
-  // If we still need more numbers (unlikely), add random ones
-  while (uniqueNumbers.size < 15) {
-    const randomNum = Math.floor(Math.random() * 25) + 1;
-    uniqueNumbers.add(randomNum);
-  }
-  
-  return Array.from(uniqueNumbers).sort((a, b) => a - b);
+  return selectedNumbers;
 }
