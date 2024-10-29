@@ -12,10 +12,10 @@ export interface ConfidenceScore {
 export const calculateConfidenceScore = (
   prediction: number[],
   player: Player,
-  historicalData: number[][]
+  historicalData: number[]
 ): ConfidenceScore => {
   const historicalAccuracy = calculateHistoricalAccuracy(player);
-  const patternStrength = analyzePatternStrength(prediction, historicalData);
+  const patternStrength = analyzePatternStrength(prediction, [historicalData]); // Wrap in array to match expected type
   const temporalRelevance = calculateTemporalRelevance(player.predictions);
 
   const score = (
