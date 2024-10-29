@@ -18,8 +18,8 @@ const implementationChecklist: ChecklistItem[] = [
     title: "Fase 1: Alta Prioridade - Gestão de Dados e IA",
     items: [
       { task: "Implementar sumarização de dados históricos", completed: true },
-      { task: "Criar sistema de ponderação para dados históricos", completed: false },
-      { task: "Implementar retreinamento periódico do modelo", completed: false },
+      { task: "Criar sistema de ponderação para dados históricos", completed: true },
+      { task: "Implementar retreinamento periódico do modelo", completed: true },
       { task: "Adicionar threads de trabalho para cálculos pesados", completed: true },
       { task: "Implementar ensemble learning com modelos especializados", completed: true },
       { task: "Configurar monitoramento de desempenho básico", completed: false }
