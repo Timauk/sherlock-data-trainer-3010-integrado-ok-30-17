@@ -1,14 +1,14 @@
 import * as tf from '@tensorflow/tfjs';
 import { analysisCache } from './cacheSystem';
 
-interface TimeSeriesAnalysis {
+export interface TimeSeriesAnalysis {
   trend: number[];
   seasonality: number[];
   cycles: number[];
   predictions: number[];
 }
 
-interface CorrelationAnalysis {
+export interface CorrelationAnalysis {
   matrix: number[][];
   significantPairs: Array<{
     numbers: [number, number];
@@ -127,16 +127,16 @@ const makePredictions = async (
   seasonality: tf.Tensor1D,
   cycles: tf.Tensor1D
 ): Promise<tf.Tensor1D> => {
-  // Combinar todos os componentes para fazer previsões
-  const combined = tf.add(
-    trend,
-    tf.add(
-      seasonality,
-      tf.reshape(cycles, [-1, 1])
-    )
-  );
+  // Ensure all tensors have the same shape
+  const reshapedCycles = cycles.reshape(trend.shape);
   
-  return combined;
+  // Combine components safely with proper shapes
+  const combined = tf.tidy(() => {
+    const seasonalityTrend = tf.add(trend, seasonality);
+    return tf.add(seasonalityTrend, reshapedCycles).asType('float32');
+  });
+  
+  return combined as tf.Tensor1D;
 };
 
 export const analyzeCorrelations = async (

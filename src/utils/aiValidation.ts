@@ -44,8 +44,8 @@ export const validateModel = async (
 };
 
 const calculateAccuracy = async (predictions: tf.Tensor, labels: tf.Tensor): Promise<number> => {
-  const predArray = await predictions.array();
-  const labelArray = await labels.array();
+  const predArray = await predictions.array() as number[][];
+  const labelArray = await labels.array() as number[][];
   
   let correct = 0;
   let total = 0;
@@ -63,16 +63,19 @@ const calculateAccuracy = async (predictions: tf.Tensor, labels: tf.Tensor): Pro
 };
 
 const calculatePrecision = async (predictions: tf.Tensor, labels: tf.Tensor): Promise<number> => {
-  const predArray = await predictions.array();
-  const labelArray = await labels.array();
+  const predArray = await predictions.array() as number[][];
+  const labelArray = await labels.array() as number[][];
   
   let truePositives = 0;
   let falsePositives = 0;
   
   for (let i = 0; i < predArray.length; i++) {
     for (let j = 0; j < predArray[i].length; j++) {
-      if (Math.round(predArray[i][j]) === 1) {
-        if (labelArray[i][j] === 1) {
+      const predictedValue = Math.round(predArray[i][j]) as 0 | 1;
+      const actualValue = labelArray[i][j] as 0 | 1;
+      
+      if (predictedValue === 1) {
+        if (actualValue === 1) {
           truePositives++;
         } else {
           falsePositives++;
@@ -85,16 +88,19 @@ const calculatePrecision = async (predictions: tf.Tensor, labels: tf.Tensor): Pr
 };
 
 const calculateRecall = async (predictions: tf.Tensor, labels: tf.Tensor): Promise<number> => {
-  const predArray = await predictions.array();
-  const labelArray = await labels.array();
+  const predArray = await predictions.array() as number[][];
+  const labelArray = await labels.array() as number[][];
   
   let truePositives = 0;
   let falseNegatives = 0;
   
   for (let i = 0; i < predArray.length; i++) {
     for (let j = 0; j < predArray[i].length; j++) {
-      if (labelArray[i][j] === 1) {
-        if (Math.round(predArray[i][j]) === 1) {
+      const predictedValue = Math.round(predArray[i][j]) as 0 | 1;
+      const actualValue = labelArray[i][j] as 0 | 1;
+      
+      if (actualValue === 1) {
+        if (predictedValue === 1) {
           truePositives++;
         } else {
           falseNegatives++;
