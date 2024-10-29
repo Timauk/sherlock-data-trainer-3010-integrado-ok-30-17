@@ -75,11 +75,11 @@ const makePredictions = async (
   seasonality: tf.Tensor1D,
   cycles: tf.Tensor1D
 ): Promise<tf.Tensor1D> => {
-  const reshapedCycles = cycles.reshape(trend.shape);
+  const reshapedCycles = cycles.reshape(trend.shape) as tf.Tensor1D;
   
   const combined = tf.tidy(() => {
-    const seasonalityTrend = tf.add(trend, seasonality);
-    return tf.add(seasonalityTrend, reshapedCycles);
+    const seasonalityTrend = tf.add(trend, seasonality) as tf.Tensor1D;
+    return tf.add(seasonalityTrend, reshapedCycles) as tf.Tensor1D;
   });
   
   return combined;
@@ -105,7 +105,7 @@ export const analyzeTimeSeries = async (
     trend: Array.from(await trend.data()),
     seasonality: Array.from(await seasonality.data()),
     cycles: Array.from(await cycles.data()),
-    predictions: Array.from(await predictions.data()),
+    predictions: Array.from(await predictions.data())
   };
 
   await analysisCache.set(cacheKey, result);
