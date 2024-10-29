@@ -19,37 +19,29 @@ export async function makePrediction(
 ): Promise<number[]> {
   if (!trainedModel) return [];
   
-  // Análise Lunar
-  const currentDate = new Date();
-  const lunarPhase = getLunarPhase(currentDate);
-  const lunarWeight = getLunarPhaseWeight(lunarPhase);
-  
-  // Análise de Frequência
-  const frequencyAnalysis = historicalData ? analyzeFrequency(historicalData.numbers) : {};
-  
-  // Análise Avançada de Padrões
-  const patterns = historicalData ? analyzeAdvancedPatterns(historicalData.numbers, historicalData.dates) : null;
-  
   // Normalização dos dados base
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Enriquecimento dos dados de entrada com todas as análises
+  // Dados base de entrada (mantendo 17 inputs conforme esperado)
   let enrichedInput = [
     ...inputData.slice(0, 15),
     normalizedConcursoNumber,
-    normalizedDataSorteio,
-    lunarWeight,
-    ...Object.values(frequencyAnalysis).slice(0, 5), // Top 5 frequências
-    patterns ? patterns.consecutive / 100 : 0,
-    patterns ? patterns.evenOdd : 0
+    normalizedDataSorteio
   ];
+  
+  // Análises adicionais (serão usadas apenas para pesos)
+  const currentDate = new Date();
+  const lunarPhase = getLunarPhase(currentDate);
+  const lunarWeight = getLunarPhaseWeight(lunarPhase);
+  const frequencyAnalysis = historicalData ? analyzeFrequency(historicalData.numbers) : {};
+  const patterns = historicalData ? analyzeAdvancedPatterns(historicalData.numbers, historicalData.dates) : null;
   
   // Adiciona aleatoriedade inteligente aos pesos do jogador
   const randomizedWeights = playerWeights.map((weight, index) => {
     const lunarInfluence = lunarWeight * 0.2;
     const frequencyInfluence = getFrequencyInfluence(index + 1, frequencyAnalysis) * 0.3;
-    const patternInfluence = patterns ? getPatternInfluence(patterns) * 0.2 : 0;
+    const patternInfluence = patterns ? (patterns.consecutive + patterns.evenOdd) / 2 * 0.2 : 0;
     const randomFactor = 1 + (Math.random() - 0.5) * 0.3;
     
     return weight * (1 + lunarInfluence + frequencyInfluence + patternInfluence) * randomFactor;
@@ -105,7 +97,6 @@ export async function makePrediction(
   return Array.from(uniqueNumbers).sort((a, b) => a - b);
 }
 
-// Funções auxiliares
 function getLunarPhaseWeight(phase: string): number {
   const weights: Record<string, number> = {
     'Nova': 0.8,

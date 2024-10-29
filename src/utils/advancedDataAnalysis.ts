@@ -7,6 +7,8 @@ interface AdvancedMetrics {
   numberGaps: number[];
   consecutivePatterns: number[];
   sumPatterns: number;
+  consecutive: number;  // Added this
+  evenOdd: number;     // Added this
 }
 
 export const analyzeAdvancedPatterns = (
@@ -19,6 +21,8 @@ export const analyzeAdvancedPatterns = (
   const numberGaps = Array(25).fill(0);
   const consecutivePatterns = Array(24).fill(0);
   let sumPatterns = 0;
+  let consecutive = 0;
+  let evenOdd = 0;
 
   // Analisa padrões por dia da semana
   dates.forEach((date, idx) => {
@@ -32,7 +36,7 @@ export const analyzeAdvancedPatterns = (
     monthlyPatterns[month] += numbers[idx].length;
   });
 
-  // Analisa gaps entre números
+  // Analisa gaps entre números e consecutivos
   numbers.forEach(draw => {
     draw.forEach((num, idx) => {
       if (idx > 0) {
@@ -40,19 +44,15 @@ export const analyzeAdvancedPatterns = (
         if (gap >= 0 && gap < numberGaps.length) {
           numberGaps[gap]++;
         }
-      }
-    });
-  });
-
-  // Analisa números consecutivos
-  numbers.forEach(draw => {
-    draw.forEach((num, idx) => {
-      if (idx > 0) {
         if (num === draw[idx - 1] + 1) {
-          consecutivePatterns[num - 2]++;
+          consecutive++;
         }
       }
     });
+
+    // Análise par/ímpar
+    const evenCount = draw.filter(n => n % 2 === 0).length;
+    evenOdd += evenCount / draw.length;
   });
 
   // Calcula soma dos números por sorteio
@@ -68,7 +68,9 @@ export const analyzeAdvancedPatterns = (
     seasonalTrends: seasonalTrends.map(v => v / totalGames),
     numberGaps: numberGaps.map(v => v / totalGames),
     consecutivePatterns: consecutivePatterns.map(v => v / totalGames),
-    sumPatterns: sumPatterns / totalGames
+    sumPatterns: sumPatterns / totalGames,
+    consecutive: consecutive / totalGames,
+    evenOdd: evenOdd / totalGames
   };
 };
 
@@ -80,8 +82,6 @@ export const enrichPredictionData = (
     ...baseData,
     ...advancedMetrics.dayOfWeekPatterns,
     ...advancedMetrics.monthlyPatterns,
-    ...advancedMetrics.numberGaps,
-    ...advancedMetrics.consecutivePatterns,
     advancedMetrics.sumPatterns
   ];
 };
