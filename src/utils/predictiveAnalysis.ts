@@ -139,6 +139,33 @@ const makePredictions = async (
   return combined as tf.Tensor1D;
 };
 
+const calculateCorrelation = (
+  numbers: number[][],
+  num1: number,
+  num2: number
+): number => {
+  // Convert boolean presence to binary values (0 or 1)
+  const occurrences1 = numbers.map(draw => draw.includes(num1) ? (1 as const) : (0 as const));
+  const occurrences2 = numbers.map(draw => draw.includes(num2) ? (1 as const) : (0 as const));
+
+  const mean1 = occurrences1.reduce((a, b) => a + b) / occurrences1.length;
+  const mean2 = occurrences2.reduce((a, b) => a + b) / occurrences2.length;
+
+  let numerator = 0;
+  let denominator1 = 0;
+  let denominator2 = 0;
+
+  for (let i = 0; i < occurrences1.length; i++) {
+    const diff1 = occurrences1[i] - mean1;
+    const diff2 = occurrences2[i] - mean2;
+    numerator += diff1 * diff2;
+    denominator1 += diff1 * diff1;
+    denominator2 += diff2 * diff2;
+  }
+
+  return numerator / Math.sqrt(denominator1 * denominator2);
+};
+
 export const analyzeCorrelations = async (
   numbers: number[][],
   threshold: number = 0.7
@@ -178,30 +205,4 @@ export const analyzeCorrelations = async (
   const result = { matrix, significantPairs };
   await analysisCache.set(cacheKey, result);
   return result;
-};
-
-const calculateCorrelation = (
-  numbers: number[][],
-  num1: number,
-  num2: number
-): number => {
-  const occurrences1 = numbers.map(draw => draw.includes(num1) ? 1 : 0);
-  const occurrences2 = numbers.map(draw => draw.includes(num2) ? 1 : 0);
-
-  const mean1 = occurrences1.reduce((a, b) => a + b) / occurrences1.length;
-  const mean2 = occurrences2.reduce((a, b) => a + b) / occurrences2.length;
-
-  let numerator = 0;
-  let denominator1 = 0;
-  let denominator2 = 0;
-
-  for (let i = 0; i < occurrences1.length; i++) {
-    const diff1 = occurrences1[i] - mean1;
-    const diff2 = occurrences2[i] - mean2;
-    numerator += diff1 * diff2;
-    denominator1 += diff1 * diff1;
-    denominator2 += diff2 * diff2;
-  }
-
-  return numerator / Math.sqrt(denominator1 * denominator2);
 };
