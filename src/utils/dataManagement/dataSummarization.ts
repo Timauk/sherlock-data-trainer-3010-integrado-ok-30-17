@@ -1,6 +1,6 @@
 import { differenceInDays } from 'date-fns';
 
-interface DataSummary {
+export interface DataSummary {
   period: string;
   frequencies: { [key: number]: number };
   patterns: {
