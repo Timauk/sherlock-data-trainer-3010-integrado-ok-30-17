@@ -1,35 +1,17 @@
-import { Player } from '@/types/gameTypes';
-
 type ToastFunction = {
   toast: {
     (props: { title: string; description: string; variant?: "default" | "destructive" }): void;
   };
 };
 
-interface GameState {
-  players: Player[];
-  generation: number;
-  gameCount: number;
-  evolutionData: any[];
-  timestamp: string;
-  path: string;
-}
-
-export const saveCheckpoint = async (data: GameState) => {
+export const saveCheckpoint = async (data: any) => {
   try {
     const response = await fetch('http://localhost:3001/api/checkpoint', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        players: data.players,
-        generation: data.generation,
-        gameCount: data.gameCount,
-        evolutionData: data.evolutionData,
-        timestamp: data.timestamp,
-        path: data.path
-      })
+      body: JSON.stringify(data)
     });
     
     const result = await response.json();
@@ -40,7 +22,7 @@ export const saveCheckpoint = async (data: GameState) => {
   }
 };
 
-export const loadLastCheckpoint = async (): Promise<GameState | null> => {
+export const loadLastCheckpoint = async () => {
   try {
     const response = await fetch('http://localhost:3001/api/checkpoint/latest');
     if (!response.ok) {

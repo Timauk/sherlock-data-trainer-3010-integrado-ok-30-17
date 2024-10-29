@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Save, RotateCcw, FolderOpen } from 'lucide-react';
 import { saveCheckpoint, loadLastCheckpoint, createSelectDirectory } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
-import { useGameState } from '@/hooks/useGameState';
 
 interface CheckpointControlsProps {
   savePath: string;
@@ -17,37 +16,25 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
-  const gameState = useGameState();
   const selectDirectory = createSelectDirectory({ toast });
 
   const handleSelectDirectory = async () => {
     try {
       const dirName = await selectDirectory();
       onSavePathChange(dirName);
-      localStorage.setItem('checkpointPath', dirName);
     } catch (error) {
       console.error('Erro ao selecionar diretório:', error);
     }
   };
 
   const handleSaveCheckpoint = async () => {
-    if (!gameState) {
-      toast({
-        title: "Erro",
-        description: "Estado do jogo não disponível",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      const checkpointData = {
-        ...gameState,
+      const gameState = {
         timestamp: new Date().toISOString(),
         path: savePath,
       };
 
-      const savedFile = await saveCheckpoint(checkpointData);
+      const savedFile = await saveCheckpoint(gameState);
       
       toast({
         title: "Checkpoint Salvo",
@@ -67,7 +54,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const checkpoint = await loadLastCheckpoint();
       if (checkpoint) {
-        localStorage.setItem('gameCheckpoint', JSON.stringify(checkpoint));
         toast({
           title: "Carregando Checkpoint",
           description: "Restaurando último estado salvo...",
