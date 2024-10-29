@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw, FolderOpen } from 'lucide-react';
-import { saveCheckpoint, loadLastCheckpoint, createSelectDirectory } from '@/utils/fileSystemUtils';
+import { saveCheckpoint, loadLastCheckpoint } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CheckpointControlsProps {
@@ -16,22 +16,14 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
-  const selectDirectory = createSelectDirectory({ toast });
-
-  const handleSelectDirectory = async () => {
-    try {
-      const dirName = await selectDirectory();
-      onSavePathChange(dirName);
-    } catch (error) {
-      console.error('Erro ao selecionar diretório:', error);
-    }
-  };
 
   const handleSaveCheckpoint = async () => {
     try {
+      // Coleta todos os dados do estado atual do jogo
       const gameState = {
         timestamp: new Date().toISOString(),
         path: savePath,
+        // Adicione aqui todos os dados que precisam ser salvos
       };
 
       const savedFile = await saveCheckpoint(gameState);
@@ -54,11 +46,18 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const checkpoint = await loadLastCheckpoint();
       if (checkpoint) {
+        // Salva o checkpoint no localStorage para persistência
+        localStorage.setItem('lastCheckpoint', JSON.stringify(checkpoint));
+        
         toast({
-          title: "Carregando Checkpoint",
-          description: "Restaurando último estado salvo...",
+          title: "Checkpoint Carregado",
+          description: "Recarregando página para aplicar as mudanças...",
         });
-        window.location.reload();
+        
+        // Força um reload da página após 1 segundo
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         toast({
           title: "Nenhum Checkpoint",
@@ -80,13 +79,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
       <div className="p-2 bg-secondary rounded-md">
         <p className="text-sm">Diretório de salvamento: {savePath || "Nenhum diretório selecionado"}</p>
       </div>
-
-      <Button 
-        onClick={handleSelectDirectory}
-        className="w-full"
-      >
-        <FolderOpen className="mr-2 h-4 w-4" /> Selecionar Diretório
-      </Button>
 
       <Button 
         onClick={handleSaveCheckpoint}

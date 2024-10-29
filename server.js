@@ -12,7 +12,7 @@ const app = express();
 const PORT = 3001;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Aumentado para comportar mais dados
+app.use(express.json({ limit: '100mb' })); // Aumentado para comportar mais dados
 
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 if (!fs.existsSync(checkpointsDir)) {
@@ -24,9 +24,8 @@ app.post('/api/checkpoint', (req, res) => {
   const filename = `checkpoint-${timestamp}.json`;
   const filepath = path.join(checkpointsDir, filename);
 
-  // Dados expandidos do checkpoint
   const checkpointData = {
-    ...req.body,
+    timestamp,
     saveTime: timestamp,
     systemInfo: {
       totalMemory: process.memoryUsage().heapTotal,
@@ -43,7 +42,13 @@ app.post('/api/checkpoint', (req, res) => {
       lunarAnalysis: req.body.lunarAnalysis || {},
       predictions: req.body.predictions || [],
       scores: req.body.scores || [],
-      championData: req.body.championData || null
+      championData: req.body.championData || null,
+      boardNumbers: req.body.boardNumbers || [],
+      concursoNumber: req.body.concursoNumber || 0,
+      gameCount: req.body.gameCount || 0,
+      isInfiniteMode: req.body.isInfiniteMode || false,
+      isManualMode: req.body.isManualMode || false,
+      logs: req.body.logs || []
     },
     checkpointType: req.body.checkpointType || 'auto',
     checkpointNumber: fs.readdirSync(checkpointsDir).length + 1
@@ -51,6 +56,7 @@ app.post('/api/checkpoint', (req, res) => {
 
   fs.writeFileSync(filepath, JSON.stringify(checkpointData, null, 2));
   console.log(`Checkpoint completo salvo: ${filename}`);
+  
   res.json({ 
     message: 'Checkpoint salvo com sucesso', 
     filename,
@@ -60,19 +66,24 @@ app.post('/api/checkpoint', (req, res) => {
 
 app.get('/api/checkpoint/latest', (req, res) => {
   try {
-    const files = fs.readdirSync(checkpointsDir);
-    const checkpoints = files.filter(f => f.startsWith('checkpoint-'));
+    const files = fs.readdirSync(checkpointsDir)
+      .filter(f => f.startsWith('checkpoint-'))
+      .sort()
+      .reverse();
     
-    if (checkpoints.length === 0) {
+    if (files.length === 0) {
       return res.status(404).json({ message: 'Nenhum checkpoint encontrado' });
     }
 
-    const latestFile = checkpoints.sort().reverse()[0];
+    const latestFile = files[0];
     const data = fs.readFileSync(path.join(checkpointsDir, latestFile));
     
     res.json(JSON.parse(data));
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao carregar checkpoint', error: error.message });
+    res.status(500).json({ 
+      message: 'Erro ao carregar checkpoint', 
+      error: error.message 
+    });
   }
 });
 
@@ -97,7 +108,10 @@ app.get('/api/checkpoints', (req, res) => {
     
     res.json(checkpoints);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao listar checkpoints', error: error.message });
+    res.status(500).json({ 
+      message: 'Erro ao listar checkpoints', 
+      error: error.message 
+    });
   }
 });
 

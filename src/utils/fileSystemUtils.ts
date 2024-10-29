@@ -1,3 +1,5 @@
+import * as tf from '@tensorflow/tfjs';
+
 type ToastFunction = {
   toast: {
     (props: { title: string; description: string; variant?: "default" | "destructive" }): void;
@@ -11,7 +13,19 @@ export const saveCheckpoint = async (data: any) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...data,
+        modelState: data.trainedModel ? await data.trainedModel.save('indexeddb://checkpoint-model') : null,
+        players: data.players || [],
+        evolutionData: data.evolutionData || [],
+        generation: data.generation || 0,
+        trainingHistory: data.trainingHistory || [],
+        frequencyAnalysis: data.frequencyAnalysis || {},
+        lunarAnalysis: data.lunarAnalysis || {},
+        predictions: data.predictions || [],
+        scores: data.scores || [],
+        championData: data.championData || null
+      })
     });
     
     const result = await response.json();
@@ -29,7 +43,20 @@ export const loadLastCheckpoint = async () => {
       if (response.status === 404) return null;
       throw new Error('Erro ao carregar checkpoint');
     }
-    return await response.json();
+    
+    const checkpoint = await response.json();
+    
+    // Carregar o modelo do IndexedDB se existir
+    if (checkpoint.modelState) {
+      try {
+        const model = await tf.loadLayersModel('indexeddb://checkpoint-model');
+        checkpoint.trainedModel = model;
+      } catch (error) {
+        console.error('Erro ao carregar modelo do IndexedDB:', error);
+      }
+    }
+    
+    return checkpoint;
   } catch (error) {
     console.error('Erro ao carregar checkpoint:', error);
     return null;
