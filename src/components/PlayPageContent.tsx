@@ -1,6 +1,7 @@
 import React from 'react';
 import DataUploader from '@/components/DataUploader';
 import GameControls from '@/components/GameControls';
+import GameBoard from '@/components/GameBoard';
 import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
 import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
 import ModelMetrics from '@/components/ModelMetrics';
@@ -10,8 +11,8 @@ import ChampionPredictions from '@/components/ChampionPredictions';
 import EvolutionStats from '@/components/EvolutionStats';
 import PlayerDetails from '@/components/PlayerDetails';
 import AdvancedAnalysis from '@/components/AdvancedAnalysis';
-import GameSection from '@/components/GameSection';
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -27,11 +28,9 @@ interface PlayPageContentProps {
   progress: number;
   generation: number;
   gameLogic: ReturnType<typeof useGameLogic>;
-  onPlayersChange: (count: number) => void;
-  currentPlayerCount?: number;
 }
 
-const PlayPageContent: React.FC<PlayPageContentProps> = ({
+export const PlayPageContent: React.FC<PlayPageContentProps> = ({
   isPlaying,
   onPlay,
   onPause,
@@ -42,115 +41,138 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   onSaveModel,
   progress,
   generation,
-  gameLogic,
-  onPlayersChange,
-  currentPlayerCount
+  gameLogic
 }) => {
-  const selectedPlayer = gameLogic.players[0] || null;
-  const nextCloneAt = 1000;
+  const champion = gameLogic.players.reduce((prev, current) => 
+    (current.fitness > prev.fitness) ? current : prev, 
+    gameLogic.players[0]
+  );
+
+  const generationStats = gameLogic.evolutionData.reduce((acc, curr) => {
+    const genData = acc.find(g => g.generation === curr.generation);
+    if (genData) {
+      genData.scores.push(curr.score);
+    } else {
+      acc.push({ generation: curr.generation, scores: [curr.score] });
+    }
+    return acc;
+  }, [] as Array<{ generation: number; scores: number[] }>)
+  .map(gen => ({
+    generation: gen.generation,
+    averageScore: gen.scores.reduce((a, b) => a + b, 0) / gen.scores.length,
+    bestScore: Math.max(...gen.scores),
+    worstScore: Math.min(...gen.scores)
+  }));
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <DataUploader
-          onCsvUpload={onCsvUpload}
-          onModelUpload={onModelUpload}
-          onSaveModel={onSaveModel}
-        />
-        <GameControls
-          isPlaying={isPlaying}
-          onPlay={onPlay}
-          onPause={onPause}
-          onReset={onReset}
-          onThemeToggle={onThemeToggle}
-          onPlayersChange={onPlayersChange}
-          currentPlayerCount={currentPlayerCount}
-        />
-      </div>
-
-      <Progress value={progress} className="w-full" />
-
-      <Tabs defaultValue="game" className="w-full">
-        <TabsList className="w-full">
-          <TabsTrigger value="game">Jogo</TabsTrigger>
-          <TabsTrigger value="analysis">Análise</TabsTrigger>
-          <TabsTrigger value="predictions">Previsões</TabsTrigger>
-          <TabsTrigger value="advanced">Avançado</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="game">
-          <GameSection
-            players={gameLogic.players}
-            boardNumbers={gameLogic.boardNumbers}
-            evolutionData={gameLogic.evolutionData}
-            logs={gameLogic.logs}
-            onUpdatePlayer={(playerId, newWeights) => {
-              const updatedPlayers = gameLogic.players.map(p =>
-                p.id === playerId ? { ...p, weights: newWeights } : p
-              );
-              gameLogic.setPlayers(updatedPlayers);
-            }}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <DataUploader 
+            onCsvUpload={onCsvUpload} 
+            onModelUpload={onModelUpload} 
+            onSaveModel={onSaveModel} 
           />
-        </TabsContent>
 
-        <TabsContent value="analysis">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <NeuralNetworkVisualization
-              layers={[17, 64, 32, 15]}
-              inputData={gameLogic.neuralNetworkVisualization?.input}
-              outputData={gameLogic.neuralNetworkVisualization?.output}
-            />
-            <ModelMetrics
-              accuracy={gameLogic.modelMetrics.accuracy}
-              randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
-              totalPredictions={gameLogic.modelMetrics.totalPredictions}
-              perGameAccuracy={gameLogic.modelMetrics.perGameAccuracy}
-              perGameRandomAccuracy={gameLogic.modelMetrics.perGameRandomAccuracy}
-            />
-            <LunarAnalysis
-              dates={gameLogic.dates}
-              numbers={gameLogic.numbers}
-            />
-            <FrequencyAnalysis
-              numbers={gameLogic.numbers}
-              onFrequencyUpdate={(freq) => console.log('Frequency updated:', freq)}
-            />
+          <GameControls
+            isPlaying={isPlaying}
+            onPlay={onPlay}
+            onPause={onPause}
+            onReset={onReset}
+            onThemeToggle={onThemeToggle}
+          />
+
+          <div className="flex gap-2">
+            <Button onClick={gameLogic.toggleInfiniteMode}>
+              {gameLogic.isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
+            </Button>
+            <Button 
+              onClick={gameLogic.toggleManualMode}
+              variant={gameLogic.isManualMode ? "destructive" : "outline"}
+            >
+              {gameLogic.isManualMode ? 'Desativar' : 'Ativar'} Modo Manual
+            </Button>
           </div>
-        </TabsContent>
 
-        <TabsContent value="predictions">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChampionPredictions
-              champion={selectedPlayer}
-              trainedModel={gameLogic.trainedModel}
-              lastConcursoNumbers={gameLogic.boardNumbers}
-            />
-            <EvolutionStats
-              gameCount={gameLogic.gameCount}
-              nextCloneAt={nextCloneAt}
-              generationStats={gameLogic.evolutionData.map(data => ({
-                generation: data.generation,
-                averageScore: data.score,
-                bestScore: data.score + data.fitness,
-                worstScore: data.score - data.fitness
-              }))}
-            />
-          </div>
-        </TabsContent>
+          <EvolutionStats
+            gameCount={gameLogic.gameCount}
+            nextCloneAt={1000}
+            generationStats={generationStats}
+          />
+        </div>
 
-        <TabsContent value="advanced">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PlayerDetails
-              player={selectedPlayer}
-              historicalPerformance={gameLogic.evolutionData.map(data => ({
+        <div className="space-y-4">
+          <PlayerDetails 
+            player={champion}
+            historicalPerformance={gameLogic.evolutionData
+              .filter(data => data.playerId === champion.id)
+              .map(data => ({
                 generation: data.generation,
                 score: data.score,
                 matches: data.fitness
               }))}
+          />
+
+          <ChampionPredictions
+            champion={champion}
+            trainedModel={gameLogic.trainedModel}
+            lastConcursoNumbers={gameLogic.boardNumbers}
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue="game" className="w-full">
+        <TabsList>
+          <TabsTrigger value="game">Jogo</TabsTrigger>
+          <TabsTrigger value="analysis">Análise</TabsTrigger>
+          <TabsTrigger value="neural">Rede Neural</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="game">
+          <div className="space-y-4">
+            <GameBoard
+              boardNumbers={gameLogic.boardNumbers}
+              concursoNumber={gameLogic.concursoNumber}
+              players={gameLogic.players}
+              evolutionData={gameLogic.evolutionData}
             />
+            
+            <EnhancedLogDisplay logs={gameLogic.logs} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <LunarAnalysis 
+              dates={gameLogic.dates} 
+              numbers={gameLogic.numbers}
+              recentResults={100}
+            />
+            
+            <FrequencyAnalysis 
+              numbers={gameLogic.numbers}
+              onFrequencyUpdate={gameLogic.updateFrequencyData}
+            />
+
             <AdvancedAnalysis
               numbers={gameLogic.numbers}
               dates={gameLogic.dates}
+            />
+
+            <ModelMetrics
+              accuracy={gameLogic.modelMetrics.accuracy}
+              randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
+              totalPredictions={gameLogic.modelMetrics.totalPredictions}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="neural">
+          <div className="space-y-4">
+            <NeuralNetworkVisualization 
+              layers={[15, 64, 32, 15]} 
+              inputData={gameLogic.neuralNetworkVisualization?.input}
+              outputData={gameLogic.neuralNetworkVisualization?.output}
             />
           </div>
         </TabsContent>

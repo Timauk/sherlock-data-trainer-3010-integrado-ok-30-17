@@ -4,22 +4,20 @@ import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
-import PlayPageContent from '@/components/PlayPageContent';
-import { Slider } from "@/components/ui/slider";
-import GameStatusChecklist from '@/components/GameStatusChecklist';
+import { PlayPageContent } from '@/components/PlayPageContent';
+import { Slider } from "@/components/ui/slider"
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000);
+  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
-  const [playerCount, setPlayerCount] = useState(10);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
-  const gameLogic = useGameLogic(csvData, trainedModel, playerCount);
+  const gameLogic = useGameLogic(csvData, trainedModel);
 
   const loadCSV = useCallback(async (file: File) => {
     try {
@@ -112,11 +110,6 @@ const PlayPage: React.FC = () => {
     gameLogic.addLog("Jogo reiniciado.");
   }, [gameLogic]);
 
-  const handlePlayerCountChange = (count: number) => {
-    setPlayerCount(count);
-    gameLogic.initializePlayers(count);
-  };
-
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     if (isPlaying) {
@@ -126,7 +119,7 @@ const PlayPage: React.FC = () => {
           const newProgress = prevProgress + (100 / csvData.length);
           if (newProgress >= 100) {
             if (!gameLogic.isManualMode) {
-              gameLogic.initializePlayers(playerCount);
+              gameLogic.evolveGeneration();
             }
             return gameLogic.isInfiniteMode ? 0 : 100;
           }
@@ -135,7 +128,16 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed, playerCount]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+
+  const handleSpeedChange = (value: number[]) => {
+    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
+    setGameSpeed(newSpeed);
+    toast({
+      title: "Velocidade Ajustada",
+      description: `${newSpeed}ms por jogada`,
+    });
+  };
 
   return (
     <div className="p-6">
@@ -147,7 +149,7 @@ const PlayPage: React.FC = () => {
           max={1900}
           min={100}
           step={100}
-          onValueChange={(value) => setGameSpeed(2000 - value[0])}
+          onValueChange={handleSpeedChange}
           className="w-full"
         />
         <p className="text-sm text-muted-foreground mt-1">
@@ -156,13 +158,9 @@ const PlayPage: React.FC = () => {
       </div>
       <PlayPageContent
         isPlaying={isPlaying}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onReset={() => {
-          setIsPlaying(false);
-          setProgress(0);
-          gameLogic.initializePlayers(playerCount);
-        }}
+        onPlay={playGame}
+        onPause={pauseGame}
+        onReset={resetGame}
         onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onCsvUpload={loadCSV}
         onModelUpload={loadModel}
@@ -170,8 +168,6 @@ const PlayPage: React.FC = () => {
         progress={progress}
         generation={gameLogic.generation}
         gameLogic={gameLogic}
-        onPlayersChange={handlePlayerCountChange}
-        currentPlayerCount={playerCount}
       />
     </div>
   );
