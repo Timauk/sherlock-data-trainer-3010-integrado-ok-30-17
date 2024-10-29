@@ -14,6 +14,7 @@ import AdvancedAnalysis from '@/components/AdvancedAnalysis';
 import { Progress } from "@/components/ui/progress";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -69,7 +70,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
       <Progress value={progress} className="w-full" />
 
       <Tabs defaultValue="game" className="w-full">
-        <TabsList>
+        <TabsList className="w-full">
           <TabsTrigger value="game">Jogo</TabsTrigger>
           <TabsTrigger value="analysis">Análise</TabsTrigger>
           <TabsTrigger value="predictions">Previsões</TabsTrigger>
@@ -77,14 +78,48 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         </TabsList>
 
         <TabsContent value="game">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <GameBoard
-              boardNumbers={gameLogic.boardNumbers}
-              concursoNumber={gameLogic.concursoNumber}
-              players={gameLogic.players}
-              evolutionData={gameLogic.evolutionData}
-            />
-            <EnhancedLogDisplay logs={gameLogic.logs} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Números do Concurso</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {gameLogic.boardNumbers.map((number, index) => (
+                  <span key={index} className="inline-block bg-primary text-primary-foreground rounded-full px-3 py-1 text-sm font-semibold">
+                    {number}
+                  </span>
+                ))}
+              </div>
+              
+              <h3 className="text-lg font-semibold mb-4">Jogadores Ativos</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {gameLogic.players.map((player) => (
+                  <div key={player.id} className="p-3 bg-muted rounded-lg">
+                    <p className="font-medium">Jogador {player.id}</p>
+                    <p className="text-sm">Pontuação: {player.score}</p>
+                    <div className="mt-2">
+                      <p className="text-xs font-medium mb-1">Previsões:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {player.predictions.map((num, idx) => (
+                          <span key={idx} className="inline-block bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs">
+                            {num}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Logs em Tempo Real</h3>
+              <div className="bg-muted p-4 rounded-lg h-[600px] overflow-y-auto">
+                {gameLogic.logs.map((log, index) => (
+                  <p key={index} className={`mb-2 ${log.matches ? 'text-green-600 dark:text-green-400 font-medium' : ''}`}>
+                    {log.message}
+                  </p>
+                ))}
+              </div>
+            </Card>
           </div>
         </TabsContent>
 
@@ -99,8 +134,8 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
               accuracy={gameLogic.modelMetrics.accuracy}
               randomAccuracy={gameLogic.modelMetrics.randomAccuracy}
               totalPredictions={gameLogic.modelMetrics.totalPredictions}
-              perGameAccuracy={0}
-              perGameRandomAccuracy={0}
+              perGameAccuracy={gameLogic.modelMetrics.perGameAccuracy}
+              perGameRandomAccuracy={gameLogic.modelMetrics.perGameRandomAccuracy}
             />
             <LunarAnalysis
               dates={gameLogic.dates}
