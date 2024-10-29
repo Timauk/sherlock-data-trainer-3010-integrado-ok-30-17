@@ -1,7 +1,6 @@
 import React from 'react';
 import DataUploader from '@/components/DataUploader';
 import GameControls from '@/components/GameControls';
-import GameBoard from '@/components/GameBoard';
 import EnhancedLogDisplay from '@/components/EnhancedLogDisplay';
 import NeuralNetworkVisualization from '@/components/NeuralNetworkVisualization';
 import ModelMetrics from '@/components/ModelMetrics';
@@ -15,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import EvolutionChart from '@/components/EvolutionChart';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -105,21 +105,39 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
                         ))}
                       </div>
                     </div>
+                    <div className="mt-2">
+                      <p className="text-xs font-medium mb-1">Pesos:</p>
+                      <div className="text-xs text-muted-foreground">
+                        {player.weights.map((weight, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>Peso {idx + 1}:</span>
+                            <span>{weight.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </Card>
             
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Logs em Tempo Real</h3>
-              <div className="bg-muted p-4 rounded-lg h-[600px] overflow-y-auto">
-                {gameLogic.logs.map((log, index) => (
-                  <p key={index} className={`mb-2 ${log.matches ? 'text-green-600 dark:text-green-400 font-medium' : ''}`}>
-                    {log.message}
-                  </p>
-                ))}
-              </div>
-            </Card>
+            <div className="space-y-4">
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Evolução dos Jogadores</h3>
+                <EvolutionChart data={gameLogic.evolutionData} />
+              </Card>
+              
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Logs em Tempo Real</h3>
+                <div className="bg-muted p-4 rounded-lg h-[400px] overflow-y-auto">
+                  {gameLogic.logs.map((log, index) => (
+                    <p key={index} className={`mb-2 ${log.matches ? 'text-green-600 dark:text-green-400 font-medium' : ''}`}>
+                      {log.message}
+                    </p>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
