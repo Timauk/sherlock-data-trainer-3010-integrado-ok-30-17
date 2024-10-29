@@ -76,7 +76,7 @@ export const useGameLoop = (
         const confidenceScore = calculateConfidenceScore(
           prediction,
           player,
-          [currentBoardNumbers] // Pass as array of arrays
+          [[...currentBoardNumbers]] // Pass as array of arrays with current board numbers
         );
 
         feedbackSystem.addFeedback(prediction, currentBoardNumbers, confidenceScore.score);
