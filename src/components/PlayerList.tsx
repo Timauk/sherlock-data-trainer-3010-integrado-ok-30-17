@@ -75,7 +75,7 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-2 mb-8">
       {players.map(player => {
         const lastScore = player.predictions.length > 0 
           ? player.predictions.filter(num => player.predictions.includes(num)).length 
@@ -87,16 +87,15 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
             <DialogTrigger asChild>
               <div 
                 onClick={() => handlePlayerClick(player)}
-                className={`p-4 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg
+                className={`p-3 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg text-sm
                   ${isTopPlayer ? 'bg-yellow-100 border-2 border-yellow-500' : 'bg-gray-100'}`}
               >
-                <h4 className="font-semibold text-lg mb-2">
-                  Jogador {player.id}
-                  {isTopPlayer && <span className="ml-2 text-yellow-600">👑</span>}
+                <h4 className="font-semibold text-base mb-1">
+                  #{player.id}
+                  {isTopPlayer && <span className="ml-1 text-yellow-600">👑</span>}
                 </h4>
-                <p className="mb-1">Pontuação Total: {player.score.toFixed(2)}</p>
-                <p className="mb-1">Última Pontuação: {lastScore}</p>
-                <p className="mb-1 text-sm text-gray-600">Clique para ajustar os pesos</p>
+                <p className="mb-1">Score: {player.score.toFixed(1)}</p>
+                <p className="mb-1">Último: {lastScore}</p>
               </div>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
