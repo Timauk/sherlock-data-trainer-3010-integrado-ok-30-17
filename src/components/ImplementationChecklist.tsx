@@ -64,10 +64,10 @@ const implementationChecklist: ChecklistItem[] = [
   {
     title: "Fase 6: Experiência do Usuário",
     items: [
-      { task: "Melhorar indicadores de progresso", completed: false },
-      { task: "Adicionar feedback em tempo real", completed: false },
-      { task: "Implementar visualizações avançadas", completed: false },
-      { task: "Otimizar performance da UI", completed: false }
+      { task: "Melhorar indicadores de progresso", completed: true },
+      { task: "Adicionar feedback em tempo real", completed: true },
+      { task: "Implementar visualizações avançadas", completed: true },
+      { task: "Otimizar performance da UI", completed: true }
     ]
   },
   {
@@ -159,4 +159,3 @@ const ImplementationChecklist = () => {
 };
 
 export default ImplementationChecklist;
-
