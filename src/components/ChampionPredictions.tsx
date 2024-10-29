@@ -31,12 +31,16 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
 
     try {
       const newPredictions = [];
-      const nextConcurso = Math.max(...champion.predictions.map(p => 
-        typeof p === 'number' ? p : 0)) + 1;
-
-      // Prepara os dados de entrada
-      const inputTensor = tf.tensor2d([lastConcursoNumbers.map(n => n / 25)]);
       
+      // Prepara os dados de entrada (15 números + 2 features normalizadas = 17 inputs)
+      const normalizedInput = [
+        ...lastConcursoNumbers.slice(0, 15).map(n => n / 25),
+        champion.generation / 1000, // Normaliza geração
+        Date.now() / (1000 * 60 * 60 * 24 * 365) // Normaliza data atual
+      ];
+      
+      const inputTensor = tf.tensor2d([normalizedInput]);
+
       for (let i = 0; i < 8; i++) {
         // Faz a previsão usando o modelo treinado
         const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
@@ -49,6 +53,12 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
                  (champion.weights[idx % champion.weights.length] / 1000)
         }));
         
+        // Adiciona aleatoriedade controlada
+        const randomFactor = 0.15; // 15% de aleatoriedade
+        weightedNumbers.forEach(num => {
+          num.weight *= (1 + (Math.random() - 0.5) * randomFactor);
+        });
+        
         // Ordena por peso e seleciona os 15 maiores
         const selectedNumbers = weightedNumbers
           .sort((a, b) => b.weight - a.weight)
@@ -56,12 +66,12 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
           .map(n => n.number)
           .sort((a, b) => a - b);
         
-        // Calcula a estimativa de acerto
+        // Calcula a estimativa de acerto baseada no histórico do campeão
         const estimatedAccuracy = (champion.fitness / 15) * 100;
         
         newPredictions.push({
           numbers: selectedNumbers,
-          estimatedAccuracy: Math.min(estimatedAccuracy, 93.33)
+          estimatedAccuracy: Math.min(estimatedAccuracy, 93.33) // Limita a 93.33%
         });
 
         prediction.dispose();
@@ -72,7 +82,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       
       toast({
         title: "Previsões Geradas",
-        description: `8 jogos foram gerados para o concurso ${nextConcurso}!`
+        description: "8 jogos foram gerados com base no desempenho do campeão!"
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
