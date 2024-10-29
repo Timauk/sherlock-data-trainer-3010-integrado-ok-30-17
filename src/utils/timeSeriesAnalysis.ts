@@ -50,6 +50,41 @@ const calculateSeasonality = async (
   return tf.tensor1d(result);
 };
 
+const detectCycles = async (data: tf.Tensor1D): Promise<tf.Tensor1D> => {
+  const values = await data.array();
+  const result: number[] = [];
+  
+  for (let lag = 1; lag <= Math.floor(values.length / 2); lag++) {
+    let correlation = 0;
+    let n = values.length - lag;
+    
+    for (let i = 0; i < n; i++) {
+      correlation += (values[i] - values[i + lag]) ** 2;
+    }
+    
+    correlation = correlation / n;
+    result.push(correlation);
+  }
+  
+  return tf.tensor1d(result);
+};
+
+const makePredictions = async (
+  data: tf.Tensor1D,
+  trend: tf.Tensor1D,
+  seasonality: tf.Tensor1D,
+  cycles: tf.Tensor1D
+): Promise<tf.Tensor1D> => {
+  const reshapedCycles = cycles.reshape(trend.shape);
+  
+  const combined = tf.tidy(() => {
+    const seasonalityTrend = tf.add(trend, seasonality);
+    return tf.add(seasonalityTrend, reshapedCycles);
+  });
+  
+  return combined;
+};
+
 export const analyzeTimeSeries = async (
   historicalData: number[][],
   windowSize: number = 10
@@ -66,7 +101,7 @@ export const analyzeTimeSeries = async (
   const cycles = await detectCycles(tensor);
   const predictions = await makePredictions(tensor, trend, seasonality, cycles);
 
-  const result = {
+  const result: TimeSeriesAnalysis = {
     trend: Array.from(await trend.data()),
     seasonality: Array.from(await seasonality.data()),
     cycles: Array.from(await cycles.data()),

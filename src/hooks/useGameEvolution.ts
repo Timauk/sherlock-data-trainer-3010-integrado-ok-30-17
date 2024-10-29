@@ -41,7 +41,7 @@ export const useGameEvolution = (
       setPlayers(newGeneration);
     }
 
-    setGeneration(prev => prev + 1);
+    setGeneration(generation + 1);
     
     setEvolutionData(prev => [
       ...prev,
