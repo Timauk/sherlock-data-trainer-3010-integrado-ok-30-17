@@ -7,6 +7,9 @@ import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
+import { validateModel, ValidationMetrics } from '@/utils/aiValidation';
+import { predictionCache } from '@/utils/cacheSystem';
+import { analyzeTimeSeries, analyzeCorrelations, TimeSeriesAnalysis, CorrelationAnalysis } from '@/utils/predictiveAnalysis';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -39,32 +42,97 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [isManualMode, setIsManualMode] = useState(false);
+  const [validationMetrics, setValidationMetrics] = useState<ValidationMetrics | null>(null);
+  const [timeSeriesAnalysis, setTimeSeriesAnalysis] = useState<TimeSeriesAnalysis | null>(null);
+  const [correlationAnalysis, setCorrelationAnalysis] = useState<CorrelationAnalysis | null>(null);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const gameLoop = useGameLoop(
-    players,
-    setPlayers,
+  const validateCurrentModel = useCallback(async () => {
+    if (!trainedModel || !csvData.length) return;
+
+    try {
+      const metrics = await validateModel(
+        trainedModel,
+        csvData.slice(0, -10),
+        csvData.slice(-10)
+      );
+      setValidationMetrics(metrics);
+      
+      toast({
+        title: "Validação do Modelo",
+        description: `Acurácia: ${(metrics.accuracy * 100).toFixed(2)}%`,
+      });
+    } catch (error) {
+      console.error("Erro na validação:", error);
+      toast({
+        title: "Erro na Validação",
+        description: "Não foi possível validar o modelo",
+        variant: "destructive"
+      });
+    }
+  }, [trainedModel, csvData, toast]);
+
+  const updatePredictiveAnalysis = useCallback(async () => {
+    if (!numbers.length) return;
+
+    try {
+      const timeSeriesResults = await analyzeTimeSeries(numbers);
+      setTimeSeriesAnalysis(timeSeriesResults);
+
+      const correlationResults = await analyzeCorrelations(numbers);
+      setCorrelationAnalysis(correlationResults);
+
+      toast({
+        title: "Análises Atualizadas",
+        description: "Análises preditivas foram atualizadas com sucesso",
+      });
+    } catch (error) {
+      console.error("Erro nas análises:", error);
+      toast({
+        title: "Erro nas Análises",
+        description: "Não foi possível atualizar as análises preditivas",
+        variant: "destructive"
+      });
+    }
+  }, [numbers, toast]);
+
+  const gameLoop = useCallback(async () => {
+    if (!csvData.length || !trainedModel) return;
+
+    const cacheKey = `prediction-${concursoNumber}`;
+    const cachedPrediction = await predictionCache.get(cacheKey);
+
+    if (cachedPrediction) {
+      setBoardNumbers(cachedPrediction);
+      addLog("Usando previsão em cache");
+    } else {
+      const currentBoardNumbers = csvData[concursoNumber % csvData.length];
+      setBoardNumbers(currentBoardNumbers);
+      await predictionCache.set(cacheKey, currentBoardNumbers);
+    }
+
+    if (gameCount % 10 === 0) {
+      await updatePredictiveAnalysis();
+    }
+
+    if (gameCount % 100 === 0) {
+      await validateCurrentModel();
+    }
+
+    setGameCount(prev => prev + 1);
+  }, [
     csvData,
     trainedModel,
     concursoNumber,
-    setEvolutionData,
-    generation,
+    gameCount,
     addLog,
-    updateInterval,
-    trainingData,
-    setTrainingData,
-    setNumbers,
-    setDates,
-    setNeuralNetworkVisualization,
-    setBoardNumbers,
-    setModelMetrics,
-    setConcursoNumber,
-    setGameCount,
-    (title, description) => toast({ title, description })
-  );
+    updatePredictiveAnalysis,
+    validateCurrentModel,
+    setBoardNumbers
+  ]);
 
   const evolveGeneration = useCallback(async () => {
     const bestPlayers = selectBestPlayers(players);
@@ -124,7 +192,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
       });
     }
-  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData]);
+  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData, setPlayers, addLog]);
 
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     setFrequencyData(newFrequencyData);
@@ -152,7 +220,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       });
       return newMode;
     });
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     initializePlayers();
@@ -186,5 +254,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     gameCount,
     isManualMode,
     toggleManualMode,
+    validationMetrics,
+    timeSeriesAnalysis,
+    correlationAnalysis,
+    validateCurrentModel,
+    updatePredictiveAnalysis,
   };
 };
