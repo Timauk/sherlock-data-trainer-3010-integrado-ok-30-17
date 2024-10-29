@@ -22,7 +22,7 @@ const implementationChecklist: ChecklistItem[] = [
       { task: "Implementar retreinamento periódico do modelo", completed: true },
       { task: "Adicionar threads de trabalho para cálculos pesados", completed: true },
       { task: "Implementar ensemble learning com modelos especializados", completed: true },
-      { task: "Configurar monitoramento de desempenho básico", completed: false }
+      { task: "Configurar monitoramento de desempenho básico", completed: true }
     ]
   },
   {
