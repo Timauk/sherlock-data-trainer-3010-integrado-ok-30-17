@@ -28,10 +28,10 @@ const implementationChecklist: ChecklistItem[] = [
   {
     title: "Fase 2: Otimização de Performance",
     items: [
-      { task: "Implementar processamento em lote para previsões", completed: false },
-      { task: "Configurar cache do lado do servidor", completed: false },
-      { task: "Implementar compressão de dados históricos", completed: false },
-      { task: "Otimizar E/S de disco para checkpoints", completed: false }
+      { task: "Implementar processamento em lote para previsões", completed: true },
+      { task: "Configurar cache do lado do servidor", completed: true },
+      { task: "Implementar compressão de dados históricos", completed: true },
+      { task: "Otimizar E/S de disco para checkpoints", completed: true }
     ]
   },
   {
@@ -159,3 +159,4 @@ const ImplementationChecklist = () => {
 };
 
 export default ImplementationChecklist;
+
