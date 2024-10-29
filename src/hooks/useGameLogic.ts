@@ -15,7 +15,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [concursoNumber, setConcursoNumber] = useState(0);
   const [isInfiniteMode, setIsInfiniteMode] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<Array<{ message: string; matches?: number }>>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
   const [dates, setDates] = useState<Date[]>([]);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState(null);
@@ -35,7 +35,12 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
 
     const predictions = await Promise.all(
       players.map(async (player) => {
-        const inputTensor = tf.tensor2d([currentBoardNumbers]);
+        // Create input tensor with shape [1,17]
+        const normalizedConcurso = concursoNumber / csvData.length;
+        const normalizedTime = Date.now() / (1000 * 60 * 60 * 24 * 365);
+        const inputData = [...currentBoardNumbers, normalizedConcurso, normalizedTime];
+        const inputTensor = tf.tensor2d([inputData], [1, 17]);
+        
         const prediction = trainedModel.predict(inputTensor) as tf.Tensor;
         const result = Array.from(await prediction.data());
         inputTensor.dispose();
@@ -140,7 +145,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     isInfiniteMode,
     setIsInfiniteMode,
     logs,
-    addLog: (message: string) => setLogs(prev => [...prev, message]),
+    addLog: (message: string, matches?: number) => 
+      setLogs(prev => [...prev, { message, matches }]),
     numbers,
     setNumbers,
     dates,
@@ -152,6 +158,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     initializePlayers,
     gameLoop,
     evolveGeneration,
-    isManualMode: false
+    isManualMode: false,
+    trainedModel
   };
 };
