@@ -4,7 +4,6 @@ import { Save, RotateCcw, FolderOpen } from 'lucide-react';
 import { saveCheckpoint, loadLastCheckpoint, createSelectDirectory } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
 import { useGameState } from '@/hooks/useGameState';
-import { useGameEvolution } from '@/hooks/useGameEvolution';
 
 interface CheckpointControlsProps {
   savePath: string;
@@ -19,14 +18,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
 }) => {
   const { toast } = useToast();
   const gameState = useGameState();
-  const { evolutionData } = useGameEvolution(
-    gameState.players,
-    gameState.setPlayers,
-    gameState.generation,
-    gameState.setGeneration,
-    gameState.gameCount,
-    () => {}
-  );
   const selectDirectory = createSelectDirectory({ toast });
 
   const handleSelectDirectory = async () => {
@@ -52,7 +43,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const checkpointData = {
         ...gameState,
-        evolutionData,
         timestamp: new Date().toISOString(),
         path: savePath,
       };
