@@ -11,13 +11,34 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = 3001;
 
+// Aumenta o limite de dados mas adiciona compressão
 app.use(cors());
-app.use(express.json({ limit: '100mb' })); // Aumentado para comportar mais dados
+app.use(express.json({ limit: '50mb' }));
+app.use(require('compression')());
+
+// Cache em memória para checkpoints recentes
+const checkpointCache = new Map();
+const MAX_CACHE_SIZE = 10;
 
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 if (!fs.existsSync(checkpointsDir)) {
   fs.mkdirSync(checkpointsDir);
 }
+
+// Limpeza periódica de dados antigos
+const cleanOldCheckpoints = () => {
+  const files = fs.readdirSync(checkpointsDir)
+    .filter(f => f.startsWith('checkpoint-'))
+    .sort()
+    .reverse();
+
+  // Mantém apenas os últimos 50 checkpoints
+  if (files.length > 50) {
+    files.slice(50).forEach(file => {
+      fs.unlinkSync(path.join(checkpointsDir, file));
+    });
+  }
+};
 
 app.post('/api/checkpoint', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -33,30 +54,38 @@ app.post('/api/checkpoint', (req, res) => {
       uptime: process.uptime()
     },
     gameState: {
-      players: req.body.players || [],
-      evolutionData: req.body.evolutionData || [],
+      // Mantém apenas os dados essenciais dos últimos 1000 concursos
+      players: (req.body.players || []).slice(-1000),
+      evolutionData: (req.body.evolutionData || []).slice(-1000),
       generation: req.body.generation || 0,
       modelState: req.body.modelState || null,
-      trainingHistory: req.body.trainingHistory || [],
+      trainingHistory: (req.body.trainingHistory || []).slice(-1000),
       frequencyAnalysis: req.body.frequencyAnalysis || {},
       lunarAnalysis: req.body.lunarAnalysis || {},
-      predictions: req.body.predictions || [],
-      scores: req.body.scores || [],
+      predictions: (req.body.predictions || []).slice(-100),
+      scores: (req.body.scores || []).slice(-1000),
       championData: req.body.championData || null,
-      boardNumbers: req.body.boardNumbers || [],
+      boardNumbers: (req.body.boardNumbers || []).slice(-100),
       concursoNumber: req.body.concursoNumber || 0,
       gameCount: req.body.gameCount || 0,
       isInfiniteMode: req.body.isInfiniteMode || false,
       isManualMode: req.body.isManualMode || false,
-      logs: req.body.logs || []
+      logs: (req.body.logs || []).slice(-100)
     },
     checkpointType: req.body.checkpointType || 'auto',
     checkpointNumber: fs.readdirSync(checkpointsDir).length + 1
   };
 
+  // Salva no cache e no disco
+  checkpointCache.set(filename, checkpointData);
+  if (checkpointCache.size > MAX_CACHE_SIZE) {
+    const oldestKey = checkpointCache.keys().next().value;
+    checkpointCache.delete(oldestKey);
+  }
+
   fs.writeFileSync(filepath, JSON.stringify(checkpointData, null, 2));
-  console.log(`Checkpoint completo salvo: ${filename}`);
-  
+  cleanOldCheckpoints();
+
   res.json({ 
     message: 'Checkpoint salvo com sucesso', 
     filename,
@@ -76,9 +105,19 @@ app.get('/api/checkpoint/latest', (req, res) => {
     }
 
     const latestFile = files[0];
-    const data = fs.readFileSync(path.join(checkpointsDir, latestFile));
     
-    res.json(JSON.parse(data));
+    // Verifica primeiro no cache
+    if (checkpointCache.has(latestFile)) {
+      return res.json(checkpointCache.get(latestFile));
+    }
+
+    const data = fs.readFileSync(path.join(checkpointsDir, latestFile));
+    const checkpoint = JSON.parse(data);
+    
+    // Adiciona ao cache
+    checkpointCache.set(latestFile, checkpoint);
+    
+    res.json(checkpoint);
   } catch (error) {
     res.status(500).json({ 
       message: 'Erro ao carregar checkpoint', 
