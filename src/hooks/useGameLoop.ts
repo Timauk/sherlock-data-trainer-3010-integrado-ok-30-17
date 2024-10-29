@@ -48,7 +48,7 @@ export const useGameLoop = (
     
     // Add cross-validation on historical data
     const validationMetrics = performCrossValidation(
-      players[0].predictions,
+      [players[0].predictions], // Wrap in array to match expected type
       csvData.slice(Math.max(0, concursoNumber - 10), concursoNumber)
     );
 
@@ -74,14 +74,12 @@ export const useGameLoop = (
           { lunarPhase, lunarPatterns }
         );
 
-        // Calculate confidence score for prediction
         const confidenceScore = calculateConfidenceScore(
           prediction,
           player,
-          csvData.slice(Math.max(0, concursoNumber - 100))
+          [currentBoardNumbers] // Wrap in array to match expected type
         );
 
-        // Add to feedback system
         feedbackSystem.addFeedback(prediction, currentBoardNumbers, confidenceScore.score);
 
         return prediction;

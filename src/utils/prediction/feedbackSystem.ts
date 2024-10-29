@@ -49,7 +49,7 @@ class FeedbackSystem {
     const confidences = this.feedback.map(f => f.confidence);
     const accuracies = this.feedback.map(f => f.matches / 15);
     
-    return calculateCorrelation(confidences, accuracies);
+    return this.calculateCorrelation(confidences, accuracies);
   }
 
   private calculateCorrelation(x: number[], y: number[]): number {
