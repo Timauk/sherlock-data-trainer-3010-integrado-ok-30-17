@@ -11,14 +11,15 @@ import GameStatusChecklist from '@/components/GameStatusChecklist';
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
+  const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const [playerCount, setPlayerCount] = useState(10);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
-  const gameLogic = useGameLogic(csvData, trainedModel);
+  const gameLogic = useGameLogic(csvData, trainedModel, playerCount);
 
   const loadCSV = useCallback(async (file: File) => {
     try {
@@ -131,13 +132,9 @@ const PlayPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [isPlaying, csvData, gameLogic, gameSpeed]);
 
-  const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
-    setGameSpeed(newSpeed);
-    toast({
-      title: "Velocidade Ajustada",
-      description: `${newSpeed}ms por jogada`,
-    });
+  const handlePlayerCountChange = (count: number) => {
+    setPlayerCount(count);
+    gameLogic.initializePlayers(count);
   };
 
   return (
@@ -150,7 +147,7 @@ const PlayPage: React.FC = () => {
           max={1900}
           min={100}
           step={100}
-          onValueChange={handleSpeedChange}
+          onValueChange={(value) => setGameSpeed(2000 - value[0])}
           className="w-full"
         />
         <p className="text-sm text-muted-foreground mt-1">
@@ -159,9 +156,13 @@ const PlayPage: React.FC = () => {
       </div>
       <PlayPageContent
         isPlaying={isPlaying}
-        onPlay={playGame}
-        onPause={pauseGame}
-        onReset={resetGame}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onReset={() => {
+          setIsPlaying(false);
+          setProgress(0);
+          gameLogic.initializePlayers(playerCount);
+        }}
         onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onCsvUpload={loadCSV}
         onModelUpload={loadModel}
@@ -169,10 +170,11 @@ const PlayPage: React.FC = () => {
         progress={progress}
         generation={gameLogic.generation}
         gameLogic={gameLogic}
+        onPlayersChange={handlePlayerCountChange}
+        currentPlayerCount={playerCount}
       />
     </div>
   );
 };
 
 export default PlayPage;
-

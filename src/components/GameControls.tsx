@@ -11,7 +11,8 @@ interface GameControlsProps {
   onPause: () => void;
   onReset: () => void;
   onThemeToggle: () => void;
-  onPlayersChange?: (count: number) => void;
+  onPlayersChange: (count: number) => void;
+  currentPlayerCount?: number;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -20,10 +21,11 @@ const GameControls: React.FC<GameControlsProps> = ({
   onPause,
   onReset,
   onThemeToggle,
-  onPlayersChange
+  onPlayersChange,
+  currentPlayerCount = 10
 }) => {
   const [gpuEnabled, setGpuEnabled] = useState(false);
-  const [playerCount, setPlayerCount] = useState(10);
+  const [playerCount, setPlayerCount] = useState(currentPlayerCount);
   const { toast } = useToast();
 
   const toggleGPU = async () => {
@@ -74,13 +76,11 @@ const GameControls: React.FC<GameControlsProps> = ({
   const handlePlayerCountChange = (value: number[]) => {
     const count = value[0];
     setPlayerCount(count);
-    if (onPlayersChange) {
-      onPlayersChange(count);
-      toast({
-        title: "Número de Jogadores Atualizado",
-        description: `Agora usando ${count} jogadores.`,
-      });
-    }
+    onPlayersChange(count);
+    toast({
+      title: "Número de Jogadores Atualizado",
+      description: `${count} jogadores serão usados na próxima geração.`,
+    });
   };
 
   return (
