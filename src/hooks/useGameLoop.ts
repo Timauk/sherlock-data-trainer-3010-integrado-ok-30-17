@@ -5,6 +5,10 @@ import { makePrediction } from '@/utils/predictionUtils';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
 import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
+import { performCrossValidation } from '@/utils/validation/crossValidation';
+import { calculateConfidenceScore } from '@/utils/prediction/confidenceScoring';
+import { feedbackSystem } from '@/utils/prediction/feedbackSystem';
+import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
 
 export const useGameLoop = (
   players: Player[],
@@ -42,35 +46,46 @@ export const useGameLoop = (
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
     
-    // Add lunar phase analysis
+    // Add cross-validation on historical data
+    const validationMetrics = performCrossValidation(
+      players[0].predictions,
+      csvData.slice(Math.max(0, concursoNumber - 10), concursoNumber)
+    );
+
     const currentDate = new Date();
     const lunarPhase = getLunarPhase(currentDate);
     const lunarPatterns = analyzeLunarPatterns([currentDate], [currentBoardNumbers]);
     
-    // Update historical data with new information
     setNumbers(currentNumbers => {
       const newNumbers = [...currentNumbers, currentBoardNumbers].slice(-100);
-      // Analyze frequency patterns
-      const frequencyMap = new Map<number, number>();
-      newNumbers.forEach(nums => {
-        nums.forEach(n => frequencyMap.set(n, (frequencyMap.get(n) || 0) + 1));
-      });
       return newNumbers;
     });
     
     setDates(currentDates => [...currentDates, currentDate].slice(-100));
 
     const playerPredictions = await Promise.all(
-      players.map(player => 
-        makePrediction(
+      players.map(async player => {
+        const prediction = await makePrediction(
           trainedModel, 
           currentBoardNumbers, 
           player.weights, 
           concursoNumber,
           setNeuralNetworkVisualization,
           { lunarPhase, lunarPatterns }
-        )
-      )
+        );
+
+        // Calculate confidence score for prediction
+        const confidenceScore = calculateConfidenceScore(
+          prediction,
+          player,
+          csvData.slice(Math.max(0, concursoNumber - 100))
+        );
+
+        // Add to feedback system
+        feedbackSystem.addFeedback(prediction, currentBoardNumbers, confidenceScore.score);
+
+        return prediction;
+      })
     );
 
     let totalMatches = 0;
@@ -90,14 +105,15 @@ export const useGameLoop = (
       randomMatches += randomMatch;
       currentGameRandomMatches += randomMatch;
 
+      // Record temporal accuracy
+      temporalAccuracyTracker.recordAccuracy(matches, 15);
+
       const reward = calculateReward(matches);
       
-      // Log significant achievements
       if (matches >= 11) {
         const logMessage = logReward(matches, player.id);
         addLog(logMessage, matches);
         
-        // Notify about exceptional performance
         if (matches >= 13) {
           showToast?.("Desempenho Excepcional!", 
             `Jogador ${player.id} acertou ${matches} números!`);
@@ -131,7 +147,6 @@ export const useGameLoop = (
       }))
     ]);
 
-    // Enhanced training data with lunar and frequency information
     const enhancedTrainingData = [...currentBoardNumbers, 
       ...updatedPlayers[0].predictions,
       lunarPhase === 'Cheia' ? 1 : 0,
@@ -143,7 +158,6 @@ export const useGameLoop = (
     setTrainingData(currentTrainingData => 
       [...currentTrainingData, enhancedTrainingData]);
 
-    // Update model more frequently for better learning
     if (concursoNumber % Math.min(updateInterval, 50) === 0 && trainingData.length > 0) {
       await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
       setTrainingData([]);
