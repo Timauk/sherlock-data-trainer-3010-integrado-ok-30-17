@@ -112,6 +112,11 @@ const PlayPage: React.FC = () => {
     gameLogic.addLog("Jogo reiniciado.");
   }, [gameLogic]);
 
+  const handlePlayerCountChange = (count: number) => {
+    setPlayerCount(count);
+    gameLogic.initializePlayers(count);
+  };
+
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     if (isPlaying) {
@@ -121,7 +126,7 @@ const PlayPage: React.FC = () => {
           const newProgress = prevProgress + (100 / csvData.length);
           if (newProgress >= 100) {
             if (!gameLogic.isManualMode) {
-              gameLogic.evolveGeneration();
+              gameLogic.initializePlayers(playerCount);
             }
             return gameLogic.isInfiniteMode ? 0 : 100;
           }
@@ -130,12 +135,7 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed]);
-
-  const handlePlayerCountChange = (count: number) => {
-    setPlayerCount(count);
-    gameLogic.initializePlayers(count);
-  };
+  }, [isPlaying, csvData, gameLogic, gameSpeed, playerCount]);
 
   return (
     <div className="p-6">

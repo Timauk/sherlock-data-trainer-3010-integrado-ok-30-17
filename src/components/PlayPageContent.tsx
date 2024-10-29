@@ -27,7 +27,8 @@ interface PlayPageContentProps {
   progress: number;
   generation: number;
   gameLogic: ReturnType<typeof useGameLogic>;
-  onPlayersChange?: (count: number) => void;
+  onPlayersChange: (count: number) => void;
+  currentPlayerCount?: number;
 }
 
 const PlayPageContent: React.FC<PlayPageContentProps> = ({
