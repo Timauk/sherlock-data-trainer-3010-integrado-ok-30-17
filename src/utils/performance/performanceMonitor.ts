@@ -1,4 +1,4 @@
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PerformanceMetrics {
   memoryUsage: number;
@@ -8,10 +8,22 @@ interface PerformanceMetrics {
   timestamp: Date;
 }
 
+// Extend Performance interface to include memory
+declare global {
+  interface Performance {
+    memory?: {
+      usedJSHeapSize: number;
+      totalJSHeapSize: number;
+      jsHeapSizeLimit: number;
+    };
+  }
+}
+
 class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private metrics: PerformanceMetrics[] = [];
   private readonly maxStoredMetrics = 1000;
+  private toast = useToast();
 
   private constructor() {}
 
@@ -32,18 +44,16 @@ class PerformanceMonitor {
 
     this.metrics.push(metrics);
     
-    // Maintain only the last maxStoredMetrics entries
     if (this.metrics.length > this.maxStoredMetrics) {
       this.metrics = this.metrics.slice(-this.maxStoredMetrics);
     }
 
-    // Alert if performance degrades
     this.checkPerformanceThresholds(metrics);
   }
 
   private checkPerformanceThresholds(metrics: PerformanceMetrics): void {
     if (metrics.modelAccuracy < 0.5) {
-      toast({
+      this.toast.toast({
         title: "Alerta de Desempenho",
         description: "Precisão do modelo está abaixo do esperado",
         variant: "destructive"
@@ -51,7 +61,7 @@ class PerformanceMonitor {
     }
 
     if (metrics.predictionLatency > 1000) {
-      toast({
+      this.toast.toast({
         title: "Alerta de Latência",
         description: "Tempo de predição está alto",
         variant: "destructive"
@@ -60,7 +70,7 @@ class PerformanceMonitor {
 
     const memoryThresholdGB = 1.5;
     if (metrics.memoryUsage > memoryThresholdGB * 1024 * 1024 * 1024) {
-      toast({
+      this.toast.toast({
         title: "Alerta de Memória",
         description: "Uso de memória está alto",
         variant: "destructive"
