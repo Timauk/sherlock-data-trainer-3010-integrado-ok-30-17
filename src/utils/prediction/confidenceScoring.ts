@@ -47,16 +47,15 @@ const analyzePatternStrength = (prediction: number[], historicalData: number[][]
     });
   });
 
-  const totalGames = historicalData.length;
+  const totalGames = historicalData.length || 1; // Prevent division by zero
   return prediction.reduce((acc, num) => {
     const frequency = frequencyMap.get(num) || 0;
     return acc + (frequency / totalGames);
   }, 0) / prediction.length;
 };
 
-const calculateTemporalRelevance = (predictions: number[][]): number => {
-  if (predictions.length < 2) return 0;
-  const recentPredictions = predictions.slice(-5);
-  const uniqueNumbers = new Set(recentPredictions.flat());
+const calculateTemporalRelevance = (predictions: number[]): number => {
+  if (!predictions.length) return 0;
+  const uniqueNumbers = new Set(predictions);
   return uniqueNumbers.size / (25 * 0.6);
 };
