@@ -36,9 +36,10 @@ class PerformanceMonitor {
 
   recordMetrics(accuracy: number, predictionTime: number): void {
     const metrics: PerformanceMetrics = {
-      memoryUsage: window.performance.memory?.usedJSHeapSize || 0,
+      memoryUsage: this.getMemoryUsage(),
       modelAccuracy: accuracy,
       predictionLatency: predictionTime,
+      cpuUsage: this.getCPUUsage(),
       timestamp: new Date()
     };
 
@@ -49,6 +50,28 @@ class PerformanceMonitor {
     }
 
     this.checkPerformanceThresholds(metrics);
+  }
+
+  getMemoryUsage(): number {
+    if (window.performance.memory) {
+      return window.performance.memory.usedJSHeapSize / window.performance.memory.jsHeapSizeLimit;
+    }
+    return 0;
+  }
+
+  getCPUUsage(): number | undefined {
+    // Note: This is a simplified version since actual CPU usage
+    // measurement in browsers is limited
+    if ('requestIdleCallback' in window) {
+      let lastTime = performance.now();
+      return new Promise<number>((resolve) => {
+        requestIdleCallback((deadline) => {
+          const cpuUsage = 1 - deadline.timeRemaining() / (performance.now() - lastTime);
+          resolve(cpuUsage);
+        });
+      });
+    }
+    return undefined;
   }
 
   private checkPerformanceThresholds(metrics: PerformanceMetrics): void {
@@ -82,6 +105,7 @@ class PerformanceMonitor {
     avgAccuracy: number;
     avgLatency: number;
     avgMemory: number;
+    avgCPU?: number;
   } {
     const timeThreshold = new Date(Date.now() - timeWindowMinutes * 60 * 1000);
     const recentMetrics = this.metrics.filter(m => m.timestamp > timeThreshold);
@@ -90,10 +114,13 @@ class PerformanceMonitor {
       return { avgAccuracy: 0, avgLatency: 0, avgMemory: 0 };
     }
 
+    const cpuMetrics = recentMetrics.filter(m => m.cpuUsage !== undefined);
+
     return {
       avgAccuracy: this.calculateAverage(recentMetrics.map(m => m.modelAccuracy)),
       avgLatency: this.calculateAverage(recentMetrics.map(m => m.predictionLatency)),
-      avgMemory: this.calculateAverage(recentMetrics.map(m => m.memoryUsage))
+      avgMemory: this.calculateAverage(recentMetrics.map(m => m.memoryUsage)),
+      avgCPU: cpuMetrics.length > 0 ? this.calculateAverage(cpuMetrics.map(m => m.cpuUsage!)) : undefined
     };
   }
 

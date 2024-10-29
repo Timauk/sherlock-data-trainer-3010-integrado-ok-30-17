@@ -73,10 +73,10 @@ const implementationChecklist: ChecklistItem[] = [
   {
     title: "Fase 7: Monitoramento",
     items: [
-      { task: "Implementar métricas de desempenho do modelo", completed: false },
-      { task: "Adicionar tracking de taxa de aprendizagem", completed: false },
-      { task: "Configurar monitoramento de recursos", completed: false },
-      { task: "Implementar tracking de erros", completed: false }
+      { task: "Implementar métricas de desempenho do modelo", completed: true },
+      { task: "Adicionar tracking de taxa de aprendizagem", completed: true },
+      { task: "Configurar monitoramento de recursos", completed: true },
+      { task: "Implementar tracking de erros", completed: true }
     ]
   },
   {
