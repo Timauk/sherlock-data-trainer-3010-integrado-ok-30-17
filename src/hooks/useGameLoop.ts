@@ -46,9 +46,8 @@ export const useGameLoop = (
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
     setBoardNumbers(currentBoardNumbers);
     
-    // Add cross-validation on historical data
     const validationMetrics = performCrossValidation(
-      [players[0].predictions], // Wrap in array to match expected type
+      [players[0].predictions],
       csvData.slice(Math.max(0, concursoNumber - 10), concursoNumber)
     );
 
@@ -77,7 +76,7 @@ export const useGameLoop = (
         const confidenceScore = calculateConfidenceScore(
           prediction,
           player,
-          [currentBoardNumbers] // Wrap in array to match expected type
+          [currentBoardNumbers] // Pass as array of arrays
         );
 
         feedbackSystem.addFeedback(prediction, currentBoardNumbers, confidenceScore.score);
