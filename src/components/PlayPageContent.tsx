@@ -58,10 +58,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
   generation,
   gameLogic
 }) => {
-  const champion = gameLogic.players.reduce((prev, current) => 
-    (current.fitness > prev.fitness) ? current : prev, 
-    gameLogic.players[0]
-  );
+  // Add null check for players array
+  const champion = gameLogic.players && gameLogic.players.length > 0 
+    ? gameLogic.players.reduce((prev, current) => 
+        (current.fitness > prev.fitness) ? current : prev, 
+        gameLogic.players[0])
+    : null;
 
   const generationStats = React.useMemo(() => gameLogic.evolutionData.reduce((acc, curr) => {
     const genData = acc.find(g => g.generation === curr.generation);
@@ -83,14 +85,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
     <div className="flex flex-col gap-4">
       <Progress 
         value={progress} 
-        showPercentage 
-        label="Progresso da Geração Atual" 
         className="w-full"
       />
       
       <RealTimeFeedback
         accuracy={gameLogic.modelMetrics.accuracy * 100}
-        predictionConfidence={champion.fitness * 100}
+        predictionConfidence={champion?.fitness ? champion.fitness * 100 : 0}
         processingSpeed={90}
         memoryUsage={75}
       />
@@ -134,22 +134,26 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
 
         <div className="space-y-4">
           <Suspense fallback={<LoadingFallback />}>
-            <PlayerDetails 
-              player={champion}
-              historicalPerformance={gameLogic.evolutionData
-                .filter(data => data.playerId === champion.id)
-                .map(data => ({
-                  generation: data.generation,
-                  score: data.score,
-                  matches: data.fitness
-                }))}
-            />
+            {champion && (
+              <>
+                <PlayerDetails 
+                  player={champion}
+                  historicalPerformance={gameLogic.evolutionData
+                    .filter(data => data.playerId === champion.id)
+                    .map(data => ({
+                      generation: data.generation,
+                      score: data.score,
+                      matches: data.fitness
+                    }))}
+                />
 
-            <ChampionPredictions
-              champion={champion}
-              trainedModel={gameLogic.trainedModel}
-              lastConcursoNumbers={gameLogic.boardNumbers}
-            />
+                <ChampionPredictions
+                  champion={champion}
+                  trainedModel={gameLogic.trainedModel}
+                  lastConcursoNumbers={gameLogic.boardNumbers}
+                />
+              </>
+            )}
           </Suspense>
         </div>
       </div>
