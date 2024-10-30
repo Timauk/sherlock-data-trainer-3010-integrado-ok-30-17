@@ -1,5 +1,3 @@
-import { useToast } from "@/components/ui/use-toast";
-
 interface PerformanceMetrics {
   memoryUsage: number;
   modelAccuracy: number;
@@ -8,7 +6,6 @@ interface PerformanceMetrics {
   timestamp: Date;
 }
 
-// Extend Performance interface to include memory
 declare global {
   interface Performance {
     memory?: {
@@ -23,11 +20,9 @@ class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private metrics: PerformanceMetrics[] = [];
   private readonly maxStoredMetrics = 1000;
-  private toast = useToast();
   private lastCpuUsage: number | null = null;
 
   private constructor() {
-    // Initialize CPU monitoring
     this.startCpuMonitoring();
   }
 
@@ -44,7 +39,6 @@ class PerformanceMonitor {
         const lastTime = performance.now();
         requestIdleCallback((deadline) => {
           this.lastCpuUsage = 1 - deadline.timeRemaining() / (performance.now() - lastTime);
-          // Schedule next update
           setTimeout(updateCpuUsage, 1000);
         });
       };
@@ -67,7 +61,18 @@ class PerformanceMonitor {
       this.metrics = this.metrics.slice(-this.maxStoredMetrics);
     }
 
-    this.checkPerformanceThresholds(metrics);
+    // Em vez de usar toast diretamente, vamos emitir um evento que pode ser capturado pelos componentes React
+    if (metrics.modelAccuracy < 0.5 || metrics.predictionLatency > 1000 || metrics.memoryUsage > 0.8) {
+      const event = new CustomEvent('performanceAlert', { 
+        detail: {
+          type: metrics.modelAccuracy < 0.5 ? 'accuracy' : 
+                metrics.predictionLatency > 1000 ? 'latency' : 'memory',
+          value: metrics.modelAccuracy < 0.5 ? metrics.modelAccuracy : 
+                metrics.predictionLatency > 1000 ? metrics.predictionLatency : metrics.memoryUsage
+        }
+      });
+      window.dispatchEvent(event);
+    }
   }
 
   getMemoryUsage(): number {
@@ -79,33 +84,6 @@ class PerformanceMonitor {
 
   getCPUUsage(): number | null {
     return this.lastCpuUsage;
-  }
-
-  private checkPerformanceThresholds(metrics: PerformanceMetrics): void {
-    if (metrics.modelAccuracy < 0.5) {
-      this.toast.toast({
-        title: "Alerta de Desempenho",
-        description: "Precisão do modelo está abaixo do esperado",
-        variant: "destructive"
-      });
-    }
-
-    if (metrics.predictionLatency > 1000) {
-      this.toast.toast({
-        title: "Alerta de Latência",
-        description: "Tempo de predição está alto",
-        variant: "destructive"
-      });
-    }
-
-    const memoryThresholdGB = 1.5;
-    if (metrics.memoryUsage > memoryThresholdGB * 1024 * 1024 * 1024) {
-      this.toast.toast({
-        title: "Alerta de Memória",
-        description: "Uso de memória está alto",
-        variant: "destructive"
-      });
-    }
   }
 
   getAverageMetrics(timeWindowMinutes: number = 60): {
