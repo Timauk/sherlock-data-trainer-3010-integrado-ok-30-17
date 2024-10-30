@@ -3,6 +3,7 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import GameMetrics from './GameMetrics';
 import ControlPanel from './GameControls/ControlPanel';
 import AnalysisTabs from './GameAnalysis/AnalysisTabs';
+import ChampionPredictions from './ChampionPredictions';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -63,6 +64,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
             isManualMode={gameLogic.isManualMode}
           />
         </div>
+        
+        <ChampionPredictions
+          champion={champion}
+          trainedModel={gameLogic.trainedModel}
+          lastConcursoNumbers={gameLogic.boardNumbers}
+        />
       </div>
 
       <AnalysisTabs
