@@ -9,9 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import SystemDiagnostics from '@/components/SystemDiagnostics'; // Import the new diagnostics component
+import SystemDiagnostics from '@/components/SystemDiagnostics';
 
-// Lazy load components that aren't immediately visible
 const EnhancedLogDisplay = lazy(() => import('@/components/EnhancedLogDisplay'));
 const NeuralNetworkVisualization = lazy(() => import('@/components/NeuralNetworkVisualization'));
 const ModelMetrics = lazy(() => import('@/components/ModelMetrics'));
