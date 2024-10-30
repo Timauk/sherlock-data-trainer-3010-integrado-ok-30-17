@@ -1,9 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const compression = require('compression');
-const fs = require('fs');
-const path = require('path');
-const NodeCache = require('node-cache');
+import express from 'express';
+import cors from 'cors';
+import compression from 'compression';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import NodeCache from 'node-cache';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
