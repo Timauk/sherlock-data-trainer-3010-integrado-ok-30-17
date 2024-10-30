@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { usePerformanceAlerts } from "@/hooks/usePerformanceAlerts";
 import { performanceMonitor } from "@/utils/performance/performanceMonitor";
 import { modelMonitoring } from "@/utils/monitoring/modelMonitoring";
 import { feedbackSystem } from "@/utils/prediction/feedbackSystem";
+import DiagnosticResults from './DiagnosticResults';
+import { SystemStatus, SpecializedModelsStatus, DataQualityMetrics, AnalysisStatus } from '@/types/monitoring';
 
-interface DiagnosticResult {
+export interface DiagnosticResult {
   phase: string;
   status: 'success' | 'error' | 'warning';
   message: string;
@@ -23,21 +24,15 @@ const SystemDiagnostics = () => {
   usePerformanceAlerts();
 
   const getUIComponentCount = () => {
-    // Conta elementos com data-testid ou role
     return document.querySelectorAll('[data-testid], [role]').length;
-  };
-
-  const getModelAccuracy = () => {
-    const metrics = modelMonitoring.getMetricsSummary();
-    return metrics?.avgAccuracy || 0;
   };
 
   const getPerformanceMetrics = () => {
     const metrics = performanceMonitor.getAverageMetrics();
     return {
-      avgLatency: metrics?.avgLatency || 0,
-      memoryUsage: metrics?.memoryUsage || 0,
-      cpuUsage: metrics?.cpuUsage || 0
+      avgLatency: metrics.avgLatency || 0,
+      avgMemory: metrics.avgMemory || 0,
+      avgCPU: metrics.avgCPU || 0
     };
   };
 
@@ -48,14 +43,14 @@ const SystemDiagnostics = () => {
 
     try {
       // Fase 1: Gestão de Dados e IA
-      const accuracy = getModelAccuracy();
+      const metrics = modelMonitoring.getMetricsSummary();
       diagnosticResults.push({
         phase: "Fase 1: Gestão de Dados e IA",
-        status: accuracy > 0.5 ? 'success' : 'warning',
-        message: `Precisão média: ${(accuracy * 100).toFixed(2)}%`,
-        details: `Modelo treinado com ${modelMonitoring.getTotalSamples() || 0} amostras`
+        status: metrics.avgAccuracy > 0.5 ? 'success' : 'warning',
+        message: `Precisão média: ${(metrics.avgAccuracy * 100).toFixed(2)}%`,
+        details: `Modelo treinado com ${metrics.totalSamples} amostras`
       });
-      setProgress(12.5);
+      setProgress(25);
 
       // Fase 2: Otimização de Performance
       const perfMetrics = getPerformanceMetrics();
@@ -63,9 +58,9 @@ const SystemDiagnostics = () => {
         phase: "Fase 2: Otimização de Performance",
         status: perfMetrics.avgLatency < 1000 ? 'success' : 'warning',
         message: `Latência média: ${perfMetrics.avgLatency.toFixed(2)}ms`,
-        details: `CPU: ${perfMetrics.cpuUsage.toFixed(1)}%, Memória: ${(perfMetrics.memoryUsage / 1024 / 1024).toFixed(1)}MB`
+        details: `CPU: ${perfMetrics.avgCPU.toFixed(1)}%, Memória: ${(perfMetrics.avgMemory / 1024 / 1024).toFixed(1)}MB`
       });
-      setProgress(25);
+      setProgress(50);
 
       // Fase 3: Modelos Especializados
       const specializedModels = modelMonitoring.getSpecializedModelsStatus();
@@ -128,6 +123,7 @@ const SystemDiagnostics = () => {
       });
       setProgress(100);
 
+      setResults(diagnosticResults);
     } catch (error) {
       console.error('Erro durante diagnóstico:', error);
       toast({
@@ -137,35 +133,11 @@ const SystemDiagnostics = () => {
       });
     }
 
-    setResults(diagnosticResults);
     setIsRunning(false);
-
-    // Notificar resultado geral
-    const errors = diagnosticResults.filter(r => r.status === 'error').length;
-    const warnings = diagnosticResults.filter(r => r.status === 'warning').length;
-
-    if (errors > 0) {
-      toast({
-        title: "Diagnóstico Concluído com Erros",
-        description: `Foram encontrados ${errors} erros que precisam de atenção.`,
-        variant: "destructive"
-      });
-    } else if (warnings > 0) {
-      toast({
-        title: "Diagnóstico Concluído com Avisos",
-        description: `Foram encontrados ${warnings} avisos que podem ser melhorados.`,
-      });
-    } else {
-      toast({
-        title: "Diagnóstico Concluído com Sucesso",
-        description: "Todos os sistemas estão funcionando corretamente.",
-      });
-    }
   };
 
   useEffect(() => {
     runDiagnostics();
-    // Executa diagnóstico a cada 5 minutos
     const interval = setInterval(runDiagnostics, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -193,30 +165,7 @@ const SystemDiagnostics = () => {
             </p>
           </div>
         )}
-
-        <div className="space-y-4">
-          {results.map((result, index) => (
-            <Alert 
-              key={index} 
-              variant={result.status === 'error' ? 'destructive' : 'default'}
-              className={
-                result.status === 'warning' 
-                  ? 'border-yellow-500 dark:border-yellow-400' 
-                  : result.status === 'success'
-                  ? 'border-green-500 dark:border-green-400'
-                  : ''
-              }
-            >
-              <h3 className="font-medium">{result.phase}</h3>
-              <AlertDescription>
-                <p className="font-medium">{result.message}</p>
-                {result.details && (
-                  <p className="text-sm text-muted-foreground mt-1">{result.details}</p>
-                )}
-              </AlertDescription>
-            </Alert>
-          ))}
-        </div>
+        <DiagnosticResults results={results} />
       </CardContent>
     </Card>
   );
