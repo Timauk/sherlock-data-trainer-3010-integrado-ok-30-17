@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 interface Weight {
@@ -28,6 +28,7 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
   const { toast } = useToast();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editedWeights, setEditedWeights] = useState<Weight[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const maxScore = Math.max(...players.map(p => p.score));
 
   const handlePlayerClick = (player: Player) => {
@@ -37,6 +38,7 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
     }));
     setEditedWeights(weights);
     setSelectedPlayer(player);
+    setIsDialogOpen(true);
   };
 
   const handleWeightChange = (index: number, newValue: number) => {
@@ -47,7 +49,9 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
 
   const handleSaveWeights = () => {
     if (selectedPlayer && onUpdatePlayer) {
-      onUpdatePlayer(selectedPlayer.id, editedWeights.map(w => w.value));
+      const newWeights = editedWeights.map(w => w.value);
+      onUpdatePlayer(selectedPlayer.id, newWeights);
+      setIsDialogOpen(false);
       toast({
         title: "Pesos Atualizados",
         description: `Os pesos do Jogador #${selectedPlayer.id} foram atualizados com sucesso.`
@@ -61,18 +65,13 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
       : 'Aguardando próxima rodada';
   };
 
-  const calculateMatches = (player: Player, boardNumbers: number[]) => {
-    if (!player.predictions.length || !boardNumbers.length) return 0;
-    return player.predictions.filter(num => boardNumbers.includes(num)).length;
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
       {players.map(player => {
         const isTopPlayer = player.score === maxScore;
         
         return (
-          <Dialog key={player.id}>
+          <Dialog key={player.id} open={isDialogOpen && selectedPlayer?.id === player.id} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <div 
                 onClick={() => handlePlayerClick(player)}
