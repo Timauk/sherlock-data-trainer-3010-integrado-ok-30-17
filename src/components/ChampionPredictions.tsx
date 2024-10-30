@@ -16,7 +16,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
   trainedModel,
   lastConcursoNumbers
 }) => {
-  const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number }>>([]);
+  const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number }>>([]);
   const { toast } = useToast();
 
   const generatePredictions = async () => {
@@ -31,61 +31,70 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
 
     try {
       const newPredictions = [];
+      // Distribuição dos jogos por objetivo de acertos
+      const targets = [
+        { matches: 11, count: 2 }, // 2 jogos mirando 11 acertos
+        { matches: 12, count: 2 }, // 2 jogos mirando 12 acertos
+        { matches: 13, count: 2 }, // 2 jogos mirando 13 acertos
+        { matches: 14, count: 1 }, // 1 jogo mirando 14 acertos
+        { matches: 15, count: 1 }  // 1 jogo mirando 15 acertos
+      ];
       
-      for (let i = 0; i < 8; i++) {
-        // Add variation to input for each prediction
-        const variationFactor = 0.05; // 5% variation
-        const normalizedInput = [
-          ...lastConcursoNumbers.slice(0, 15).map(n => {
-            const variation = (Math.random() - 0.5) * variationFactor;
-            return (n / 25) * (1 + variation);
-          }),
-          (champion.generation + i) / 1000, // Slightly different generation number
-          (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365) // Different timestamp
-        ];
-        
-        const inputTensor = tf.tensor2d([normalizedInput]);
-        
-        // Make prediction
-        const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
-        const predictionArray = Array.from(await prediction.data());
-        
-        // Apply weights with randomization
-        const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
-          number: idx + 1,
-          weight: predictionArray[idx % predictionArray.length] * 
-                 (champion.weights[idx % champion.weights.length] / 1000) *
-                 (1 + (Math.random() - 0.5) * 0.2) // Add 20% random variation
-        }));
-        
-        // Select numbers with some randomization
-        const selectedNumbers = weightedNumbers
-          .sort((a, b) => b.weight - a.weight)
-          .slice(0, 20) // Get top 20 instead of 15 for more variety
-          .sort(() => Math.random() - 0.5) // Shuffle
-          .slice(0, 15) // Then take 15
-          .map(n => n.number)
-          .sort((a, b) => a - b);
-        
-        // Calculate estimated accuracy with some variation
-        const baseAccuracy = (champion.fitness / 15) * 100;
-        const accuracyVariation = (Math.random() - 0.5) * 5; // ±2.5% variation
-        const estimatedAccuracy = Math.min(Math.max(baseAccuracy + accuracyVariation, 0), 93.33);
-        
-        newPredictions.push({
-          numbers: selectedNumbers,
-          estimatedAccuracy
-        });
+      for (const target of targets) {
+        for (let i = 0; i < target.count; i++) {
+          // Ajusta a variação baseada no objetivo
+          // Quanto menor o número de acertos desejado, maior a variação
+          const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
+          
+          const normalizedInput = [
+            ...lastConcursoNumbers.slice(0, 15).map(n => {
+              const variation = (Math.random() - 0.5) * variationFactor;
+              return (n / 25) * (1 + variation);
+            }),
+            (champion.generation + i) / 1000,
+            (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365)
+          ];
+          
+          const inputTensor = tf.tensor2d([normalizedInput]);
+          const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
+          const predictionArray = Array.from(await prediction.data());
+          
+          // Ajusta os pesos baseado no objetivo
+          const weightAdjustment = target.matches / 15; // Fator de ajuste baseado no objetivo
+          const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
+            number: idx + 1,
+            weight: predictionArray[idx % predictionArray.length] * 
+                   (champion.weights[idx % champion.weights.length] / 1000) *
+                   weightAdjustment *
+                   (1 + (Math.random() - 0.5) * 0.2)
+          }));
+          
+          const selectedNumbers = weightedNumbers
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 20)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 15)
+            .map(n => n.number)
+            .sort((a, b) => a - b);
+          
+          const estimatedAccuracy = (target.matches / 15) * 100;
+          
+          newPredictions.push({
+            numbers: selectedNumbers,
+            estimatedAccuracy,
+            targetMatches: target.matches
+          });
 
-        prediction.dispose();
-        inputTensor.dispose();
+          prediction.dispose();
+          inputTensor.dispose();
+        }
       }
 
       setPredictions(newPredictions);
       
       toast({
         title: "Previsões Geradas",
-        description: "8 jogos diferentes foram gerados com base no desempenho do campeão!"
+        description: "8 jogos foram gerados com diferentes objetivos de acertos!"
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
@@ -112,7 +121,9 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
           <div className="space-y-4">
             {predictions.map((pred, idx) => (
               <div key={idx} className="p-4 bg-gray-100 rounded-lg dark:bg-gray-800">
-                <div className="font-semibold mb-2">Jogo {idx + 1}</div>
+                <div className="font-semibold mb-2">
+                  Jogo {idx + 1} (Objetivo: {pred.targetMatches} acertos)
+                </div>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {pred.numbers.map((num, numIdx) => (
                     <span key={numIdx} className="bg-blue-500 text-white px-3 py-1 rounded-full">
