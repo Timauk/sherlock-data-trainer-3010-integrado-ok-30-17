@@ -1,6 +1,3 @@
-import { useToast } from "@/hooks/use-toast";
-import { performanceMonitor } from "../performance/performanceMonitor";
-
 interface ModelMetrics {
   accuracy: number;
   learningRate: number;
@@ -15,7 +12,6 @@ interface ModelMetrics {
 class ModelMonitoring {
   private static instance: ModelMonitoring;
   private metrics: ModelMetrics[] = [];
-  private toast = useToast();
 
   private constructor() {}
 
@@ -47,28 +43,17 @@ class ModelMonitoring {
   }
 
   private checkThresholds(metrics: ModelMetrics): void {
-    if (metrics.accuracy < 0.5) {
-      this.toast.toast({
-        title: "Alerta de Precisão",
-        description: "A precisão do modelo está abaixo do esperado",
-        variant: "destructive"
+    if (metrics.accuracy < 0.5 || metrics.errorRate > 0.3 || metrics.resourceUsage.memory > 0.8) {
+      const event = new CustomEvent('modelAlert', {
+        detail: {
+          type: metrics.accuracy < 0.5 ? 'accuracy' :
+                metrics.errorRate > 0.3 ? 'error' : 'memory',
+          value: metrics.accuracy < 0.5 ? metrics.accuracy :
+                metrics.errorRate > 0.3 ? metrics.errorRate : metrics.resourceUsage.memory,
+          metrics: metrics
+        }
       });
-    }
-
-    if (metrics.errorRate > 0.3) {
-      this.toast.toast({
-        title: "Taxa de Erro Alta",
-        description: "A taxa de erro do modelo está acima do limite",
-        variant: "destructive"
-      });
-    }
-
-    if (metrics.resourceUsage.memory > 0.8) {
-      this.toast.toast({
-        title: "Uso de Memória Alto",
-        description: "O consumo de memória está acima do limite",
-        variant: "destructive"
-      });
+      window.dispatchEvent(event);
     }
   }
 
@@ -92,7 +77,7 @@ class ModelMonitoring {
   }
 
   private calculateAverage(numbers: number[]): number {
-    return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+    return numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : 0;
   }
 }
 

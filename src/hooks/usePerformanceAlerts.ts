@@ -33,10 +33,41 @@ export const usePerformanceAlerts = () => {
       });
     };
 
+    const handleModelAlert = (event: CustomEvent<{
+      type: 'accuracy' | 'error' | 'memory';
+      value: number;
+      metrics: any;
+    }>) => {
+      const { type, value } = event.detail;
+      
+      const messages = {
+        accuracy: {
+          title: "Alerta de Precisão do Modelo",
+          description: `Precisão abaixo do esperado: ${(value * 100).toFixed(2)}%`
+        },
+        error: {
+          title: "Taxa de Erro Alta",
+          description: `Taxa de erro: ${(value * 100).toFixed(2)}%`
+        },
+        memory: {
+          title: "Uso de Memória Alto",
+          description: `${(value * 100).toFixed(2)}% da memória em uso`
+        }
+      };
+
+      toast({
+        title: messages[type].title,
+        description: messages[type].description,
+        variant: "destructive"
+      });
+    };
+
     window.addEventListener('performanceAlert', handlePerformanceAlert as EventListener);
+    window.addEventListener('modelAlert', handleModelAlert as EventListener);
     
     return () => {
       window.removeEventListener('performanceAlert', handlePerformanceAlert as EventListener);
+      window.removeEventListener('modelAlert', handleModelAlert as EventListener);
     };
   }, [toast]);
 };
