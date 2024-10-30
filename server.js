@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import NodeCache from 'node-cache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,7 +16,7 @@ const PORT = 3001;
 // Aumenta o limite de dados mas adiciona compressão
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(require('compression')());
+app.use(compression());
 
 // Cache em memória para checkpoints recentes
 const checkpointCache = new Map();
@@ -54,7 +56,6 @@ app.post('/api/checkpoint', (req, res) => {
       uptime: process.uptime()
     },
     gameState: {
-      // Mantém apenas os dados essenciais dos últimos 1000 concursos
       players: (req.body.players || []).slice(-1000),
       evolutionData: (req.body.evolutionData || []).slice(-1000),
       generation: req.body.generation || 0,
