@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import SystemDiagnostics from '@/components/SystemDiagnostics'; // Import the new diagnostics component
 
 // Lazy load components that aren't immediately visible
 const EnhancedLogDisplay = lazy(() => import('@/components/EnhancedLogDisplay'));
@@ -159,6 +160,7 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
           <TabsTrigger value="game">Jogo</TabsTrigger>
           <TabsTrigger value="analysis">Análise</TabsTrigger>
           <TabsTrigger value="neural">Rede Neural</TabsTrigger>
+          <TabsTrigger value="diagnostics">Diagnóstico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="game">
@@ -213,6 +215,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
                 outputData={gameLogic.neuralNetworkVisualization?.output}
               />
             </div>
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="diagnostics">
+          <Suspense fallback={<LoadingFallback />}>
+            <SystemDiagnostics />
           </Suspense>
         </TabsContent>
       </Tabs>
