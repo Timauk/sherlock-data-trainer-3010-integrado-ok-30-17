@@ -1,3 +1,5 @@
+import { performanceMonitor } from "../performance/performanceMonitor";
+
 interface ModelMetrics {
   accuracy: number;
   learningRate: number;
