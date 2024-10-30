@@ -82,10 +82,10 @@ const implementationChecklist: ChecklistItem[] = [
   {
     title: "Fase 8: Qualidade de Dados",
     items: [
-      { task: "Implementar validação de dados", completed: false },
-      { task: "Adicionar detecção de outliers", completed: false },
-      { task: "Implementar redução de ruído", completed: false },
-      { task: "Criar análise de importância de features", completed: false }
+      { task: "Implementar validação de dados", completed: true },
+      { task: "Adicionar detecção de outliers", completed: true },
+      { task: "Implementar redução de ruído", completed: true },
+      { task: "Criar análise de importância de features", completed: true }
     ]
   },
   {
