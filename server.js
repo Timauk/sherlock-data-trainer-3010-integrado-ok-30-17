@@ -12,28 +12,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3001;
 
-// Aumenta o limite de dados mas adiciona compressão
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 
-// Cache em memória para checkpoints recentes
 const checkpointCache = new Map();
 const MAX_CACHE_SIZE = 10;
 
-const checkpointsDir = path.join(__dirname, 'checkpoints');
-if (!fs.existsSync(checkpointsDir)) {
-  fs.mkdirSync(checkpointsDir);
-}
-
-// Limpeza periódica de dados antigos
-const cleanOldCheckpoints = () => {
+const cleanOldCheckpoints = (checkpointsDir) => {
   const files = fs.readdirSync(checkpointsDir)
     .filter(f => f.startsWith('checkpoint-'))
     .sort()
     .reverse();
 
-  // Mantém apenas os últimos 50 checkpoints
   if (files.length > 50) {
     files.slice(50).forEach(file => {
       fs.unlinkSync(path.join(checkpointsDir, file));
@@ -42,6 +33,19 @@ const cleanOldCheckpoints = () => {
 };
 
 app.post('/api/checkpoint', (req, res) => {
+  const checkpointsDir = req.body.path || path.join(__dirname, 'checkpoints');
+  
+  if (!fs.existsSync(checkpointsDir)) {
+    try {
+      fs.mkdirSync(checkpointsDir, { recursive: true });
+    } catch (error) {
+      return res.status(500).json({
+        message: 'Erro ao criar diretório',
+        error: error.message
+      });
+    }
+  }
+
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `checkpoint-${timestamp}.json`;
   const filepath = path.join(checkpointsDir, filename);
@@ -76,7 +80,6 @@ app.post('/api/checkpoint', (req, res) => {
     checkpointNumber: fs.readdirSync(checkpointsDir).length + 1
   };
 
-  // Salva no cache e no disco
   checkpointCache.set(filename, checkpointData);
   if (checkpointCache.size > MAX_CACHE_SIZE) {
     const oldestKey = Array.from(checkpointCache.keys())[0];
@@ -84,7 +87,7 @@ app.post('/api/checkpoint', (req, res) => {
   }
 
   fs.writeFileSync(filepath, JSON.stringify(checkpointData, null, 2));
-  cleanOldCheckpoints();
+  cleanOldCheckpoints(checkpointsDir);
 
   res.json({ 
     message: 'Checkpoint salvo com sucesso', 
@@ -95,6 +98,7 @@ app.post('/api/checkpoint', (req, res) => {
 
 app.get('/api/checkpoint/latest', (req, res) => {
   try {
+    const checkpointsDir = path.join(__dirname, 'checkpoints');
     const files = fs.readdirSync(checkpointsDir)
       .filter(f => f.startsWith('checkpoint-'))
       .sort()
@@ -106,7 +110,6 @@ app.get('/api/checkpoint/latest', (req, res) => {
 
     const latestFile = files[0];
     
-    // Verifica primeiro no cache
     if (checkpointCache.has(latestFile)) {
       return res.json(checkpointCache.get(latestFile));
     }
@@ -114,7 +117,6 @@ app.get('/api/checkpoint/latest', (req, res) => {
     const data = fs.readFileSync(path.join(checkpointsDir, latestFile));
     const checkpoint = JSON.parse(data);
     
-    // Adiciona ao cache
     checkpointCache.set(latestFile, checkpoint);
     
     res.json(checkpoint);
@@ -128,6 +130,7 @@ app.get('/api/checkpoint/latest', (req, res) => {
 
 app.get('/api/checkpoints', (req, res) => {
   try {
+    const checkpointsDir = path.join(__dirname, 'checkpoints');
     const files = fs.readdirSync(checkpointsDir);
     const checkpoints = files
       .filter(f => f.startsWith('checkpoint-'))
@@ -156,5 +159,4 @@ app.get('/api/checkpoints', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log(`Checkpoints sendo salvos em: ${checkpointsDir}`);
 });

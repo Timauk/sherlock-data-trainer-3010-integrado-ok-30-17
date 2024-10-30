@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw, FolderOpen } from 'lucide-react';
 import { saveCheckpoint, loadLastCheckpoint } from '@/utils/fileSystemUtils';
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface CheckpointControlsProps {
   savePath: string;
@@ -16,14 +17,13 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
+  const [inputPath, setInputPath] = useState(savePath);
 
   const handleSaveCheckpoint = async () => {
     try {
-      // Coleta todos os dados do estado atual do jogo
       const gameState = {
         timestamp: new Date().toISOString(),
         path: savePath,
-        // Adicione aqui todos os dados que precisam ser salvos
       };
 
       const savedFile = await saveCheckpoint(gameState);
@@ -46,7 +46,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     try {
       const checkpoint = await loadLastCheckpoint();
       if (checkpoint) {
-        // Salva o checkpoint no localStorage para persistência
         localStorage.setItem('lastCheckpoint', JSON.stringify(checkpoint));
         
         toast({
@@ -54,7 +53,6 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
           description: "Recarregando página para aplicar as mudanças...",
         });
         
-        // Força um reload da página após 1 segundo
         setTimeout(() => {
           window.location.reload();
         }, 1000);
@@ -74,10 +72,37 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
     }
   };
 
+  const handlePathSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputPath) {
+      onSavePathChange(inputPath);
+      localStorage.setItem('checkpointPath', inputPath);
+      toast({
+        title: "Diretório Atualizado",
+        description: "O diretório de salvamento foi atualizado com sucesso.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <form onSubmit={handlePathSubmit} className="space-y-2">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            value={inputPath}
+            onChange={(e) => setInputPath(e.target.value)}
+            placeholder="Digite o caminho do diretório"
+            className="flex-1"
+          />
+          <Button type="submit" variant="secondary">
+            <FolderOpen className="mr-2 h-4 w-4" /> Definir
+          </Button>
+        </div>
+      </form>
+
       <div className="p-2 bg-secondary rounded-md">
-        <p className="text-sm">Diretório de salvamento: {savePath || "Nenhum diretório selecionado"}</p>
+        <p className="text-sm">Diretório atual: {savePath || "Nenhum diretório selecionado"}</p>
       </div>
 
       <Button 
