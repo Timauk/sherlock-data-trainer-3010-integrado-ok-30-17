@@ -32,57 +32,60 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     try {
       const newPredictions = [];
       
-      // Prepara os dados de entrada (15 números + 2 features normalizadas = 17 inputs)
-      const normalizedInput = [
-        ...lastConcursoNumbers.slice(0, 15).map(n => n / 25),
-        champion.generation / 1000, // Normaliza geração
-        Date.now() / (1000 * 60 * 60 * 24 * 365) // Normaliza data atual
-      ];
-      
-      const inputTensor = tf.tensor2d([normalizedInput]);
-
       for (let i = 0; i < 8; i++) {
-        // Faz a previsão usando o modelo treinado
+        // Add variation to input for each prediction
+        const variationFactor = 0.05; // 5% variation
+        const normalizedInput = [
+          ...lastConcursoNumbers.slice(0, 15).map(n => {
+            const variation = (Math.random() - 0.5) * variationFactor;
+            return (n / 25) * (1 + variation);
+          }),
+          (champion.generation + i) / 1000, // Slightly different generation number
+          (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365) // Different timestamp
+        ];
+        
+        const inputTensor = tf.tensor2d([normalizedInput]);
+        
+        // Make prediction
         const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
         const predictionArray = Array.from(await prediction.data());
         
-        // Aplica os pesos do campeão
+        // Apply weights with randomization
         const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
           number: idx + 1,
           weight: predictionArray[idx % predictionArray.length] * 
-                 (champion.weights[idx % champion.weights.length] / 1000)
+                 (champion.weights[idx % champion.weights.length] / 1000) *
+                 (1 + (Math.random() - 0.5) * 0.2) // Add 20% random variation
         }));
         
-        // Adiciona aleatoriedade controlada
-        const randomFactor = 0.15; // 15% de aleatoriedade
-        weightedNumbers.forEach(num => {
-          num.weight *= (1 + (Math.random() - 0.5) * randomFactor);
-        });
-        
-        // Ordena por peso e seleciona os 15 maiores
+        // Select numbers with some randomization
         const selectedNumbers = weightedNumbers
           .sort((a, b) => b.weight - a.weight)
-          .slice(0, 15)
+          .slice(0, 20) // Get top 20 instead of 15 for more variety
+          .sort(() => Math.random() - 0.5) // Shuffle
+          .slice(0, 15) // Then take 15
           .map(n => n.number)
           .sort((a, b) => a - b);
         
-        // Calcula a estimativa de acerto baseada no histórico do campeão
-        const estimatedAccuracy = (champion.fitness / 15) * 100;
+        // Calculate estimated accuracy with some variation
+        const baseAccuracy = (champion.fitness / 15) * 100;
+        const accuracyVariation = (Math.random() - 0.5) * 5; // ±2.5% variation
+        const estimatedAccuracy = Math.min(Math.max(baseAccuracy + accuracyVariation, 0), 93.33);
         
         newPredictions.push({
           numbers: selectedNumbers,
-          estimatedAccuracy: Math.min(estimatedAccuracy, 93.33) // Limita a 93.33%
+          estimatedAccuracy
         });
 
         prediction.dispose();
+        inputTensor.dispose();
       }
 
-      inputTensor.dispose();
       setPredictions(newPredictions);
       
       toast({
         title: "Previsões Geradas",
-        description: "8 jogos foram gerados com base no desempenho do campeão!"
+        description: "8 jogos diferentes foram gerados com base no desempenho do campeão!"
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
