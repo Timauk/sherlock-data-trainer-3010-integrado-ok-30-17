@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -37,13 +37,27 @@ const PlayerList: React.FC<PlayerListProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const maxScore = Math.max(...players.map(p => p.score));
 
+  // Atualiza os pesos editados quando um jogador é selecionado ou quando os players são atualizados
+  useEffect(() => {
+    if (selectedPlayer) {
+      const currentPlayer = players.find(p => p.id === selectedPlayer.id);
+      if (currentPlayer) {
+        const weights = currentPlayer.weights.map((value, index) => ({
+          ...WEIGHT_DESCRIPTIONS[index],
+          value: Math.round(value)
+        }));
+        setEditedWeights(weights);
+      }
+    }
+  }, [selectedPlayer, players]);
+
   const handlePlayerClick = (player: Player) => {
+    setSelectedPlayer(player);
     const weights = player.weights.map((value, index) => ({
       ...WEIGHT_DESCRIPTIONS[index],
       value: Math.round(value)
     }));
     setEditedWeights(weights);
-    setSelectedPlayer(player);
     setIsDialogOpen(true);
   };
 
@@ -90,7 +104,12 @@ const PlayerList: React.FC<PlayerListProps> = ({
         const isTopPlayer = player.score === maxScore;
         
         return (
-          <Dialog key={player.id} open={isDialogOpen && selectedPlayer?.id === player.id} onOpenChange={setIsDialogOpen}>
+          <Dialog key={player.id} open={isDialogOpen && selectedPlayer?.id === player.id} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setSelectedPlayer(null);
+            }
+          }}>
             <DialogTrigger asChild>
               <div 
                 onClick={() => handlePlayerClick(player)}
