@@ -1,14 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import compression from 'compression';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import NodeCache from 'node-cache';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const compression = require('compression');
+const fs = require('fs');
+const path = require('path');
+const NodeCache = require('node-cache');
 
 const app = express();
 const PORT = 3001;
@@ -80,7 +75,7 @@ app.post('/api/checkpoint', (req, res) => {
   // Salva no cache e no disco
   checkpointCache.set(filename, checkpointData);
   if (checkpointCache.size > MAX_CACHE_SIZE) {
-    const oldestKey = checkpointCache.keys().next().value;
+    const oldestKey = Array.from(checkpointCache.keys())[0];
     checkpointCache.delete(oldestKey);
   }
 
