@@ -4,6 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Copy } from 'lucide-react';
 
 interface Weight {
   name: string;
@@ -57,19 +58,22 @@ const PlayerList: React.FC<PlayerListProps> = ({
       const newWeights = editedWeights.map(w => w.value);
       onUpdatePlayer(selectedPlayer.id, newWeights);
       
-      // Feedback visual do salvamento
       toast({
         title: "Pesos Atualizados",
         description: `Os pesos do Jogador #${selectedPlayer.id} foram atualizados com sucesso.`
       });
       
-      // Fecha o diálogo após salvar
       setIsDialogOpen(false);
-    } else {
+    }
+  };
+
+  const handleClonePlayer = (player: Player, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClonePlayer) {
+      onClonePlayer(player);
       toast({
-        title: "Erro ao Salvar",
-        description: "Não foi possível salvar os pesos. Tente novamente.",
-        variant: "destructive"
+        title: "Jogador Clonado",
+        description: `Um clone do Jogador #${player.id} foi criado com sucesso.`
       });
     }
   };
@@ -113,18 +117,15 @@ const PlayerList: React.FC<PlayerListProps> = ({
                   <p className="text-sm">
                     <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}
                   </p>
-                  {onClonePlayer && (
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClonePlayer(player);
-                      }}
-                      className="w-full mt-2"
-                      variant="outline"
-                    >
-                      Clonar Jogador
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={(e) => handleClonePlayer(player, e)}
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                    variant="default"
+                    disabled={!onClonePlayer}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Clonar Jogador
+                  </Button>
                 </div>
               </div>
             </DialogTrigger>
