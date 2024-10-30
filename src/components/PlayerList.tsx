@@ -51,10 +51,20 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
     if (selectedPlayer && onUpdatePlayer) {
       const newWeights = editedWeights.map(w => w.value);
       onUpdatePlayer(selectedPlayer.id, newWeights);
-      setIsDialogOpen(false);
+      
+      // Feedback visual do salvamento
       toast({
         title: "Pesos Atualizados",
         description: `Os pesos do Jogador #${selectedPlayer.id} foram atualizados com sucesso.`
+      });
+      
+      // Fecha o diálogo após salvar
+      setIsDialogOpen(false);
+    } else {
+      toast({
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar os pesos. Tente novamente.",
+        variant: "destructive"
       });
     }
   };
@@ -124,7 +134,11 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
                     />
                   </div>
                 ))}
-                <Button onClick={handleSaveWeights} className="w-full">
+                <Button 
+                  onClick={handleSaveWeights} 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={!onUpdatePlayer}
+                >
                   Salvar Alterações
                 </Button>
               </div>
