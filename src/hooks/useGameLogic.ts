@@ -154,6 +154,16 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     });
   }, []);
 
+  const clonePlayer = useCallback((player: Player) => {
+    const clones = cloneChampion(player, 1);
+    setPlayers(prevPlayers => [...prevPlayers, ...clones]);
+    
+    toast({
+      title: "Jogador Clonado",
+      description: `Um novo clone do Jogador #${player.id} foi criado.`
+    });
+  }, []);
+
   useEffect(() => {
     initializePlayers();
   }, [initializePlayers]);
@@ -186,5 +196,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     gameCount,
     isManualMode,
     toggleManualMode,
+    clonePlayer,
   };
 };

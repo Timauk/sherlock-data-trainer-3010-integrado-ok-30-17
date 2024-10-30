@@ -22,9 +22,14 @@ interface Player {
 interface PlayerListProps {
   players: Player[];
   onUpdatePlayer?: (playerId: number, newWeights: number[]) => void;
+  onClonePlayer?: (player: Player) => void;
 }
 
-const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
+const PlayerList: React.FC<PlayerListProps> = ({ 
+  players, 
+  onUpdatePlayer,
+  onClonePlayer 
+}) => {
   const { toast } = useToast();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editedWeights, setEditedWeights] = useState<Weight[]>([]);
@@ -108,6 +113,18 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, onUpdatePlayer }) => {
                   <p className="text-sm">
                     <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}
                   </p>
+                  {onClonePlayer && (
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClonePlayer(player);
+                      }}
+                      className="w-full mt-2"
+                      variant="outline"
+                    >
+                      Clonar Jogador
+                    </Button>
+                  )}
                 </div>
               </div>
             </DialogTrigger>
