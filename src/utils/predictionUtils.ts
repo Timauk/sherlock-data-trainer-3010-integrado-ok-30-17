@@ -23,20 +23,21 @@ export async function makePrediction(
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Dados base de entrada
+  // Dados base de entrada (mantendo 17 inputs conforme esperado)
   let enrichedInput = [
     ...inputData.slice(0, 15),
     normalizedConcursoNumber,
     normalizedDataSorteio
   ];
   
-  // Análises adicionais
+  // Análises adicionais (serão usadas apenas para pesos)
   const currentDate = new Date();
   const lunarPhase = getLunarPhase(currentDate);
   const lunarWeight = getLunarPhaseWeight(lunarPhase);
   const frequencyAnalysis = historicalData ? analyzeFrequency(historicalData.numbers) : {};
   const patterns = historicalData ? analyzeAdvancedPatterns(historicalData.numbers, historicalData.dates) : null;
   
+  // Adiciona aleatoriedade inteligente aos pesos do jogador
   const randomizedWeights = playerWeights.map((weight, index) => {
     const lunarInfluence = lunarWeight * 0.2;
     const frequencyInfluence = getFrequencyInfluence(index + 1, frequencyAnalysis) * 0.3;
@@ -49,8 +50,7 @@ export async function makePrediction(
   const weightedInput = enrichedInput.map((value, index) => 
     value * (randomizedWeights[index % randomizedWeights.length] / 1000));
   
-  // Reshape input para 3D [batch_size, timesteps, features]
-  const inputTensor = tf.tensor3d([weightedInput], [1, 1, weightedInput.length]);
+  const inputTensor = tf.tensor2d([weightedInput]);
   const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
   const result = Array.from(await predictions.data());
   
@@ -63,6 +63,7 @@ export async function makePrediction(
     weights: trainedModel.getWeights().map(w => Array.from(w.dataSync()))
   });
   
+  // Sistema de seleção de números com influência de todas as análises
   const weightedNumbers = Array.from({ length: 25 }, (_, i) => {
     const number = i + 1;
     const baseWeight = result[i % result.length];
@@ -76,14 +77,17 @@ export async function makePrediction(
     };
   }).sort((a, b) => b.weight - a.weight);
   
+  // Seleção dos números finais com aleatoriedade controlada
   const uniqueNumbers = new Set<number>();
   let index = 0;
   
+  // Primeiro, seleciona os números com maior peso
   while (uniqueNumbers.size < 10 && index < weightedNumbers.length) {
     uniqueNumbers.add(weightedNumbers[index].number);
     index++;
   }
   
+  // Depois, adiciona alguns números com base em probabilidade
   while (uniqueNumbers.size < 15) {
     const randomIndex = Math.floor(Math.random() * weightedNumbers.length);
     const number = weightedNumbers[randomIndex].number;
@@ -117,6 +121,7 @@ function getFrequencyInfluence(number: number, frequency: Record<number, number>
 }
 
 function getLunarNumberInfluence(number: number, phase: string): number {
+  // Diferentes fases lunares podem favorecer diferentes ranges de números
   const ranges = {
     'Nova': [1, 6],
     'Crescente': [7, 12],
@@ -129,6 +134,10 @@ function getLunarNumberInfluence(number: number, phase: string): number {
     return 0.2;
   }
   return 0;
+}
+
+function getPatternInfluence(patterns: any): number {
+  return (patterns.consecutive + patterns.evenOdd) / 2;
 }
 
 function getNumberPatternInfluence(number: number, patterns: any): number {
