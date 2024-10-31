@@ -32,11 +32,10 @@ export const useGameEvolution = (
 
     const compromisedLearning = learningAnalysis.filter(a => !a.isLearningEffective).length;
     if (compromisedLearning > bestPlayers.length * 0.5) {
-      showToast({
-        title: "Alerta de Aprendizado",
-        description: `${compromisedLearning} jogadores podem estar com aprendizado comprometido.`,
-        variant: "destructive"
-      });
+      showToast(
+        "Alerta de Aprendizado",
+        `${compromisedLearning} jogadores podem estar com aprendizado comprometido.`
+      );
     }
 
     if (gameState.gameCount % 1000 === 0 && bestPlayers.length > 0) {
@@ -54,27 +53,26 @@ export const useGameEvolution = (
         
         if (trainedModel) {
           try {
-            const updatedModel = await updateModelWithChampionKnowledge(
+            await updateModelWithChampionKnowledge(
               trainedModel,
               champion,
               gameState.trainingData
             );
             
-            showToast({
-              title: "Modelo Atualizado",
-              description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
-            });
+            showToast(
+              "Modelo Atualizado",
+              `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`
+            );
 
           } catch (error) {
             console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
           }
         }
       } else {
-        showToast({
-          title: "Alerta de Qualidade",
-          description: "Campeão atual pode não estar aprendendo efetivamente. Mantendo geração anterior.",
-          variant: "destructive"
-        });
+        showToast(
+          "Alerta de Qualidade",
+          "Campeão atual pode não estar aprendendo efetivamente. Mantendo geração anterior."
+        );
       }
     } else {
       const newGeneration = bestPlayers.map(player => ({
@@ -99,10 +97,10 @@ export const useGameEvolution = (
 
     if (bestPlayers.length > 0) {
       addLog(`Melhor jogador da geração ${gameState.generation}: Score ${bestPlayers[0].score}`);
-      showToast({
-        title: "Nova Geração",
-        description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
-      });
+      showToast(
+        "Nova Geração",
+        `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`
+      );
     }
   }, [gameState, trainedModel, numbers, showToast, addLog]);
 };

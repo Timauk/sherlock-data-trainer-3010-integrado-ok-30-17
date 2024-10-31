@@ -22,7 +22,28 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const gameLoop = useGameLoop(gameState, csvData, trainedModel, addLog, showToast, updateInterval);
+  const gameLoop = useGameLoop(
+    gameState.players,
+    gameState.setPlayers,
+    csvData,
+    trainedModel,
+    gameState.concursoNumber,
+    gameState.setEvolutionData,
+    gameState.generation,
+    addLog,
+    updateInterval,
+    gameState.trainingData,
+    gameState.setTrainingData,
+    setNumbers,
+    setDates,
+    setNeuralNetworkVisualization,
+    gameState.setBoardNumbers,
+    gameState.setModelMetrics,
+    gameState.setConcursoNumber,
+    gameState.setGameCount,
+    showToast
+  );
+
   const evolveGeneration = useGameEvolution(gameState, trainedModel, numbers, showToast, addLog);
 
   const toggleManualMode = useCallback(() => {
