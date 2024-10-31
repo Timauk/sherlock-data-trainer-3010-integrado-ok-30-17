@@ -1,5 +1,7 @@
 import { systemLogger } from './systemLogger';
 
+type LogType = 'action' | 'prediction' | 'performance' | 'system' | 'lunar' | 'player' | 'checkpoint' | 'learning' | 'model';
+
 interface LogConfig {
   removeMatches?: boolean;
   formatMessage?: boolean;
@@ -17,7 +19,7 @@ class EnhancedLogger {
     return EnhancedLogger.instance;
   }
 
-  log(type: string, message: string, details?: any, config: LogConfig = {}) {
+  log(type: LogType, message: string, details?: any, config: LogConfig = {}) {
     // Remove matches object se configurado
     if (config.removeMatches && details?.matches) {
       delete details.matches;
