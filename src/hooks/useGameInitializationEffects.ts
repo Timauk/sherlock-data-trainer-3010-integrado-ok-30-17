@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { GameLogicState } from '@/types/gameTypes';
 
 export const useGameInitializationEffects = (
   initializePlayers: () => void,

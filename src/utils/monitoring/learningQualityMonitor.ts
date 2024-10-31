@@ -75,7 +75,7 @@ class LearningQualityMonitor {
       : [player.predictions[player.predictions.length - 1]];
 
     const historicalPatterns = this.extractPatterns(historicalData);
-    const predictionPatterns = this.extractPatterns([latestPrediction]);
+    const predictionPatterns = this.extractPatterns([latestPrediction as number[]]);
 
     return this.comparePatterns(historicalPatterns, predictionPatterns);
   }
