@@ -35,6 +35,18 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
+  const initializePlayers = useCallback(() => {
+    const newPlayers = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      score: 0,
+      predictions: [],
+      weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
+      fitness: 0,
+      generation: 1
+    }));
+    gameState.setPlayers(newPlayers);
+  }, [gameState]);
+
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
@@ -60,7 +72,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     
     setDates(currentDates => [...currentDates, currentDate].slice(-100));
 
-    // Get traditional player's prediction
     const traditionalPrediction = traditionalPlayer.makePlay(currentBoardNumbers);
     if (traditionalPrediction) {
       const traditionalMatches = Array.isArray(traditionalPrediction[0]) 
@@ -73,7 +84,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         predictions: traditionalPrediction
       }));
 
-      // Compare with AI players and show alert if traditional player is performing better
       const avgAiScore = gameState.players.reduce((sum, p) => sum + p.score, 0) / gameState.players.length;
       if (gameState.traditionalPlayerStats.score > avgAiScore * 1.2) {
         toast({
@@ -145,7 +155,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       };
     });
 
-    setModelMetrics({
+    gameState.setModelMetrics({
       accuracy: totalMatches / (gameState.players.length * 15),
       randomAccuracy: randomMatches / (gameState.players.length * 15),
       totalPredictions: totalPredictions,
@@ -245,7 +255,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
             
             setChampionData({
               player: champion,
-              trainingData: currentTrainingData
+              trainingData: gameState.trainingData
             });
           } catch (error) {
             console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
@@ -286,7 +296,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
       });
     }
-  }, [gameState, toast]);
+  }, [gameState, toast, championData, numbers, trainedModel]);
 
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     setFrequencyData(newFrequencyData);
@@ -334,6 +344,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     modelMetrics: gameState.modelMetrics,
     logs,
     gameLoop,
+    evolveGeneration,
+    initializePlayers,
     addLog,
     toggleInfiniteMode: useCallback(() => gameState.setIsInfiniteMode(prev => !prev), [gameState]),
     dates,

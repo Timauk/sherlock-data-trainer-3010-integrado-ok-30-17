@@ -19,6 +19,10 @@ const PlayPage: React.FC = () => {
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
+  useEffect(() => {
+    gameLogic.initializePlayers();
+  }, [gameLogic]);
+
   const loadCSV = useCallback(async (file: File) => {
     try {
       const text = await file.text();
