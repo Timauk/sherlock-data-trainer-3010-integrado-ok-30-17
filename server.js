@@ -12,11 +12,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
+// Configure CORS
+app.use(cors({
+  origin: '*', // In production, replace with your actual domain
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 
-// Rotas
+// Routes
 import { modelRouter } from './routes/model.js';
 import { checkpointRouter } from './routes/checkpoint.js';
 import { statusRouter } from './routes/status.js';
@@ -26,5 +32,5 @@ app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

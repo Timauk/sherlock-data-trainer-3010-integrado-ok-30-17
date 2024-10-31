@@ -8,9 +8,11 @@ export const useServerStatus = () => {
       const response = await fetch('http://localhost:3001/api/status', {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        mode: 'cors'
+        mode: 'cors',
+        credentials: 'omit'
       });
       
       if (response.ok) {
