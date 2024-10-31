@@ -30,19 +30,11 @@ if not exist "checkpoints" (
 echo Iniciando servidor Node.js...
 start cmd /k "node --watch server.js"
 
-:: Aguarda 5 segundos para o servidor iniciar
-timeout /t 5 /nobreak
+:: Aguarda 2 segundos
+timeout /t 2 /nobreak
 
 :: Inicia a aplicação React
 echo Iniciando aplicacao React...
 start cmd /k "npm run dev"
-
-:: Aguarda mais 3 segundos para a aplicação iniciar
-timeout /t 3 /nobreak
-
-:: Abre o navegador padrão nas duas URLs
-echo Abrindo navegador...
-start http://localhost:5173
-start http://localhost:3001
 
 echo Ambiente de desenvolvimento iniciado com sucesso!
