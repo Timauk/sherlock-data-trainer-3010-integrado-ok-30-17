@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameState } from './useGameState';
-import { Player, ModelVisualization, ModelMetrics } from '@/types/gameTypes';
+import { Player, ModelVisualization } from '@/types/gameTypes';
 import { learningQualityMonitor } from '@/utils/monitoring/learningQualityMonitor';
 import { traditionalPlayer } from '@/utils/traditionalPlayerLogic';
 import { performCrossValidation } from '@/utils/validation/crossValidation';
@@ -35,17 +35,12 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  const initializePlayers = useCallback(() => {
-    const newPlayers = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      score: 0,
-      predictions: [],
-      weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
-      fitness: 0,
-      generation: 1
-    }));
-    gameState.setPlayers(newPlayers);
-  }, [gameState]);
+  const showToast = useCallback((title: string, description: string) => {
+    toast({
+      title,
+      description,
+    });
+  }, [toast]);
 
   const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
@@ -316,25 +311,25 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const toggleManualMode = useCallback(() => {
     setIsManualMode(prev => {
       const newMode = !prev;
-      toast({
-        title: newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
-        description: newMode ? 
+      showToast(
+        newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
+        newMode ? 
           "A clonagem automática está desativada. Suas alterações serão mantidas." : 
-          "A clonagem automática está ativada novamente.",
-      });
+          "A clonagem automática está ativada novamente."
+      );
       return newMode;
     });
-  }, [toast]);
+  }, [showToast]);
 
   const clonePlayer = useCallback((player: Player) => {
     const clones = cloneChampion(player, 1);
     gameState.setPlayers(prevPlayers => [...prevPlayers, ...clones]);
     
-    toast({
-      title: "Jogador Clonado",
-      description: `Um novo clone do Jogador #${player.id} foi criado.`
-    });
-  }, [gameState, toast]);
+    showToast(
+      "Jogador Clonado",
+      `Um novo clone do Jogador #${player.id} foi criado.`
+    );
+  }, [gameState, showToast]);
 
   return {
     players: gameState.players,
@@ -345,7 +340,17 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     logs,
     gameLoop,
     evolveGeneration,
-    initializePlayers,
+    initializePlayers: useCallback(() => {
+      const newPlayers = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        score: 0,
+        predictions: [],
+        weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
+        fitness: 0,
+        generation: 1
+      }));
+      gameState.setPlayers(newPlayers);
+    }, [gameState]),
     addLog,
     toggleInfiniteMode: useCallback(() => gameState.setIsInfiniteMode(prev => !prev), [gameState]),
     dates,

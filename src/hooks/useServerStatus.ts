@@ -5,20 +5,28 @@ export const useServerStatus = () => {
 
   const checkServerStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/status');
+      const response = await fetch('http://localhost:3001/api/status', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+      
       if (response.ok) {
         setStatus('online');
       } else {
         setStatus('offline');
       }
     } catch (error) {
+      console.error('Server status check failed:', error);
       setStatus('offline');
     }
   };
 
   useEffect(() => {
     checkServerStatus();
-    const interval = setInterval(checkServerStatus, 30000); // Verifica a cada 30 segundos
+    const interval = setInterval(checkServerStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
