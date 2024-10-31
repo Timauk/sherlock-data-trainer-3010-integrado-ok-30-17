@@ -25,11 +25,15 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       : 'Aguardando próxima rodada';
   };
 
+  const isPlayer11 = player.id === 11;
+  
   const cardClass = isTraditional
     ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500'
-    : isTopPlayer
-      ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
-      : 'bg-card';
+    : isPlayer11
+      ? 'bg-purple-100 dark:bg-purple-900 border-2 border-purple-500'
+      : isTopPlayer
+        ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
+        : 'bg-card';
 
   return (
     <div 
@@ -39,9 +43,10 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-lg">
           {isTraditional ? 'Jogador Tradicional' : `Jogador #${player.id}`}
-          {isTopPlayer && !isTraditional && <span className="ml-2 text-yellow-600">👑</span>}
+          {isPlayer11 && <span className="ml-2 text-purple-600">⚡</span>}
+          {isTopPlayer && !isTraditional && !isPlayer11 && <span className="ml-2 text-yellow-600">👑</span>}
         </h4>
-        <Badge variant={isTraditional ? "default" : isTopPlayer ? "default" : "secondary"}>
+        <Badge variant={isTraditional ? "default" : isPlayer11 ? "secondary" : isTopPlayer ? "default" : "secondary"}>
           Score: {player.score.toFixed(0)}
         </Badge>
       </div>

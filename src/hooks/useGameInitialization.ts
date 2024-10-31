@@ -15,9 +15,10 @@ export const useGameInitialization = () => {
       generation: 1
     }));
 
-    // Garantir que o jogador 11 tenha pesos otimizados
-    if (newPlayers[10]) {
-      newPlayers[10].weights = newPlayers[10].weights.map(() => 
+    // Garantir que o jogador 11 tenha pesos otimizados e seja especial
+    const player11 = newPlayers.find(p => p.id === 11);
+    if (player11) {
+      player11.weights = player11.weights.map(() => 
         Math.floor(Math.random() * 1001) + 500 // Valores mais altos para melhor performance
       );
     }
