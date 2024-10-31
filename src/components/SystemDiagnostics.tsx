@@ -44,82 +44,56 @@ const SystemDiagnostics = () => {
     try {
       // Fase 1: Gestão de Dados e IA
       const metrics = modelMonitoring.getMetricsSummary();
+      const accuracyPercentage = metrics.avgAccuracy * 100;
       diagnosticResults.push({
         phase: "Fase 1: Gestão de Dados e IA",
-        status: metrics.avgAccuracy > 0.5 ? 'success' : 'warning',
-        message: `Precisão média: ${(metrics.avgAccuracy * 100).toFixed(2)}%`,
+        status: accuracyPercentage > 50 ? 'success' : 'warning',
+        message: `Precisão média: ${accuracyPercentage.toFixed(2)}%`,
         details: `Modelo treinado com ${metrics.totalSamples} amostras`
       });
       setProgress(25);
 
       // Fase 2: Otimização de Performance
       const perfMetrics = getPerformanceMetrics();
+      const memoryMB = (perfMetrics.avgMemory / 1024 / 1024).toFixed(1);
       diagnosticResults.push({
         phase: "Fase 2: Otimização de Performance",
         status: perfMetrics.avgLatency < 1000 ? 'success' : 'warning',
         message: `Latência média: ${perfMetrics.avgLatency.toFixed(2)}ms`,
-        details: `CPU: ${perfMetrics.avgCPU.toFixed(1)}%, Memória: ${(perfMetrics.avgMemory / 1024 / 1024).toFixed(1)}MB`
+        details: `CPU: ${perfMetrics.avgCPU?.toFixed(1) || 0}%, Memória: ${memoryMB}MB`
       });
       setProgress(50);
 
       // Fase 3: Modelos Especializados
       const specializedModels = modelMonitoring.getSpecializedModelsStatus();
+      const modelsRatio = specializedModels.activeCount / specializedModels.totalCount;
       diagnosticResults.push({
         phase: "Fase 3: Modelos Especializados",
-        status: specializedModels?.active ? 'success' : 'warning',
+        status: modelsRatio >= 0.75 ? 'success' : 'warning',
         message: "Status dos Modelos Especializados",
-        details: `Ativos: ${specializedModels?.activeCount || 0}, Total: ${specializedModels?.totalCount || 0}`
+        details: `Ativos: ${specializedModels.activeCount}, Total: ${specializedModels.totalCount}`
       });
-      setProgress(37.5);
+      setProgress(75);
 
       // Fase 4: Validação e Qualidade
       const confidenceCorrelation = feedbackSystem.getConfidenceCorrelation();
       const accuracyTrend = feedbackSystem.getAccuracyTrend();
+      const lastAccuracy = accuracyTrend[accuracyTrend.length - 1] || 0;
       diagnosticResults.push({
         phase: "Fase 4: Validação e Qualidade",
         status: confidenceCorrelation > 0.5 ? 'success' : 'warning',
         message: `Correlação de confiança: ${confidenceCorrelation.toFixed(2)}`,
-        details: `Tendência de precisão: ${(accuracyTrend[accuracyTrend.length - 1] * 100).toFixed(1)}%`
+        details: `Tendência de precisão: ${(lastAccuracy * 100).toFixed(1)}%`
       });
-      setProgress(50);
+      setProgress(85);
 
       // Fase 5: Análise Avançada
       const analysisStatus = modelMonitoring.getAnalysisStatus();
       diagnosticResults.push({
         phase: "Fase 5: Análise Avançada",
-        status: analysisStatus?.active ? 'success' : 'warning',
+        status: analysisStatus.activeAnalyses >= 6 ? 'success' : 'warning',
         message: "Status das Análises Avançadas",
-        details: `Análises ativas: ${analysisStatus?.activeAnalyses || 0}`
-      });
-      setProgress(62.5);
-
-      // Fase 6: Experiência do Usuário
-      const uiComponents = getUIComponentCount();
-      diagnosticResults.push({
-        phase: "Fase 6: Experiência do Usuário",
-        status: uiComponents > 10 ? 'success' : 'warning',
-        message: `${uiComponents} componentes UI detectados`,
-        details: "Verificação dos componentes de interface"
-      });
-      setProgress(75);
-
-      // Fase 7: Monitoramento
-      const monitoringStatus = modelMonitoring.getSystemStatus();
-      diagnosticResults.push({
-        phase: "Fase 7: Monitoramento",
-        status: monitoringStatus?.healthy ? 'success' : 'warning',
-        message: "Status do Sistema de Monitoramento",
-        details: `Saúde: ${monitoringStatus?.health || 0}%, Alertas: ${monitoringStatus?.alerts || 0}`
-      });
-      setProgress(87.5);
-
-      // Fase 8: Qualidade de Dados
-      const dataQuality = modelMonitoring.getDataQualityMetrics();
-      diagnosticResults.push({
-        phase: "Fase 8: Qualidade de Dados",
-        status: dataQuality?.quality > 0.7 ? 'success' : 'warning',
-        message: "Qualidade dos Dados",
-        details: `Score: ${(dataQuality?.quality * 100).toFixed(1)}%, Completude: ${(dataQuality?.completeness * 100).toFixed(1)}%`
+        details: `Análises ativas: ${analysisStatus.activeAnalyses}`
       });
       setProgress(100);
 
@@ -131,14 +105,14 @@ const SystemDiagnostics = () => {
         description: "Ocorreu um erro durante a execução do diagnóstico.",
         variant: "destructive"
       });
+    } finally {
+      setIsRunning(false);
     }
-
-    setIsRunning(false);
   };
 
   useEffect(() => {
     runDiagnostics();
-    const interval = setInterval(runDiagnostics, 5 * 60 * 1000);
+    const interval = setInterval(runDiagnostics, 60000); // Atualiza a cada minuto
     return () => clearInterval(interval);
   }, []);
 
@@ -152,7 +126,7 @@ const SystemDiagnostics = () => {
             className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             disabled={isRunning}
           >
-            Atualizar
+            {isRunning ? 'Atualizando...' : 'Atualizar'}
           </button>
         </CardTitle>
       </CardHeader>
