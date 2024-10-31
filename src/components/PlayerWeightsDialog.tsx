@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Copy } from 'lucide-react';
 import { Player } from '@/types/gameTypes';
 import { Weight } from './PlayerList';
+import { useToast } from "@/components/ui/use-toast";
 
 interface PlayerWeightsDialogProps {
   isOpen: boolean;
@@ -12,7 +13,6 @@ interface PlayerWeightsDialogProps {
   player: Player | null;
   editedWeights: Weight[];
   onWeightChange: (index: number, value: number) => void;
-  onSaveWeights: () => void;
   onClonePlayer: (player: Player) => void;
 }
 
@@ -22,10 +22,27 @@ const PlayerWeightsDialog: React.FC<PlayerWeightsDialogProps> = ({
   player,
   editedWeights,
   onWeightChange,
-  onSaveWeights,
   onClonePlayer,
 }) => {
+  const { toast } = useToast();
+
   if (!player) return null;
+
+  const handleWeightChange = (index: number, value: number) => {
+    onWeightChange(index, value);
+    toast({
+      title: "Peso Ajustado",
+      description: `${editedWeights[index].name}: ${value}`,
+    });
+  };
+
+  const handleClonePlayer = () => {
+    onClonePlayer(player);
+    toast({
+      title: "Jogador Clonado",
+      description: `Clone do Jogador #${player.id} criado com sucesso!`,
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -48,25 +65,17 @@ const PlayerWeightsDialog: React.FC<PlayerWeightsDialogProps> = ({
                 min={0}
                 max={1000}
                 step={1}
-                onValueChange={(value) => onWeightChange(index, value[0])}
+                onValueChange={(value) => handleWeightChange(index, value[0])}
               />
             </div>
           ))}
-          <div className="flex gap-2">
-            <Button 
-              onClick={onSaveWeights} 
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              Salvar Alterações
-            </Button>
-            <Button
-              onClick={() => onClonePlayer(player)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Clonar Jogador
-            </Button>
-          </div>
+          <Button
+            onClick={handleClonePlayer}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Clonar Jogador
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

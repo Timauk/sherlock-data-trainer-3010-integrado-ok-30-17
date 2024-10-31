@@ -10,12 +10,6 @@ export interface Weight {
   description: string;
 }
 
-interface PlayerListProps {
-  players: Player[];
-  onUpdatePlayer?: (playerId: number, newWeights: number[]) => void;
-  onClonePlayer?: (player: Player) => void;
-}
-
 const WEIGHT_DESCRIPTIONS: Weight[] = [
   { name: "Aprendizado Base", value: 0, description: "Capacidade de aprender com dados históricos" },
   { name: "Adaptabilidade", value: 0, description: "Velocidade de adaptação a mudanças" },
@@ -35,6 +29,12 @@ const WEIGHT_DESCRIPTIONS: Weight[] = [
   { name: "Estabilidade", value: 0, description: "Consistência no desempenho" },
   { name: "Criatividade", value: 0, description: "Capacidade de gerar soluções únicas" }
 ];
+
+interface PlayerListProps {
+  players: Player[];
+  onUpdatePlayer?: (playerId: number, newWeights: number[]) => void;
+  onClonePlayer?: (player: Player) => void;
+}
 
 const PlayerList: React.FC<PlayerListProps> = ({ 
   players, 
@@ -71,27 +71,23 @@ const PlayerList: React.FC<PlayerListProps> = ({
   };
 
   const handleWeightChange = (index: number, newValue: number) => {
-    const newWeights = [...editedWeights];
-    newWeights[index] = { ...newWeights[index], value: newValue };
-    setEditedWeights(newWeights);
-  };
-
-  const handleSaveWeights = () => {
     if (selectedPlayer && onUpdatePlayer) {
-      const newWeights = editedWeights.map(w => w.value);
+      const newWeights = [...selectedPlayer.weights];
+      newWeights[index] = newValue;
       onUpdatePlayer(selectedPlayer.id, newWeights);
       
+      const updatedWeights = [...editedWeights];
+      updatedWeights[index] = { ...updatedWeights[index], value: newValue };
+      setEditedWeights(updatedWeights);
       toast({
-        title: "Pesos Atualizados",
-        description: `Os pesos do Jogador #${selectedPlayer.id} foram atualizados com sucesso.`
+        title: "Peso Ajustado",
+        description: `${editedWeights[index].name}: ${newValue}`,
       });
-      
-      setIsDialogOpen(false);
     }
   };
 
-  const handleClonePlayer = (player: Player, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClonePlayer = (player: Player, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (onClonePlayer) {
       onClonePlayer(player);
       toast({
@@ -119,13 +115,7 @@ const PlayerList: React.FC<PlayerListProps> = ({
         player={selectedPlayer}
         editedWeights={editedWeights}
         onWeightChange={handleWeightChange}
-        onSaveWeights={handleSaveWeights}
-        onClonePlayer={(player) => {
-          if (onClonePlayer) {
-            onClonePlayer(player);
-            setIsDialogOpen(false);
-          }
-        }}
+        onClonePlayer={handleClonePlayer}
       />
     </div>
   );
