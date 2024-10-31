@@ -1,6 +1,6 @@
 import { systemLogger } from './systemLogger';
 
-type LogType = 'action' | 'prediction' | 'performance' | 'system' | 'lunar' | 'player' | 'checkpoint' | 'learning' | 'model' | 'error';
+type LogType = 'action' | 'prediction' | 'performance' | 'system' | 'lunar' | 'player' | 'checkpoint' | 'learning' | 'model';
 
 interface LogConfig {
   removeMatches?: boolean;
