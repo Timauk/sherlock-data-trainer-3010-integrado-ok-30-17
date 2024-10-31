@@ -47,7 +47,6 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   concursoNumber,
   players,
   evolutionData,
-  logs,
   dates,
   numbers,
   updateFrequencyData,
@@ -72,7 +71,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
               players={players}
               evolutionData={evolutionData}
             />
-            <EnhancedLogDisplay logs={logs} />
+            <EnhancedLogDisplay />
           </div>
         </Suspense>
       </TabsContent>
