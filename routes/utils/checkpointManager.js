@@ -1,60 +1,62 @@
 import fs from 'fs';
 import path from 'path';
-import { compressHistoricalData } from '../performance/dataCompression.js';
-import { optimizedCheckpointWrite, optimizedCheckpointRead } from '../performance/checkpointOptimization.js';
+import { fileURLToPath } from 'url';
 
-export class CheckpointManager {
-  private static instance: CheckpointManager;
-  private checkpointPath: string;
-  private maxCheckpoints: number = 50;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-  private constructor() {
+class CheckpointManager {
+  static instance = null;
+  
+  constructor() {
     this.checkpointPath = path.join(process.cwd(), 'checkpoints');
+    this.maxCheckpoints = 50;
     this.ensureCheckpointDirectory();
   }
 
-  static getInstance(): CheckpointManager {
+  static getInstance() {
     if (!CheckpointManager.instance) {
       CheckpointManager.instance = new CheckpointManager();
     }
     return CheckpointManager.instance;
   }
 
-  private ensureCheckpointDirectory(): void {
+  ensureCheckpointDirectory() {
     if (!fs.existsSync(this.checkpointPath)) {
       fs.mkdirSync(this.checkpointPath, { recursive: true });
     }
   }
 
-  async saveCheckpoint(data: any): Promise<string> {
+  async saveCheckpoint(data) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `checkpoint-${timestamp}.dat`;
+    const filename = `checkpoint-${timestamp}.json`;
     const filepath = path.join(this.checkpointPath, filename);
 
-    await optimizedCheckpointWrite(filepath, data);
+    await fs.promises.writeFile(filepath, JSON.stringify(data, null, 2));
     await this.cleanOldCheckpoints();
     
     return filename;
   }
 
-  async loadLatestCheckpoint(): Promise<any> {
+  async loadLatestCheckpoint() {
     const files = fs.readdirSync(this.checkpointPath)
-      .filter(f => f.endsWith('.dat'))
+      .filter(f => f.endsWith('.json'))
       .sort()
       .reverse();
 
     if (files.length === 0) return null;
 
     const latestFile = files[0];
-    const data = await optimizedCheckpointRead(
-      path.join(this.checkpointPath, latestFile)
+    const data = await fs.promises.readFile(
+      path.join(this.checkpointPath, latestFile),
+      'utf8'
     );
-    return data;
+    return JSON.parse(data);
   }
 
-  private async cleanOldCheckpoints(): Promise<void> {
+  async cleanOldCheckpoints() {
     const files = fs.readdirSync(this.checkpointPath)
-      .filter(f => f.endsWith('.dat'))
+      .filter(f => f.endsWith('.json'))
       .sort();
 
     if (files.length > this.maxCheckpoints) {

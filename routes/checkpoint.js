@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkpointManager } from '../src/utils/storage/checkpointManager.js';
+import { checkpointManager } from './utils/checkpointManager.js';
 
 const router = express.Router();
 
@@ -12,24 +12,7 @@ router.post('/', async (req, res) => {
         freeMemory: process.memoryUsage().heapUsed,
         uptime: process.uptime()
       },
-      gameState: {
-        players: (req.body.players || []).slice(-1000),
-        evolutionData: (req.body.evolutionData || []).slice(-1000),
-        generation: req.body.generation || 0,
-        modelState: req.body.modelState || null,
-        trainingHistory: (req.body.trainingHistory || []).slice(-1000),
-        frequencyAnalysis: req.body.frequencyAnalysis || {},
-        lunarAnalysis: req.body.lunarAnalysis || {},
-        predictions: (req.body.predictions || []).slice(-100),
-        scores: (req.body.scores || []).slice(-1000),
-        championData: req.body.championData || null,
-        boardNumbers: (req.body.boardNumbers || []).slice(-100),
-        concursoNumber: req.body.concursoNumber || 0,
-        gameCount: req.body.gameCount || 0,
-        isInfiniteMode: req.body.isInfiniteMode || false,
-        isManualMode: req.body.isManualMode || false,
-        logs: (req.body.logs || []).slice(-100)
-      }
+      gameState: req.body
     });
 
     res.json({ 
