@@ -9,7 +9,7 @@ export const useGameInitialization = () => {
       id: i + 1,
       score: 0,
       predictions: [],
-      weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
+      weights: Array.from({ length: 17 }, () => Math.random()),
       fitness: 0,
       generation: 1
     }));
