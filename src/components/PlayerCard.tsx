@@ -9,6 +9,7 @@ interface PlayerCardProps {
   isTopPlayer: boolean;
   onPlayerClick: (player: Player) => void;
   onClonePlayer: (player: Player, e: React.MouseEvent) => void;
+  isTraditional?: boolean;
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({
@@ -16,6 +17,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   isTopPlayer,
   onPlayerClick,
   onClonePlayer,
+  isTraditional = false
 }) => {
   const formatPredictions = (predictions: number[]) => {
     return predictions.length > 0 
@@ -23,18 +25,23 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       : 'Aguardando próxima rodada';
   };
 
+  const cardClass = isTraditional
+    ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500'
+    : isTopPlayer
+      ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
+      : 'bg-card';
+
   return (
     <div 
       onClick={() => onPlayerClick(player)}
-      className={`p-4 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg
-        ${isTopPlayer ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500' : 'bg-card'}`}
+      className={`p-4 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg ${cardClass}`}
     >
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-lg">
-          Jogador #{player.id}
-          {isTopPlayer && <span className="ml-2 text-yellow-600">👑</span>}
+          {isTraditional ? 'Jogador Tradicional' : `Jogador #${player.id}`}
+          {isTopPlayer && !isTraditional && <span className="ml-2 text-yellow-600">👑</span>}
         </h4>
-        <Badge variant={isTopPlayer ? "default" : "secondary"}>
+        <Badge variant={isTraditional ? "default" : isTopPlayer ? "default" : "secondary"}>
           Score: {player.score.toFixed(0)}
         </Badge>
       </div>
@@ -49,14 +56,16 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         <p className="text-sm">
           <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}
         </p>
-        <Button 
-          onClick={(e) => onClonePlayer(player, e)}
-          className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
-          variant="default"
-        >
-          <Copy className="mr-2 h-4 w-4" />
-          Clonar Jogador
-        </Button>
+        {!isTraditional && (
+          <Button 
+            onClick={(e) => onClonePlayer(player, e)}
+            className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+            variant="default"
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Clonar Jogador
+          </Button>
+        )}
       </div>
     </div>
   );

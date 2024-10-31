@@ -9,6 +9,7 @@ import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerE
 import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
 import { learningQualityMonitor } from '@/utils/monitoring/learningQualityMonitor';
+import { traditionalPlayer } from '@/utils/traditionalPlayerLogic';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -25,6 +26,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     score: number;
     fitness: number;
   }>>([]);
+  const [traditionalPlayerStats, setTraditionalPlayerStats] = useState({
+    score: 0,
+    matches: 0,
+    predictions: [] as number[]
+  });
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
   const [modelMetrics, setModelMetrics] = useState({
     accuracy: 0,
@@ -46,10 +52,152 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
-  // Use the extracted initialization effects
   useGameInitializationEffects(initializePlayers, csvData, setUpdateInterval);
 
-  const gameLoop = useGameLoop(
+  const gameLoop = useCallback(async () => {
+    if (csvData.length === 0 || !trainedModel) return;
+
+    setConcursoNumber(prev => prev + 1);
+    setGameCount(prev => prev + 1);
+
+    const currentBoardNumbers = csvData[concursoNumber % csvData.length];
+    setBoardNumbers(currentBoardNumbers);
+
+    const validationMetrics = performCrossValidation(
+      [players[0].predictions],
+      csvData.slice(Math.max(0, concursoNumber - 10), concursoNumber)
+    );
+
+    const currentDate = new Date();
+    const lunarPhase = getLunarPhase(currentDate);
+    const lunarPatterns = analyzeLunarPatterns([currentDate], [currentBoardNumbers]);
+    
+    setNumbers(currentNumbers => {
+      const newNumbers = [...currentNumbers, currentBoardNumbers].slice(-100);
+      return newNumbers;
+    });
+    
+    setDates(currentDates => [...currentDates, currentDate].slice(-100));
+
+    // Get traditional player's prediction
+    const traditionalPrediction = traditionalPlayer.makePlay(currentBoardNumbers);
+    if (traditionalPrediction) {
+      const traditionalMatches = traditionalPrediction.filter(num => 
+        currentBoardNumbers.includes(num)).length;
+      
+      setTraditionalPlayerStats(prev => ({
+        score: prev.score + traditionalMatches,
+        matches: prev.matches + traditionalMatches,
+        predictions: traditionalPrediction
+      }));
+
+      // Compare with AI players and show alert if traditional player is performing better
+      const avgAiScore = players.reduce((sum, p) => sum + p.score, 0) / players.length;
+      if (traditionalPlayerStats.score > avgAiScore * 1.2) {
+        toast({
+          title: "Atenção!",
+          description: "O jogador tradicional está superando a média dos jogadores IA!",
+          variant: "warning"
+        });
+      }
+    }
+
+    const playerPredictions = await Promise.all(
+      players.map(async player => {
+        const prediction = await makePrediction(
+          trainedModel, 
+          currentBoardNumbers, 
+          player.weights, 
+          concursoNumber,
+          setNeuralNetworkVisualization,
+          { lunarPhase, lunarPatterns },
+          { numbers: [[...currentBoardNumbers]], dates: [currentDate] }
+        );
+
+        const timeSeriesAnalyzer = new TimeSeriesAnalysis([[...currentBoardNumbers]]);
+        const arimaPredictor = timeSeriesAnalyzer.analyzeNumbers();
+        predictionMonitor.recordPrediction(prediction, currentBoardNumbers, arimaPredictor);
+
+        return prediction;
+      })
+    );
+
+    let totalMatches = 0;
+    let randomMatches = 0;
+    let currentGameMatches = 0;
+    let currentGameRandomMatches = 0;
+    const totalPredictions = players.length * (concursoNumber + 1);
+
+    const updatedPlayers = players.map((player, index) => {
+      const predictions = playerPredictions[index];
+      const matches = predictions.filter(num => currentBoardNumbers.includes(num)).length;
+      totalMatches += matches;
+      currentGameMatches += matches;
+      
+      const randomPrediction = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
+      const randomMatch = randomPrediction.filter(num => currentBoardNumbers.includes(num)).length;
+      randomMatches += randomMatch;
+      currentGameRandomMatches += randomMatch;
+
+      temporalAccuracyTracker.recordAccuracy(matches, 15);
+
+      const reward = calculateReward(matches);
+      
+      if (matches >= 11) {
+        const logMessage = logReward(matches, player.id);
+        addLog(logMessage, matches);
+        
+        if (matches >= 13) {
+          toast({
+            title: "Desempenho Excepcional!",
+            description: `Jogador ${player.id} acertou ${matches} números!`
+          });
+        }
+      }
+
+      return {
+        ...player,
+        score: player.score + reward,
+        predictions,
+        fitness: matches
+      };
+    });
+
+    setModelMetrics({
+      accuracy: totalMatches / (players.length * 15),
+      randomAccuracy: randomMatches / (players.length * 15),
+      totalPredictions: totalPredictions,
+      perGameAccuracy: currentGameMatches / (players.length * 15),
+      perGameRandomAccuracy: currentGameRandomMatches / (players.length * 15)
+    });
+
+    setPlayers(updatedPlayers);
+    setEvolutionData(prev => [
+      ...prev,
+      ...updatedPlayers.map(player => ({
+        generation,
+        playerId: player.id,
+        score: player.score,
+        fitness: player.fitness
+      }))
+    ]);
+
+    const enhancedTrainingData = [...currentBoardNumbers, 
+      ...updatedPlayers[0].predictions,
+      lunarPhase === 'Cheia' ? 1 : 0,
+      lunarPhase === 'Nova' ? 1 : 0,
+      lunarPhase === 'Crescente' ? 1 : 0,
+      lunarPhase === 'Minguante' ? 1 : 0
+    ];
+
+    setTrainingData(currentTrainingData => 
+      [...currentTrainingData, enhancedTrainingData]);
+
+    if (concursoNumber % Math.min(updateInterval, 50) === 0 && trainingData.length > 0) {
+      await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
+      setTrainingData([]);
+    }
+  }, [
     players,
     setPlayers,
     csvData,
@@ -63,19 +211,18 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     setTrainingData,
     setNumbers,
     setDates,
-    setNeuralNetworkVisualization,
     setBoardNumbers,
+    setNeuralNetworkVisualization,
     setModelMetrics,
     setConcursoNumber,
     setGameCount,
-    (title, description) => toast({ title, description })
-  );
+    toast
+  ]);
 
   const evolveGeneration = useCallback(async () => {
     const bestPlayers = selectBestPlayers(players);
     setGameCount(prev => prev + 1);
 
-    // Ensure predictions are properly formatted as number[][]
     const formatPredictions = (player: Player): number[][] => {
       if (!player.predictions.length) return [];
       return player.predictions.map(pred => 
@@ -83,7 +230,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       );
     };
 
-    // Análise da qualidade do aprendizado para cada jogador
     const learningAnalysis = bestPlayers.map(player => 
       learningQualityMonitor.analyzePlayerLearning(
         player,
@@ -92,7 +238,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       )
     );
 
-    // Alerta se muitos jogadores estão com aprendizado comprometido
     const compromisedLearning = learningAnalysis.filter(a => !a.isLearningEffective).length;
     if (compromisedLearning > bestPlayers.length * 0.5) {
       toast({
@@ -105,7 +250,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     if (gameCount % 1000 === 0 && bestPlayers.length > 0) {
       const champion = bestPlayers[0];
       
-      // Verifica qualidade do aprendizado do campeão
       const championAnalysis = learningQualityMonitor.analyzePlayerLearning(
         champion,
         numbers,
@@ -223,9 +367,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     gameLoop,
     evolveGeneration,
     addLog,
-    toggleInfiniteMode: useCallback(() => {
-      setIsInfiniteMode(prev => !prev);
-    }, []),
+    toggleInfiniteMode: useCallback(() => setIsInfiniteMode(prev => !prev), []),
     dates,
     numbers,
     updateFrequencyData,
@@ -237,5 +379,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     isManualMode,
     toggleManualMode,
     clonePlayer,
+    traditionalPlayerStats
   };
 };
