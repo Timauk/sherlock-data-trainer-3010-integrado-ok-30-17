@@ -1,27 +1,17 @@
 import React, { useState } from 'react';
+import { useTheme } from 'next-themes';
+import * as tf from '@tensorflow/tfjs';
+import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
-import { useServerStatus } from '@/hooks/useServerStatus';
-import GameMetrics from './GameMetrics';
-import ControlPanel from './GameControls/ControlPanel';
-import AnalysisTabs from './GameAnalysis/AnalysisTabs';
-import ChampionPredictions from './ChampionPredictions';
-import ProcessingSelector from './ProcessingSelector';
+import { PlayPageHeader } from '@/components/PlayPageHeader';
+import { GameMetrics } from '@/components/GameMetrics';
+import { ControlPanel } from '@/components/GameControls/ControlPanel';
+import ChampionPredictions from '@/components/ChampionPredictions';
+import AnalysisTabs from '@/components/GameAnalysis/AnalysisTabs';
+import ProcessingSelector from '@/components/ProcessingSelector';
+import { Slider } from "@/components/ui/slider";
 
-interface PlayPageContentProps {
-  isPlaying: boolean;
-  onPlay: () => void;
-  onPause: () => void;
-  onReset: () => void;
-  onThemeToggle: () => void;
-  onCsvUpload: (file: File) => void;
-  onModelUpload: (jsonFile: File, weightsFile: File) => void;
-  onSaveModel: () => void;
-  progress: number;
-  generation: number;
-  gameLogic: ReturnType<typeof useGameLogic>;
-}
-
-export const PlayPageContent: React.FC<PlayPageContentProps> = ({
+const PlayPageContent: React.FC<PlayPageContentProps> = ({
   isPlaying,
   onPlay,
   onPause,
@@ -89,7 +79,6 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
         concursoNumber={gameLogic.concursoNumber}
         players={gameLogic.players}
         evolutionData={gameLogic.evolutionData}
-        logs={gameLogic.logs}
         dates={gameLogic.dates}
         numbers={gameLogic.numbers}
         updateFrequencyData={gameLogic.updateFrequencyData}
