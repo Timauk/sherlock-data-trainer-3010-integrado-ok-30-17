@@ -10,6 +10,27 @@ import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
 import { learningQualityMonitor } from '@/utils/monitoring/learningQualityMonitor';
 import { traditionalPlayer } from '@/utils/traditionalPlayerLogic';
+import { performCrossValidation } from '@/utils/validation/crossValidation';
+import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
+import { makePrediction } from '@/utils/predictionUtils';
+import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
+import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
+import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
+import { calculateReward, logReward } from '@/utils/rewardSystem';
+
+interface ModelMetrics {
+  accuracy: number;
+  randomAccuracy: number;
+  totalPredictions: number;
+  perGameAccuracy?: number;
+  perGameRandomAccuracy?: number;
+}
+
+interface TraditionalPlayerStats {
+  score: number;
+  matches: number;
+  predictions: number[];
+}
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -26,13 +47,13 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     score: number;
     fitness: number;
   }>>([]);
-  const [traditionalPlayerStats, setTraditionalPlayerStats] = useState({
+  const [traditionalPlayerStats, setTraditionalPlayerStats] = useState<TraditionalPlayerStats>({
     score: 0,
     matches: 0,
-    predictions: [] as number[]
+    predictions: []
   });
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
-  const [modelMetrics, setModelMetrics] = useState({
+  const [modelMetrics, setModelMetrics] = useState<ModelMetrics>({
     accuracy: 0,
     randomAccuracy: 0,
     totalPredictions: 0,
