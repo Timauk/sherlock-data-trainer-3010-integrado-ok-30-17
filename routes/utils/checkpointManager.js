@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as tf from '@tensorflow/tfjs-node';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,44 +26,108 @@ class CheckpointManager {
     if (!fs.existsSync(this.checkpointPath)) {
       fs.mkdirSync(this.checkpointPath, { recursive: true });
     }
+    // Create model directory if it doesn't exist
+    const modelPath = path.join(this.checkpointPath, 'models');
+    if (!fs.existsSync(modelPath)) {
+      fs.mkdirSync(modelPath, { recursive: true });
+    }
   }
 
   async saveCheckpoint(data) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `checkpoint-${timestamp}.json`;
-    const filepath = path.join(this.checkpointPath, filename);
+    const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
+    fs.mkdirSync(checkpointDir);
 
-    await fs.promises.writeFile(filepath, JSON.stringify(data, null, 2));
+    // Save game state JSON
+    const gameStatePath = path.join(checkpointDir, 'gameState.json');
+    const gameState = {
+      players: data.gameState.players || [],
+      evolutionData: data.gameState.evolutionData || [],
+      generation: data.gameState.generation || 0,
+      trainingHistory: data.gameState.trainingHistory || [],
+      frequencyAnalysis: data.gameState.frequencyAnalysis || {},
+      lunarAnalysis: data.gameState.lunarAnalysis || {},
+      predictions: data.gameState.predictions || [],
+      scores: data.gameState.scores || [],
+      championData: data.gameState.championData,
+      boardNumbers: data.gameState.boardNumbers || [],
+      concursoNumber: data.gameState.concursoNumber || 0,
+      gameCount: data.gameState.gameCount || 0,
+      isInfiniteMode: data.gameState.isInfiniteMode || false,
+      isManualMode: data.gameState.isManualMode || false,
+      logs: data.gameState.logs || [],
+      metrics: data.gameState.metrics || {},
+      dates: data.gameState.dates || [],
+      numbers: data.gameState.numbers || [],
+      csvData: data.gameState.csvData || [],
+      trainingData: data.gameState.trainingData || []
+    };
+
+    await fs.promises.writeFile(gameStatePath, JSON.stringify(gameState, null, 2));
+
+    // Save neural network model if exists
+    if (data.gameState.model) {
+      const modelPath = path.join(checkpointDir, 'model');
+      await tf.node.saveModel(data.gameState.model, `file://${modelPath}`);
+    }
+
+    // Save training metrics and charts data
+    const metricsPath = path.join(checkpointDir, 'metrics.json');
+    await fs.promises.writeFile(metricsPath, JSON.stringify({
+      accuracy: data.gameState.metrics?.accuracy || 0,
+      loss: data.gameState.metrics?.loss || 0,
+      predictions: data.gameState.metrics?.predictions || [],
+      evolutionStats: data.gameState.metrics?.evolutionStats || [],
+      trainingProgress: data.gameState.metrics?.trainingProgress || 0
+    }, null, 2));
+
     await this.cleanOldCheckpoints();
-    
-    return filename;
+    return path.basename(checkpointDir);
   }
 
   async loadLatestCheckpoint() {
-    const files = fs.readdirSync(this.checkpointPath)
-      .filter(f => f.endsWith('.json'))
+    const checkpoints = fs.readdirSync(this.checkpointPath)
+      .filter(f => f.startsWith('checkpoint-'))
       .sort()
       .reverse();
 
-    if (files.length === 0) return null;
+    if (checkpoints.length === 0) return null;
 
-    const latestFile = files[0];
-    const data = await fs.promises.readFile(
-      path.join(this.checkpointPath, latestFile),
-      'utf8'
-    );
-    return JSON.parse(data);
+    const latestCheckpoint = checkpoints[0];
+    const checkpointDir = path.join(this.checkpointPath, latestCheckpoint);
+
+    // Load game state
+    const gameStatePath = path.join(checkpointDir, 'gameState.json');
+    const gameState = JSON.parse(await fs.promises.readFile(gameStatePath, 'utf8'));
+
+    // Load model if exists
+    const modelPath = path.join(checkpointDir, 'model');
+    if (fs.existsSync(modelPath)) {
+      gameState.model = await tf.loadLayersModel(`file://${modelPath}/model.json`);
+    }
+
+    // Load metrics
+    const metricsPath = path.join(checkpointDir, 'metrics.json');
+    if (fs.existsSync(metricsPath)) {
+      gameState.metrics = JSON.parse(await fs.promises.readFile(metricsPath, 'utf8'));
+    }
+
+    return {
+      timestamp: latestCheckpoint.replace('checkpoint-', ''),
+      gameState
+    };
   }
 
   async cleanOldCheckpoints() {
-    const files = fs.readdirSync(this.checkpointPath)
-      .filter(f => f.endsWith('.json'))
+    const checkpoints = fs.readdirSync(this.checkpointPath)
+      .filter(f => f.startsWith('checkpoint-'))
       .sort();
 
-    if (files.length > this.maxCheckpoints) {
-      const filesToDelete = files.slice(0, files.length - this.maxCheckpoints);
-      for (const file of filesToDelete) {
-        fs.unlinkSync(path.join(this.checkpointPath, file));
+    if (checkpoints.length > this.maxCheckpoints) {
+      const checkpointsToDelete = checkpoints.slice(0, checkpoints.length - this.maxCheckpoints);
+      for (const checkpoint of checkpointsToDelete) {
+        const checkpointPath = path.join(this.checkpointPath, checkpoint);
+        await fs.promises.rm(checkpointPath, { recursive: true });
       }
     }
   }

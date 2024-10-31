@@ -20,6 +20,7 @@ router.post('/', async (req, res) => {
       filename 
     });
   } catch (error) {
+    console.error('Erro ao salvar checkpoint:', error);
     res.status(500).json({ 
       message: 'Erro ao salvar checkpoint', 
       error: error.message 
@@ -37,6 +38,7 @@ router.get('/latest', async (req, res) => {
     
     res.json(checkpoint);
   } catch (error) {
+    console.error('Erro ao carregar checkpoint:', error);
     res.status(500).json({ 
       message: 'Erro ao carregar checkpoint', 
       error: error.message 
