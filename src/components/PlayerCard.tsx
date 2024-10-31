@@ -9,7 +9,6 @@ interface PlayerCardProps {
   isTopPlayer: boolean;
   onPlayerClick: (player: Player) => void;
   onClonePlayer: (player: Player, e: React.MouseEvent) => void;
-  isTraditional?: boolean;
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({
@@ -17,7 +16,6 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   isTopPlayer,
   onPlayerClick,
   onClonePlayer,
-  isTraditional = false
 }) => {
   const formatPredictions = (predictions: number[]) => {
     return predictions.length > 0 
@@ -25,28 +23,18 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       : 'Aguardando próxima rodada';
   };
 
-  const isPlayer11 = player.id === 11;
-  
-  const cardClass = isTraditional
-    ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500'
-    : isPlayer11
-      ? 'bg-purple-100 dark:bg-purple-900 border-2 border-purple-500'
-      : isTopPlayer
-        ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
-        : 'bg-card';
-
   return (
     <div 
       onClick={() => onPlayerClick(player)}
-      className={`p-4 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg ${cardClass}`}
+      className={`p-4 rounded-lg shadow cursor-pointer transition-all hover:shadow-lg
+        ${isTopPlayer ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500' : 'bg-card'}`}
     >
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-lg">
-          {isTraditional ? 'Jogador Tradicional' : `Jogador #${player.id}`}
-          {isPlayer11 && <span className="ml-2 text-purple-600">⚡</span>}
-          {isTopPlayer && !isTraditional && !isPlayer11 && <span className="ml-2 text-yellow-600">👑</span>}
+          Jogador #{player.id}
+          {isTopPlayer && <span className="ml-2 text-yellow-600">👑</span>}
         </h4>
-        <Badge variant={isTraditional ? "default" : isPlayer11 ? "secondary" : isTopPlayer ? "default" : "secondary"}>
+        <Badge variant={isTopPlayer ? "default" : "secondary"}>
           Score: {player.score.toFixed(0)}
         </Badge>
       </div>
@@ -61,16 +49,14 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         <p className="text-sm">
           <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}
         </p>
-        {!isTraditional && (
-          <Button 
-            onClick={(e) => onClonePlayer(player, e)}
-            className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
-            variant="default"
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Clonar Jogador
-          </Button>
-        )}
+        <Button 
+          onClick={(e) => onClonePlayer(player, e)}
+          className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+          variant="default"
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Clonar Jogador
+        </Button>
       </div>
     </div>
   );

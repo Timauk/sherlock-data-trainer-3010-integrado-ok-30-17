@@ -1,103 +1,241 @@
 import { useState, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { useGameState } from './useGameState';
-import { useGameToast } from './useGameToast';
+import { useToast } from "@/components/ui/use-toast";
+import { useGameInitialization } from './useGameInitialization';
 import { useGameLoop } from './useGameLoop';
-import { useGameEvolution } from './useGameEvolution';
-import { Player, ModelVisualization } from '@/types/gameTypes';
-import { cloneChampion } from '@/utils/playerEvolution';
+import { useGameInitializationEffects } from './useGameInitializationEffects';
+import { updateModelWithNewData } from '@/utils/modelUtils';
+import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
+import { selectBestPlayers } from '@/utils/evolutionSystem';
+import { ModelVisualization, Player } from '@/types/gameTypes';
+import { learningQualityMonitor } from '@/utils/monitoring/learningQualityMonitor';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
-  const gameState = useGameState();
-  const showToast = useGameToast();
+  const { toast } = useToast();
+  const { players, setPlayers, initializePlayers } = useGameInitialization();
+  const [generation, setGeneration] = useState(1);
+  const [gameCount, setGameCount] = useState(0);
+  const [championData, setChampionData] = useState<{
+    player: Player;
+    trainingData: number[][];
+  }>();
+  const [evolutionData, setEvolutionData] = useState<Array<{
+    generation: number;
+    playerId: number;
+    score: number;
+    fitness: number;
+  }>>([]);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
+  const [modelMetrics, setModelMetrics] = useState({
+    accuracy: 0,
+    randomAccuracy: 0,
+    totalPredictions: 0,
+  });
   const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
   const [frequencyData, setFrequencyData] = useState<{ [key: string]: number[] }>({});
   const [updateInterval, setUpdateInterval] = useState(10);
+  const [isInfiniteMode, setIsInfiniteMode] = useState(false);
+  const [concursoNumber, setConcursoNumber] = useState(0);
+  const [trainingData, setTrainingData] = useState<number[][]>([]);
+  const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [isManualMode, setIsManualMode] = useState(false);
 
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
 
+  // Use the extracted initialization effects
+  useGameInitializationEffects(initializePlayers, csvData, setUpdateInterval);
+
   const gameLoop = useGameLoop(
-    gameState.players,
-    gameState.setPlayers,
+    players,
+    setPlayers,
     csvData,
     trainedModel,
-    gameState.concursoNumber,
-    gameState.setEvolutionData,
-    gameState.generation,
+    concursoNumber,
+    setEvolutionData,
+    generation,
     addLog,
     updateInterval,
-    gameState.trainingData,
-    gameState.setTrainingData,
+    trainingData,
+    setTrainingData,
     setNumbers,
     setDates,
     setNeuralNetworkVisualization,
-    gameState.setBoardNumbers,
-    gameState.setModelMetrics,
-    gameState.setConcursoNumber,
-    gameState.setGameCount,
-    showToast
+    setBoardNumbers,
+    setModelMetrics,
+    setConcursoNumber,
+    setGameCount,
+    (title, description) => toast({ title, description })
   );
 
-  const evolveGeneration = useGameEvolution(gameState, trainedModel, numbers, showToast, addLog);
+  const evolveGeneration = useCallback(async () => {
+    const bestPlayers = selectBestPlayers(players);
+    setGameCount(prev => prev + 1);
+
+    // Ensure predictions are properly formatted as number[][]
+    const formatPredictions = (player: Player): number[][] => {
+      if (!player.predictions.length) return [];
+      return player.predictions.map(pred => 
+        Array.isArray(pred) ? pred : [pred]
+      );
+    };
+
+    // Análise da qualidade do aprendizado para cada jogador
+    const learningAnalysis = bestPlayers.map(player => 
+      learningQualityMonitor.analyzePlayerLearning(
+        player,
+        numbers,
+        formatPredictions(player)
+      )
+    );
+
+    // Alerta se muitos jogadores estão com aprendizado comprometido
+    const compromisedLearning = learningAnalysis.filter(a => !a.isLearningEffective).length;
+    if (compromisedLearning > bestPlayers.length * 0.5) {
+      toast({
+        title: "Alerta de Aprendizado",
+        description: `${compromisedLearning} jogadores podem estar com aprendizado comprometido.`,
+        variant: "destructive"
+      });
+    }
+
+    if (gameCount % 1000 === 0 && bestPlayers.length > 0) {
+      const champion = bestPlayers[0];
+      
+      // Verifica qualidade do aprendizado do campeão
+      const championAnalysis = learningQualityMonitor.analyzePlayerLearning(
+        champion,
+        numbers,
+        formatPredictions(champion)
+      );
+
+      if (championAnalysis.isLearningEffective) {
+        const clones = cloneChampion(champion, players.length);
+        setPlayers(clones);
+        
+        if (trainedModel && championData) {
+          try {
+            const updatedModel = await updateModelWithChampionKnowledge(
+              trainedModel,
+              champion,
+              championData.trainingData
+            );
+            
+            toast({
+              title: "Modelo Atualizado",
+              description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
+            });
+            
+            setChampionData({
+              player: champion,
+              trainingData: trainingData
+            });
+          } catch (error) {
+            console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
+          }
+        }
+      } else {
+        toast({
+          title: "Alerta de Qualidade",
+          description: "Campeão atual pode não estar aprendendo efetivamente. Mantendo geração anterior.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      const newGeneration = bestPlayers.map(player => ({
+        ...player,
+        generation: generation + 1
+      }));
+      
+      setPlayers(newGeneration);
+    }
+
+    setGeneration(prev => prev + 1);
+    
+    setEvolutionData(prev => [
+      ...prev,
+      ...players.map(player => ({
+        generation,
+        playerId: player.id,
+        score: player.score,
+        fitness: player.fitness
+      }))
+    ]);
+
+    if (bestPlayers.length > 0) {
+      addLog(`Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
+      toast({
+        title: "Nova Geração",
+        description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
+      });
+    }
+  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData, numbers]);
+
+  const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
+    setFrequencyData(newFrequencyData);
+    
+    if (trainedModel && players.length > 0) {
+      const frequencyFeatures = Object.values(newFrequencyData).flat();
+      setTrainingData(prev => {
+        const lastEntry = prev[prev.length - 1];
+        if (lastEntry) {
+          return [...prev.slice(0, -1), [...lastEntry, ...frequencyFeatures]];
+        }
+        return prev;
+      });
+    }
+  }, [trainedModel, players]);
 
   const toggleManualMode = useCallback(() => {
     setIsManualMode(prev => {
       const newMode = !prev;
-      showToast(
-        newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
-        newMode ? 
+      toast({
+        title: newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
+        description: newMode ? 
           "A clonagem automática está desativada. Suas alterações serão mantidas." : 
-          "A clonagem automática está ativada novamente."
-      );
+          "A clonagem automática está ativada novamente.",
+      });
       return newMode;
     });
-  }, [showToast]);
+  }, []);
 
-  const clonePlayerCallback = useCallback((player: Player) => {
+  const clonePlayer = useCallback((player: Player) => {
     const clones = cloneChampion(player, 1);
-    gameState.setPlayers(prevPlayers => [...prevPlayers, ...clones]);
-    showToast("Jogador Clonado", `Um novo clone do Jogador #${player.id} foi criado.`);
-  }, [gameState, showToast]);
+    setPlayers(prevPlayers => [...prevPlayers, ...clones]);
+    
+    toast({
+      title: "Jogador Clonado",
+      description: `Um novo clone do Jogador #${player.id} foi criado.`
+    });
+  }, []);
 
   return {
-    players: gameState.players,
-    generation: gameState.generation,
-    evolutionData: gameState.evolutionData,
+    players,
+    generation,
+    evolutionData,
     neuralNetworkVisualization,
-    modelMetrics: gameState.modelMetrics,
+    modelMetrics,
     logs,
+    initializePlayers,
     gameLoop,
     evolveGeneration,
-    initializePlayers: useCallback(() => {
-      const newPlayers = Array.from({ length: 10 }, (_, i) => ({
-        id: i + 1,
-        score: 0,
-        predictions: [],
-        weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
-        fitness: 0,
-        generation: 1
-      }));
-      gameState.setPlayers(newPlayers);
-    }, [gameState]),
     addLog,
-    toggleInfiniteMode: useCallback(() => gameState.setIsInfiniteMode(prev => !prev), [gameState]),
+    toggleInfiniteMode: useCallback(() => {
+      setIsInfiniteMode(prev => !prev);
+    }, []),
     dates,
     numbers,
-    updateFrequencyData: setFrequencyData,
-    isInfiniteMode: gameState.isInfiniteMode,
-    boardNumbers: gameState.boardNumbers,
-    concursoNumber: gameState.concursoNumber,
+    updateFrequencyData,
+    isInfiniteMode,
+    boardNumbers,
+    concursoNumber,
     trainedModel,
-    gameCount: gameState.gameCount,
+    gameCount,
     isManualMode,
     toggleManualMode,
-    clonePlayer: clonePlayerCallback,
-    traditionalPlayerStats: gameState.traditionalPlayerStats
+    clonePlayer,
   };
 };

@@ -6,6 +6,7 @@ import { updateModelWithNewData } from '@/utils/modelUtils';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
 import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
 import { performCrossValidation } from '@/utils/validation/crossValidation';
+import { calculateConfidenceScore } from '@/utils/prediction/confidenceScoring';
 import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
 import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
 import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
@@ -74,6 +75,7 @@ export const useGameLoop = (
           { numbers: [[...currentBoardNumbers]], dates: [currentDate] }
         );
 
+        // Monitorar previsões
         const timeSeriesAnalyzer = new TimeSeriesAnalysis([[...currentBoardNumbers]]);
         const arimaPredictor = timeSeriesAnalyzer.analyzeNumbers();
         predictionMonitor.recordPrediction(prediction, currentBoardNumbers, arimaPredictor);
@@ -99,6 +101,7 @@ export const useGameLoop = (
       randomMatches += randomMatch;
       currentGameRandomMatches += randomMatch;
 
+      // Record temporal accuracy
       temporalAccuracyTracker.recordAccuracy(matches, 15);
 
       const reward = calculateReward(matches);
