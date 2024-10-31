@@ -1,4 +1,5 @@
 @echo off
-start cmd /k "node server.js"
-timeout /t 2
-start cmd /k "npm run dev"
+echo Iniciando servidor Node.js e monitoramento...
+start cmd /k "node --watch server.js"
+echo Iniciando aplicação React...
+npm run dev

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameLogic } from '@/hooks/useGameLogic';
+import { useServerStatus } from '@/hooks/useServerStatus';
 import GameMetrics from './GameMetrics';
 import ControlPanel from './GameControls/ControlPanel';
 import AnalysisTabs from './GameAnalysis/AnalysisTabs';
 import ChampionPredictions from './ChampionPredictions';
+import ProcessingSelector from './ProcessingSelector';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -32,7 +34,9 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
   generation,
   gameLogic
 }) => {
-  // Encontra o champion com verificação de null
+  const [isServerProcessing, setIsServerProcessing] = useState(false);
+  const { status: serverStatus } = useServerStatus();
+  
   const champion = gameLogic.players && gameLogic.players.length > 0 
     ? gameLogic.players.reduce((prev, current) => 
         (current.fitness > (prev?.fitness || 0)) ? current : prev, 
@@ -41,6 +45,12 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
+      <ProcessingSelector
+        isServerProcessing={isServerProcessing}
+        onToggleProcessing={() => setIsServerProcessing(prev => !prev)}
+        serverStatus={serverStatus}
+      />
+      
       <GameMetrics 
         progress={progress}
         champion={champion}
@@ -62,6 +72,7 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
             toggleManualMode={gameLogic.toggleManualMode}
             isInfiniteMode={gameLogic.isInfiniteMode}
             isManualMode={gameLogic.isManualMode}
+            disabled={serverStatus === 'checking' || (isServerProcessing && serverStatus === 'offline')}
           />
         </div>
         
@@ -69,6 +80,7 @@ export const PlayPageContent: React.FC<PlayPageContentProps> = ({
           champion={champion}
           trainedModel={gameLogic.trainedModel}
           lastConcursoNumbers={gameLogic.boardNumbers}
+          isServerProcessing={isServerProcessing}
         />
       </div>
 

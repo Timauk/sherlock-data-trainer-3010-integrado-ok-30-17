@@ -1,9 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
+import path from 'path';
 import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
 
@@ -17,13 +16,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 
-// Separate model logic into its own route handler
+// Rotas
 import { modelRouter } from './routes/model.js';
-app.use('/api/model', modelRouter);
-
-// Separate checkpoint logic into its own route handler
 import { checkpointRouter } from './routes/checkpoint.js';
+import { statusRouter } from './routes/status.js';
+
+app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
+app.use('/api/status', statusRouter);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
