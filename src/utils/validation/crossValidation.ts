@@ -5,6 +5,7 @@ export interface ValidationMetrics {
   precision: number;
   recall: number;
   f1Score: number;
+  lastGameAccuracy: number; // Nova métrica específica para último concurso
 }
 
 export const performCrossValidation = (
@@ -22,10 +23,24 @@ export const performCrossValidation = (
     const testPredictions = predictions.slice(testStart, testEnd);
     const testActual = actualResults.slice(testStart, testEnd);
     
-    metrics.push(calculateMetrics(testPredictions, testActual));
+    // Foco especial no último concurso de cada fold
+    const lastGameMetrics = calculateLastGameMetrics(
+      testPredictions[testPredictions.length - 1],
+      testActual[testActual.length - 1]
+    );
+
+    metrics.push({
+      ...calculateMetrics(testPredictions, testActual),
+      lastGameAccuracy: lastGameMetrics
+    });
   }
 
   return metrics;
+};
+
+const calculateLastGameMetrics = (prediction: number[], actual: number[]): number => {
+  const matches = prediction.filter(num => actual.includes(num)).length;
+  return matches / actual.length;
 };
 
 const calculateMetrics = (predictions: number[][], actual: number[][]): ValidationMetrics => {
@@ -49,15 +64,33 @@ const calculateMetrics = (predictions: number[][], actual: number[][]): Validati
     });
   });
 
-  const precision = truePositives / (truePositives + falsePositives);
-  const recall = truePositives / (truePositives + falseNegatives);
-  const accuracy = truePositives / (truePositives + falsePositives + falseNegatives);
-  const f1Score = 2 * (precision * recall) / (precision + recall);
+  const precision = truePositives / (truePositives + falsePositives) || 0;
+  const recall = truePositives / (truePositives + falseNegatives) || 0;
+  const accuracy = truePositives / (truePositives + falsePositives + falseNegatives) || 0;
+  const f1Score = 2 * (precision * recall) / (precision + recall) || 0;
 
   return {
     accuracy,
     precision,
     recall,
-    f1Score
+    f1Score,
+    lastGameAccuracy: 0 // Será substituído pelo valor real
+  };
+};
+
+export const validateLastGamePrediction = (
+  prediction: number[],
+  actual: number[]
+): ValidationMetrics => {
+  const matches = prediction.filter(num => actual.includes(num)).length;
+  const accuracy = matches / actual.length;
+  
+  return {
+    accuracy,
+    precision: matches / prediction.length,
+    recall: matches / actual.length,
+    f1Score: 2 * (matches / prediction.length) * (matches / actual.length) / 
+             ((matches / prediction.length) + (matches / actual.length)),
+    lastGameAccuracy: accuracy
   };
 };
