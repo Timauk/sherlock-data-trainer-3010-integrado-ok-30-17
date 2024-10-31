@@ -4,8 +4,8 @@ import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
-import { PlayPageContent } from '@/components/PlayPageContent';
-import { Slider } from "@/components/ui/slider"
+import PlayPageContent from '@/components/PlayPageContent';
+import { Slider } from "@/components/ui/slider";
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);

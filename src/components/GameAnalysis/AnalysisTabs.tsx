@@ -17,7 +17,6 @@ interface AnalysisTabsProps {
   concursoNumber: number;
   players: Player[];
   evolutionData: any[];
-  logs: { message: string; matches?: number; }[];
   dates: Date[];
   numbers: number[][];
   updateFrequencyData: (data: { [key: string]: number[] }) => void;
