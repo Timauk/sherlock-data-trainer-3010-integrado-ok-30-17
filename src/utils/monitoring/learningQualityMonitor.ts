@@ -56,7 +56,6 @@ class LearningQualityMonitor {
   private calculateRandomnessScore(predictions: number[][]): number {
     if (!predictions.length) return 1;
 
-    // Verifica quão diferentes são as previsões entre si
     let similarityCount = 0;
     for (let i = 0; i < predictions.length - 1; i++) {
       const currentPred = new Set(predictions[i]);
@@ -65,16 +64,19 @@ class LearningQualityMonitor {
       similarityCount += matches / 15;
     }
 
-    // Retorna um score onde 1 é totalmente aleatório e 0 é totalmente padronizado
     return similarityCount / (predictions.length - 1 || 1);
   }
 
   private analyzePatternRecognition(player: Player, historicalData: number[][]): number {
-    if (!player.predictions.length || !historicalData.length) return 0;
+    if (!Array.isArray(player.predictions) || player.predictions.length === 0 || !historicalData.length) return 0;
 
-    // Analisa se as previsões seguem padrões dos dados históricos
+    // Ensure we're working with the correct type
+    const latestPrediction = Array.isArray(player.predictions[0]) 
+      ? player.predictions[player.predictions.length - 1] 
+      : [player.predictions[player.predictions.length - 1]];
+
     const historicalPatterns = this.extractPatterns(historicalData);
-    const predictionPatterns = this.extractPatterns([player.predictions[player.predictions.length - 1]]);
+    const predictionPatterns = this.extractPatterns([latestPrediction]);
 
     return this.comparePatterns(historicalPatterns, predictionPatterns);
   }
@@ -83,6 +85,8 @@ class LearningQualityMonitor {
     const patterns = new Set<string>();
     
     numbers.forEach(game => {
+      if (!Array.isArray(game)) return;
+
       // Padrões de números consecutivos
       for (let i = 0; i < game.length - 1; i++) {
         if (game[i + 1] - game[i] === 1) {
@@ -116,9 +120,8 @@ class LearningQualityMonitor {
   private calculatePredictionQuality(player: Player): number {
     if (!player.predictions.length) return 0;
 
-    // Usa o histórico de fitness do jogador para avaliar a qualidade
     const recentFitness = player.fitness;
-    const baselineQuality = 0.2; // 20% é o mínimo esperado por chance
+    const baselineQuality = 0.2;
     
     return Math.max(0, (recentFitness - baselineQuality) / (1 - baselineQuality));
   }
@@ -128,7 +131,6 @@ class LearningQualityMonitor {
     patternRecognition: number,
     quality: number
   ): boolean {
-    // Critérios para determinar se o aprendizado é efetivo
     const isNotTooRandom = randomness <= this.randomThreshold;
     const hasPatternRecognition = patternRecognition >= this.qualityThreshold;
     const hasQuality = quality >= this.qualityThreshold;

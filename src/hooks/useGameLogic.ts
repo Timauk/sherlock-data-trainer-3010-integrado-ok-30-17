@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameInitialization } from './useGameInitialization';
@@ -71,12 +71,20 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     const bestPlayers = selectBestPlayers(players);
     setGameCount(prev => prev + 1);
 
+    // Ensure predictions are properly formatted as number[][]
+    const formatPredictions = (player: Player): number[][] => {
+      if (!player.predictions.length) return [];
+      return player.predictions.map(pred => 
+        Array.isArray(pred) ? pred : [pred]
+      );
+    };
+
     // Análise da qualidade do aprendizado para cada jogador
     const learningAnalysis = bestPlayers.map(player => 
       learningQualityMonitor.analyzePlayerLearning(
         player,
         numbers,
-        player.predictions as number[][]
+        formatPredictions(player)
       )
     );
 
@@ -97,7 +105,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       const championAnalysis = learningQualityMonitor.analyzePlayerLearning(
         champion,
         numbers,
-        champion.predictions as number[][]
+        formatPredictions(champion)
       );
 
       if (championAnalysis.isLearningEffective) {
