@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { systemLogger } from '@/utils/logging/systemLogger';
+import { Badge } from "@/components/ui/badge";
 
 interface LogEntry {
   timestamp: Date;
@@ -29,21 +30,21 @@ const EnhancedLogDisplay: React.FC = () => {
   const getLogColor = (type: string) => {
     switch (type) {
       case 'action':
-        return 'text-blue-500';
+        return 'bg-blue-500';
       case 'prediction':
-        return 'text-green-500';
+        return 'bg-green-500';
       case 'performance':
-        return 'text-yellow-500';
+        return 'bg-yellow-500';
       case 'system':
-        return 'text-purple-500';
+        return 'bg-purple-500';
       case 'lunar':
-        return 'text-indigo-500';
+        return 'bg-indigo-500';
       case 'player':
-        return 'text-orange-500';
+        return 'bg-orange-500';
       case 'checkpoint':
-        return 'text-red-500';
+        return 'bg-red-500';
       default:
-        return 'text-gray-500';
+        return 'bg-gray-500';
     }
   };
 
@@ -72,17 +73,21 @@ const EnhancedLogDisplay: React.FC = () => {
 
       <ScrollArea className="h-[400px] rounded-md border p-4">
         {filteredLogs.map((log, index) => (
-          <div key={index} className={`mb-2 ${getLogColor(log.type)}`}>
-            <span className="text-xs text-gray-500">
-              {new Date(log.timestamp).toLocaleString()}
+          <div key={index} className="mb-2 flex items-start gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              {new Date(log.timestamp).toLocaleTimeString()}
             </span>
-            <span className="ml-2 font-medium">[{log.type}]</span>
-            <span className="ml-2">{log.message}</span>
-            {log.details && (
-              <pre className="text-xs mt-1 bg-gray-100 p-2 rounded">
-                {JSON.stringify(log.details, null, 2)}
-              </pre>
-            )}
+            <Badge variant="secondary" className={`${getLogColor(log.type)} text-white`}>
+              {log.type}
+            </Badge>
+            <div className="flex-1">
+              <span className="text-sm">{log.message}</span>
+              {log.details && (
+                <pre className="text-xs mt-1 bg-gray-100 p-2 rounded overflow-x-auto">
+                  {JSON.stringify(log.details, null, 2)}
+                </pre>
+              )}
+            </div>
           </div>
         ))}
       </ScrollArea>

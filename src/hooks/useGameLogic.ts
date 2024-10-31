@@ -7,6 +7,7 @@ import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
+import { systemLogger } from '@/utils/logging/systemLogger';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -29,7 +30,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     randomAccuracy: 0,
     totalPredictions: 0,
   });
-  const [logs, setLogs] = useState<{ message: string; matches?: number }[]>([]);
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
   const [frequencyData, setFrequencyData] = useState<{ [key: string]: number[] }>({});
@@ -41,7 +41,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [isManualMode, setIsManualMode] = useState(false);
 
   const addLog = useCallback((message: string, matches?: number) => {
-    setLogs(prevLogs => [...prevLogs, { message, matches }]);
+    const logType = matches ? 'prediction' : 'action';
+    systemLogger.log(logType, message, { matches });
   }, []);
 
   const gameLoop = useGameLoop(
@@ -83,17 +84,14 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
             championData.trainingData
           );
           
-          toast({
-            title: "Modelo Atualizado",
-            description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
-          });
+          systemLogger.log('player', `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`);
           
           setChampionData({
             player: champion,
             trainingData: trainingData
           });
         } catch (error) {
-          console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
+          systemLogger.log('system', `Erro ao atualizar modelo com conhecimento do campeão: ${error}`);
         }
       }
     } else {
@@ -118,13 +116,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     ]);
 
     if (bestPlayers.length > 0) {
-      addLog(`Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
-      toast({
-        title: "Nova Geração",
-        description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
-      });
+      systemLogger.log('player', `Melhor jogador da geração ${generation}: Score ${bestPlayers[0].score}`);
     }
-  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData]);
+  }, [players, generation, trainedModel, gameCount, championData, trainingData]);
 
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     setFrequencyData(newFrequencyData);
@@ -144,12 +138,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const toggleManualMode = useCallback(() => {
     setIsManualMode(prev => {
       const newMode = !prev;
-      toast({
-        title: newMode ? "Modo Manual Ativado" : "Modo Manual Desativado",
-        description: newMode ? 
-          "A clonagem automática está desativada. Suas alterações serão mantidas." : 
-          "A clonagem automática está ativada novamente.",
-      });
+      systemLogger.log('action', newMode ? 
+        "Modo Manual Ativado - Clonagem automática desativada" : 
+        "Modo Manual Desativado - Clonagem automática reativada"
+      );
       return newMode;
     });
   }, []);
@@ -157,11 +149,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const clonePlayer = useCallback((player: Player) => {
     const clones = cloneChampion(player, 1);
     setPlayers(prevPlayers => [...prevPlayers, ...clones]);
-    
-    toast({
-      title: "Jogador Clonado",
-      description: `Um novo clone do Jogador #${player.id} foi criado.`
-    });
+    systemLogger.log('player', `Novo clone do Jogador #${player.id} criado`);
   }, []);
 
   useEffect(() => {
@@ -178,7 +166,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     evolutionData,
     neuralNetworkVisualization,
     modelMetrics,
-    logs,
     initializePlayers,
     gameLoop,
     evolveGeneration,
