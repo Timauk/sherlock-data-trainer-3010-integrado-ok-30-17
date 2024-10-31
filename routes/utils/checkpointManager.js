@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,11 +25,6 @@ class CheckpointManager {
   ensureCheckpointDirectory() {
     if (!fs.existsSync(this.checkpointPath)) {
       fs.mkdirSync(this.checkpointPath, { recursive: true });
-    }
-    // Create model directory if it doesn't exist
-    const modelPath = path.join(this.checkpointPath, 'models');
-    if (!fs.existsSync(modelPath)) {
-      fs.mkdirSync(modelPath, { recursive: true });
     }
   }
 
@@ -67,8 +62,18 @@ class CheckpointManager {
 
     // Save neural network model if exists
     if (data.gameState.model) {
-      const modelPath = path.join(checkpointDir, 'model');
-      await tf.node.saveModel(data.gameState.model, `file://${modelPath}`);
+      const modelPath = path.join(checkpointDir, 'model.json');
+      const modelData = await data.gameState.model.save('file://' + modelPath);
+      await fs.promises.writeFile(
+        path.join(checkpointDir, 'model-topology.json'),
+        JSON.stringify(modelData.modelTopology)
+      );
+      if (modelData.weightData) {
+        await fs.promises.writeFile(
+          path.join(checkpointDir, 'model-weights.bin'),
+          Buffer.from(modelData.weightData)
+        );
+      }
     }
 
     // Save training metrics and charts data
@@ -101,9 +106,18 @@ class CheckpointManager {
     const gameState = JSON.parse(await fs.promises.readFile(gameStatePath, 'utf8'));
 
     // Load model if exists
-    const modelPath = path.join(checkpointDir, 'model');
+    const modelPath = path.join(checkpointDir, 'model.json');
     if (fs.existsSync(modelPath)) {
-      gameState.model = await tf.loadLayersModel(`file://${modelPath}/model.json`);
+      try {
+        const modelTopology = JSON.parse(
+          await fs.promises.readFile(path.join(checkpointDir, 'model-topology.json'), 'utf8')
+        );
+        const weightsData = await fs.promises.readFile(path.join(checkpointDir, 'model-weights.bin'));
+        
+        gameState.model = await tf.loadLayersModel(tf.io.fromMemory(modelTopology, weightsData));
+      } catch (error) {
+        console.error('Error loading model:', error);
+      }
     }
 
     // Load metrics
