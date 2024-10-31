@@ -48,7 +48,7 @@ export class CheckpointManager {
 
       return true;
     } catch (error) {
-      enhancedLogger.log('error', 'Erro ao salvar checkpoint', { error });
+      enhancedLogger.log('system', 'Erro ao salvar checkpoint', { error });
       return false;
     }
   }
@@ -75,7 +75,7 @@ export class CheckpointManager {
         ...savedData
       };
     } catch (error) {
-      enhancedLogger.log('error', 'Erro ao carregar checkpoint', { error });
+      enhancedLogger.log('system', 'Erro ao carregar checkpoint', { error });
       return null;
     }
   }
@@ -87,7 +87,7 @@ export class CheckpointManager {
       localStorage.removeItem('checkpoint-weights');
       enhancedLogger.log('checkpoint', 'Checkpoints limpos com sucesso');
     } catch (error) {
-      enhancedLogger.log('error', 'Erro ao limpar checkpoints', { error });
+      enhancedLogger.log('system', 'Erro ao limpar checkpoints', { error });
     }
   }
 }
