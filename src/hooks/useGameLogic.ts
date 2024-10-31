@@ -3,6 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameInitialization } from './useGameInitialization';
 import { useGameLoop } from './useGameLoop';
+import { useGameInitializationEffects } from './useGameInitializationEffects';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
@@ -44,6 +45,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const addLog = useCallback((message: string, matches?: number) => {
     setLogs(prevLogs => [...prevLogs, { message, matches }]);
   }, []);
+
+  // Use the extracted initialization effects
+  useGameInitializationEffects(initializePlayers, csvData, setUpdateInterval);
 
   const gameLoop = useGameLoop(
     players,
@@ -207,14 +211,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       description: `Um novo clone do Jogador #${player.id} foi criado.`
     });
   }, []);
-
-  useEffect(() => {
-    initializePlayers();
-  }, [initializePlayers]);
-
-  useEffect(() => {
-    setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
-  }, [csvData]);
 
   return {
     players,

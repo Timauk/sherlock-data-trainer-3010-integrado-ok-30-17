@@ -10,8 +10,8 @@ interface LearningMetrics {
 
 class LearningQualityMonitor {
   private static instance: LearningQualityMonitor;
-  private readonly randomThreshold = 0.4; // 40% de similaridade com random é o máximo aceitável
-  private readonly qualityThreshold = 0.6; // Mínimo de 60% de qualidade nas previsões
+  private readonly randomThreshold = 0.4;
+  private readonly qualityThreshold = 0.6;
 
   private constructor() {}
 
@@ -70,7 +70,6 @@ class LearningQualityMonitor {
   private analyzePatternRecognition(player: Player, historicalData: number[][]): number {
     if (!Array.isArray(player.predictions) || player.predictions.length === 0 || !historicalData.length) return 0;
 
-    // Ensure we're working with the correct type
     const latestPrediction = Array.isArray(player.predictions[0]) 
       ? player.predictions[player.predictions.length - 1] 
       : [player.predictions[player.predictions.length - 1]];
@@ -87,18 +86,15 @@ class LearningQualityMonitor {
     numbers.forEach(game => {
       if (!Array.isArray(game)) return;
 
-      // Padrões de números consecutivos
       for (let i = 0; i < game.length - 1; i++) {
         if (game[i + 1] - game[i] === 1) {
           patterns.add(`consecutive_${game[i]}_${game[i + 1]}`);
         }
       }
 
-      // Padrões de paridade
       const evenCount = game.filter(n => n % 2 === 0).length;
       patterns.add(`evenOdd_${evenCount}`);
 
-      // Padrões de soma
       const sum = game.reduce((a, b) => a + b, 0);
       patterns.add(`sum_${Math.floor(sum / 50) * 50}`);
     });
