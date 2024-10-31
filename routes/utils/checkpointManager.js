@@ -33,32 +33,23 @@ class CheckpointManager {
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
     fs.mkdirSync(checkpointDir);
 
-    // Save game state JSON
+    // Save game state JSON with logs
     const gameStatePath = path.join(checkpointDir, 'gameState.json');
     const gameState = {
-      players: data.gameState.players || [],
-      evolutionData: data.gameState.evolutionData || [],
-      generation: data.gameState.generation || 0,
-      trainingHistory: data.gameState.trainingHistory || [],
-      frequencyAnalysis: data.gameState.frequencyAnalysis || {},
-      lunarAnalysis: data.gameState.lunarAnalysis || {},
-      predictions: data.gameState.predictions || [],
-      scores: data.gameState.scores || [],
-      championData: data.gameState.championData,
-      boardNumbers: data.gameState.boardNumbers || [],
-      concursoNumber: data.gameState.concursoNumber || 0,
-      gameCount: data.gameState.gameCount || 0,
-      isInfiniteMode: data.gameState.isInfiniteMode || false,
-      isManualMode: data.gameState.isManualMode || false,
+      ...data.gameState,
       logs: data.gameState.logs || [],
-      metrics: data.gameState.metrics || {},
-      dates: data.gameState.dates || [],
-      numbers: data.gameState.numbers || [],
-      csvData: data.gameState.csvData || [],
-      trainingData: data.gameState.trainingData || []
+      systemLogs: data.gameState.systemLogs || []
     };
 
     await fs.promises.writeFile(gameStatePath, JSON.stringify(gameState, null, 2));
+
+    // Save separate logs file for better organization
+    const logsPath = path.join(checkpointDir, 'logs.json');
+    await fs.promises.writeFile(logsPath, JSON.stringify({
+      timestamp: new Date().toISOString(),
+      logs: data.gameState.logs || [],
+      systemLogs: data.gameState.systemLogs || []
+    }, null, 2));
 
     // Save neural network model if exists
     if (data.gameState.model) {
@@ -120,10 +111,12 @@ class CheckpointManager {
       }
     }
 
-    // Load metrics
-    const metricsPath = path.join(checkpointDir, 'metrics.json');
-    if (fs.existsSync(metricsPath)) {
-      gameState.metrics = JSON.parse(await fs.promises.readFile(metricsPath, 'utf8'));
+    // Load logs if they exist
+    const logsPath = path.join(checkpointDir, 'logs.json');
+    if (fs.existsSync(logsPath)) {
+      const logs = JSON.parse(await fs.promises.readFile(logsPath, 'utf8'));
+      gameState.logs = logs.logs;
+      gameState.systemLogs = logs.systemLogs;
     }
 
     return {
