@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ChecklistItem {
   title: string;
@@ -99,6 +100,74 @@ const implementationChecklist: ChecklistItem[] = [
   }
 ];
 
+const databaseImplementationChecklist: ChecklistItem[] = [
+  {
+    title: "Fase 1: Configuração do Supabase",
+    items: [
+      { task: "Criar projeto no Supabase", completed: false },
+      { task: "Configurar variáveis de ambiente", completed: false },
+      { task: "Implementar cliente Supabase", completed: false },
+      { task: "Configurar autenticação", completed: false },
+      { task: "Definir políticas de segurança (RLS)", completed: false }
+    ]
+  },
+  {
+    title: "Fase 2: Modelagem de Dados",
+    items: [
+      { task: "Criar tabela de jogos históricos", completed: false },
+      { task: "Criar tabela de jogadores e linhagens", completed: false },
+      { task: "Criar tabela de previsões", completed: false },
+      { task: "Criar tabela de métricas de desempenho", completed: false },
+      { task: "Implementar triggers para atualizações automáticas", completed: false }
+    ]
+  },
+  {
+    title: "Fase 3: Integração com API Oficial",
+    items: [
+      { task: "Criar job de sincronização com resultados oficiais", completed: false },
+      { task: "Implementar cache de resultados", completed: false },
+      { task: "Criar sistema de webhooks para atualizações", completed: false },
+      { task: "Implementar validação de dados", completed: false }
+    ]
+  },
+  {
+    title: "Fase 4: Sistema de Herança Genética",
+    items: [
+      { task: "Criar modelo de DNA digital", completed: false },
+      { task: "Implementar sistema de mutações", completed: false },
+      { task: "Criar árvore genealógica de jogadores", completed: false },
+      { task: "Implementar tracking de características herdadas", completed: false }
+    ]
+  },
+  {
+    title: "Fase 5: Otimização de Performance",
+    items: [
+      { task: "Implementar cache em múltiplas camadas", completed: false },
+      { task: "Configurar índices otimizados", completed: false },
+      { task: "Implementar queries materialized", completed: false },
+      { task: "Configurar jobs de manutenção", completed: false }
+    ]
+  },
+  {
+    title: "Fase 6: Sincronização Híbrida",
+    items: [
+      { task: "Implementar sistema offline-first", completed: false },
+      { task: "Criar sistema de resolução de conflitos", completed: false },
+      { task: "Implementar sincronização em background", completed: false },
+      { task: "Criar sistema de filas para operações", completed: false }
+    ]
+  },
+  {
+    title: "Fase 7: Análise Avançada",
+    items: [
+      { task: "Criar views para análise estatística", completed: false },
+      { task: "Implementar machine learning no banco", completed: false },
+      { task: "Criar sistema de recomendações", completed: false },
+      { task: "Implementar análise preditiva em tempo real", completed: false }
+    ]
+  }
+];
+
 const ImplementationChecklist = () => {
   return (
     <Card className="w-full">
@@ -106,53 +175,112 @@ const ImplementationChecklist = () => {
         <CardTitle>Checklist de Implementação</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[600px] pr-4">
-          <Accordion type="single" collapsible className="w-full">
-            {implementationChecklist.map((phase, phaseIndex) => {
-              const completedTasks = phase.items.filter(item => item.completed).length;
-              const progress = Math.round((completedTasks / phase.items.length) * 100);
-              
-              return (
-                <AccordionItem key={phaseIndex} value={`phase-${phaseIndex}`}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex flex-col items-start">
-                      <span>{phase.title}</span>
-                      <span className="text-sm text-muted-foreground">
-                        Progresso: {progress}% ({completedTasks}/{phase.items.length})
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {phase.items.map((item, itemIndex) => (
-                        <div key={itemIndex} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`task-${phaseIndex}-${itemIndex}`}
-                            checked={item.completed}
-                            disabled
-                          />
-                          <label
-                            htmlFor={`task-${phaseIndex}-${itemIndex}`}
-                            className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-                              item.completed ? 'line-through text-muted-foreground' : ''
-                            }`}
-                          >
-                            {item.task}
-                          </label>
-                          {item.inProgress && (
-                            <span className="text-xs bg-yellow-200 dark:bg-yellow-900 px-2 py-1 rounded">
-                              Em progresso
-                            </span>
-                          )}
+        <Tabs defaultValue="core" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="core">Core</TabsTrigger>
+            <TabsTrigger value="database">Database</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="core">
+            <ScrollArea className="h-[600px] pr-4">
+              <Accordion type="single" collapsible className="w-full">
+                {implementationChecklist.map((phase, phaseIndex) => {
+                  const completedTasks = phase.items.filter(item => item.completed).length;
+                  const progress = Math.round((completedTasks / phase.items.length) * 100);
+                  
+                  return (
+                    <AccordionItem key={phaseIndex} value={`phase-${phaseIndex}`}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex flex-col items-start">
+                          <span>{phase.title}</span>
+                          <span className="text-sm text-muted-foreground">
+                            Progresso: {progress}% ({completedTasks}/{phase.items.length})
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              );
-            })}
-          </Accordion>
-        </ScrollArea>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          {phase.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`task-${phaseIndex}-${itemIndex}`}
+                                checked={item.completed}
+                                disabled
+                              />
+                              <label
+                                htmlFor={`task-${phaseIndex}-${itemIndex}`}
+                                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                                  item.completed ? 'line-through text-muted-foreground' : ''
+                                }`}
+                              >
+                                {item.task}
+                              </label>
+                              {item.inProgress && (
+                                <span className="text-xs bg-yellow-200 dark:bg-yellow-900 px-2 py-1 rounded">
+                                  Em progresso
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="database">
+            <ScrollArea className="h-[600px] pr-4">
+              <Accordion type="single" collapsible className="w-full">
+                {databaseImplementationChecklist.map((phase, phaseIndex) => {
+                  const completedTasks = phase.items.filter(item => item.completed).length;
+                  const progress = Math.round((completedTasks / phase.items.length) * 100);
+                  
+                  return (
+                    <AccordionItem key={phaseIndex} value={`db-phase-${phaseIndex}`}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex flex-col items-start">
+                          <span>{phase.title}</span>
+                          <span className="text-sm text-muted-foreground">
+                            Progresso: {progress}% ({completedTasks}/{phase.items.length})
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          {phase.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`db-task-${phaseIndex}-${itemIndex}`}
+                                checked={item.completed}
+                                disabled
+                              />
+                              <label
+                                htmlFor={`db-task-${phaseIndex}-${itemIndex}`}
+                                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                                  item.completed ? 'line-through text-muted-foreground' : ''
+                                }`}
+                              >
+                                {item.task}
+                              </label>
+                              {item.inProgress && (
+                                <span className="text-xs bg-yellow-200 dark:bg-yellow-900 px-2 py-1 rounded">
+                                  Em progresso
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
