@@ -98,7 +98,7 @@ const PlayerList: React.FC<PlayerListProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
       {players.map(player => (
         <PlayerCard
           key={player.id}
