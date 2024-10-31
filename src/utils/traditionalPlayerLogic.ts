@@ -49,14 +49,19 @@ export class TraditionalPlayer {
   private generateFirstTenGames(lastGame: number[], penultimateGame: number[]): number[][] {
     const games: number[][] = [];
     
-    // Generate 10 games based on previous results
+    // Generate first 10 games based on last and penultimate games
     for (let i = 0; i < 10; i++) {
-      const numbersToKeep = 14 - i; // Starts with 14 and decreases
+      const numbersToKeep = 15 - i - 1; // Start with 14 numbers and decrease
       const numbersFromLast = lastGame.slice(0, numbersToKeep);
+      
+      // Get numbers that didn't appear in penultimate game
       const notInPenultimate = lastGame.filter(n => !penultimateGame.includes(n));
-      const additionalNumbers = notInPenultimate.slice(0, i + 1);
+      const additionalCount = i + 1; // Increases from 1 to 10
+      const additionalNumbers = notInPenultimate.slice(0, Math.min(additionalCount, notInPenultimate.length));
       
       const game = [...new Set([...numbersFromLast, ...additionalNumbers])];
+      
+      // If we still need more numbers, add random ones
       while (game.length < 15) {
         const randomNum = Math.floor(Math.random() * 25) + 1;
         if (!game.includes(randomNum)) {
@@ -81,7 +86,7 @@ export class TraditionalPlayer {
       { high: 7, medium: 5, low: 3 },  // Game 7
       { high: 6, medium: 7, low: 2 },  // Game 8
       { high: 8, medium: 5, low: 2 },  // Game 9
-      { high: 5, medium: 5, low: 5 }   // Game 10 (more random)
+      { high: 5, medium: 5, low: 5 }   // Game 10 (balanced random)
     ];
 
     return configurations.map(config => {
