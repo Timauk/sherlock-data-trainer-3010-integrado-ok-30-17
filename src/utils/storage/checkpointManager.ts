@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { compressHistoricalData } from '../performance/dataCompression';
-import { optimizedCheckpointWrite, optimizedCheckpointRead } from '../performance/checkpointOptimization';
+import { compressHistoricalData } from '../performance/dataCompression.js';
+import { optimizedCheckpointWrite, optimizedCheckpointRead } from '../performance/checkpointOptimization.js';
 
 export class CheckpointManager {
   private static instance: CheckpointManager;
