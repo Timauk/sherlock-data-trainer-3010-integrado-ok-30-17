@@ -97,9 +97,16 @@ const PlayerList: React.FC<PlayerListProps> = ({
     }
   };
 
+  // Ordenar jogadores para garantir que o jogador 11 apareça por último
+  const sortedPlayers = [...players].sort((a, b) => {
+    if (a.id === 11) return 1;
+    if (b.id === 11) return -1;
+    return 0;
+  });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
-      {players.map(player => (
+      {sortedPlayers.map(player => (
         <PlayerCard
           key={player.id}
           player={player}
