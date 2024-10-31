@@ -40,8 +40,9 @@ start cmd /k "npm run dev"
 :: Aguarda mais 3 segundos para a aplicação iniciar
 timeout /t 3 /nobreak
 
-:: Abre o navegador padrão
+:: Abre o navegador padrão nas duas URLs
 echo Abrindo navegador...
 start http://localhost:5173
+start http://localhost:3001
 
 echo Ambiente de desenvolvimento iniciado com sucesso!
