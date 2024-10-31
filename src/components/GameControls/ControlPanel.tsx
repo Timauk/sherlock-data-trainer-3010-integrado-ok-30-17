@@ -15,6 +15,7 @@ interface ControlPanelProps {
   toggleManualMode: () => void;
   isInfiniteMode: boolean;
   isManualMode: boolean;
+  disabled?: boolean;
 }
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -29,7 +30,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   toggleInfiniteMode,
   toggleManualMode,
   isInfiniteMode,
-  isManualMode
+  isManualMode,
+  disabled = false
 }) => {
   return (
     <div className="space-y-4">
@@ -40,17 +42,18 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       />
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={isPlaying ? onPause : onPlay}>
+        <Button onClick={isPlaying ? onPause : onPlay} disabled={disabled}>
           {isPlaying ? 'Pausar' : 'Iniciar'}
         </Button>
-        <Button onClick={onReset}>Reiniciar</Button>
+        <Button onClick={onReset} disabled={disabled}>Reiniciar</Button>
         <Button onClick={onThemeToggle}>Alternar Tema</Button>
-        <Button onClick={toggleInfiniteMode}>
+        <Button onClick={toggleInfiniteMode} disabled={disabled}>
           {isInfiniteMode ? 'Desativar' : 'Ativar'} Modo Infinito
         </Button>
         <Button 
           onClick={toggleManualMode}
           variant={isManualMode ? "destructive" : "outline"}
+          disabled={disabled}
         >
           {isManualMode ? 'Desativar' : 'Ativar'} Modo Manual
         </Button>

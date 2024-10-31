@@ -9,12 +9,14 @@ interface ChampionPredictionsProps {
   champion: Player | undefined;
   trainedModel: tf.LayersModel | null;
   lastConcursoNumbers: number[];
+  isServerProcessing?: boolean;
 }
 
 const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
   champion,
   trainedModel,
-  lastConcursoNumbers
+  lastConcursoNumbers,
+  isServerProcessing = false
 }) => {
   const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number }>>([]);
   const { toast } = useToast();
@@ -94,7 +96,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       
       toast({
         title: "Previsões Geradas",
-        description: "8 jogos foram gerados com diferentes objetivos de acertos!"
+        description: `8 jogos foram gerados com diferentes objetivos de acertos! ${isServerProcessing ? '(Processado no servidor)' : '(Processado no navegador)'}`
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
@@ -110,7 +112,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Previsões do Campeão</span>
+          <span>Previsões do Campeão {isServerProcessing ? '(Servidor)' : '(Local)'}</span>
           <Button onClick={generatePredictions} className="bg-green-600 hover:bg-green-700">
             Gerar 8 Jogos
           </Button>
