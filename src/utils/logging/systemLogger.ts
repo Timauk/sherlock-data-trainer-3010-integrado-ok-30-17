@@ -1,6 +1,6 @@
 interface LogEntry {
   timestamp: Date;
-  type: 'action' | 'prediction' | 'performance' | 'system' | 'lunar' | 'player' | 'checkpoint';
+  type: 'action' | 'prediction' | 'performance' | 'system' | 'lunar' | 'player' | 'checkpoint' | 'learning' | 'model';
   message: string;
   details?: any;
 }

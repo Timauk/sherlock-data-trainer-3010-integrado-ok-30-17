@@ -30,10 +30,8 @@ export class LearningFeedbackLoop {
     actual: number[],
     patterns: number[][]
   ): Promise<void> {
-    // Análise de padrões profunda
     const deepPatterns = await deepPatternAnalyzer.analyzePatterns(patterns);
     
-    // Cálculo de recompensa com fatores múltiplos
     const reward = rewardSystem.calculateReward({
       matches: this.calculateMatches(prediction, actual),
       consistency: this.calculateConsistency(patterns),
@@ -41,10 +39,8 @@ export class LearningFeedbackLoop {
       efficiency: this.calculateEfficiency(prediction, actual)
     });
 
-    // Atualização do modelo com base no feedback
     await this.updateModel(model, prediction, actual, reward);
 
-    // Registro de métricas
     this.recordMetrics({
       accuracy: this.calculateAccuracy(prediction, actual),
       loss: await this.calculateLoss(model, prediction, actual),
@@ -63,17 +59,14 @@ export class LearningFeedbackLoop {
   }
 
   private calculateConsistency(patterns: number[][]): number {
-    // Implementação do cálculo de consistência
     return 0.5;
   }
 
   private calculateNovelty(patterns: any[]): number {
-    // Implementação do cálculo de novidade
     return 0.5;
   }
 
   private calculateEfficiency(prediction: number[], actual: number[]): number {
-    // Implementação do cálculo de eficiência
     return 0.5;
   }
 
@@ -85,7 +78,7 @@ export class LearningFeedbackLoop {
     const predTensor = tf.tensor2d([prediction]);
     const actualTensor = tf.tensor2d([actual]);
     
-    const loss = await model.evaluateInternal(predTensor, actualTensor);
+    const loss = model.evaluate(predTensor, actualTensor) as tf.Tensor;
     const result = await loss.data();
     
     predTensor.dispose();

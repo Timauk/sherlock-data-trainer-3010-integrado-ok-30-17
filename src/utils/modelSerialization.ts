@@ -13,20 +13,15 @@ export interface ModelMetadata {
 
 export const serializeModel = async (model: tf.LayersModel, metadata: ModelMetadata) => {
   try {
-    // Salva o modelo completo com pesos
     await model.save('indexeddb://current-model');
-    
-    // Salva metadata separadamente para fácil acesso
     localStorage.setItem('model-metadata', JSON.stringify(metadata));
-    
-    // Salva configuração da arquitetura
     const config = model.getConfig();
     localStorage.setItem('model-architecture', JSON.stringify(config));
     
-    systemLogger.log('model', 'Modelo serializado com sucesso', metadata);
+    systemLogger.log('system', 'Modelo serializado com sucesso', metadata);
     return true;
   } catch (error) {
-    systemLogger.log('model', 'Erro ao serializar modelo', { error });
+    systemLogger.log('system', 'Erro ao serializar modelo', { error });
     return false;
   }
 };
@@ -40,7 +35,7 @@ export const deserializeModel = async (): Promise<{
     const metadata = JSON.parse(localStorage.getItem('model-metadata') || 'null');
     return { model, metadata };
   } catch (error) {
-    systemLogger.log('model', 'Erro ao deserializar modelo', { error });
+    systemLogger.log('system', 'Erro ao deserializar modelo', { error });
     return { model: null, metadata: null };
   }
 };
