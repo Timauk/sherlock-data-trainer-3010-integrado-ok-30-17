@@ -10,6 +10,7 @@ export class TraditionalPlayer {
   private static instance: TraditionalPlayer;
   private gameCount: number = 0;
   private lastResults: number[][] = [];
+  private currentGames: number[][] = [];
   
   private constructor() {}
   
@@ -48,8 +49,10 @@ export class TraditionalPlayer {
   private generateFirstTenGames(lastGame: number[], penultimateGame: number[]): number[][] {
     const games: number[][] = [];
     
+    // Generate 10 games based on previous results
     for (let i = 0; i < 10; i++) {
-      const numbersFromLast = lastGame.slice(0, 14 - i);
+      const numbersToKeep = 14 - i; // Starts with 14 and decreases
+      const numbersFromLast = lastGame.slice(0, numbersToKeep);
       const notInPenultimate = lastGame.filter(n => !penultimateGame.includes(n));
       const additionalNumbers = notInPenultimate.slice(0, i + 1);
       
@@ -69,16 +72,16 @@ export class TraditionalPlayer {
 
   private generateFrequencyBasedGames(frequencyGroups: FrequencyGroups): number[][] {
     const configurations = [
-      { high: 7, medium: 5, low: 3 },
-      { high: 6, medium: 6, low: 3 },
-      { high: 5, medium: 7, low: 3 },
-      { high: 8, medium: 4, low: 3 },
-      { high: 7, medium: 6, low: 2 },
-      { high: 6, medium: 6, low: 3 },
-      { high: 7, medium: 5, low: 3 },
-      { high: 6, medium: 7, low: 2 },
-      { high: 8, medium: 5, low: 2 },
-      { high: 5, medium: 5, low: 5 }  // Last game more random
+      { high: 7, medium: 5, low: 3 },  // Game 1
+      { high: 6, medium: 6, low: 3 },  // Game 2
+      { high: 5, medium: 7, low: 3 },  // Game 3
+      { high: 8, medium: 4, low: 3 },  // Game 4
+      { high: 7, medium: 6, low: 2 },  // Game 5
+      { high: 6, medium: 6, low: 3 },  // Game 6
+      { high: 7, medium: 5, low: 3 },  // Game 7
+      { high: 6, medium: 7, low: 2 },  // Game 8
+      { high: 8, medium: 5, low: 2 },  // Game 9
+      { high: 5, medium: 5, low: 5 }   // Game 10 (more random)
     ];
 
     return configurations.map(config => {
@@ -103,11 +106,18 @@ export class TraditionalPlayer {
     });
   }
 
-  public makePlay(currentGame: number[]): number[] | null {
+  private generateAllGames(lastGame: number[], penultimateGame: number[], frequencyGroups: FrequencyGroups): number[][] {
+    const firstTenGames = this.generateFirstTenGames(lastGame, penultimateGame);
+    const frequencyGames = this.generateFrequencyBasedGames(frequencyGroups);
+    
+    return [...firstTenGames, ...frequencyGames];
+  }
+
+  public makePlay(currentGame: number[]): number[] | number[][] {
     if (this.gameCount < 10) {
       this.lastResults.push(currentGame);
       this.gameCount++;
-      return null;  // Don't play in first 10 rounds
+      return [];  // Don't play in first 10 rounds
     }
 
     this.lastResults.push(currentGame);
@@ -119,17 +129,16 @@ export class TraditionalPlayer {
     const lastGame = this.lastResults[this.lastResults.length - 1];
     const penultimateGame = this.lastResults[this.lastResults.length - 2];
 
-    const firstTenGames = this.generateFirstTenGames(lastGame, penultimateGame);
-    const frequencyGames = this.generateFrequencyBasedGames(frequencyGroups);
-
-    // Return one game at a time, cycling through all 20 games
-    const gameIndex = (this.gameCount - 10) % 20;
-    const selectedGame = gameIndex < 10 ? 
-      firstTenGames[gameIndex] : 
-      frequencyGames[gameIndex - 10];
-
+    // Generate all 20 games at once
+    this.currentGames = this.generateAllGames(lastGame, penultimateGame, frequencyGroups);
     this.gameCount++;
-    return selectedGame;
+    
+    // Return all 20 games
+    return this.currentGames;
+  }
+
+  public getCurrentGames(): number[][] {
+    return this.currentGames;
   }
 
   public getGameCount(): number {
@@ -139,6 +148,7 @@ export class TraditionalPlayer {
   public reset(): void {
     this.gameCount = 0;
     this.lastResults = [];
+    this.currentGames = [];
   }
 }
 
