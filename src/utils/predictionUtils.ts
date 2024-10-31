@@ -2,6 +2,8 @@ import * as tf from '@tensorflow/tfjs';
 import { ModelVisualization } from '../types/gameTypes';
 import { analyzeAdvancedPatterns, enrichPredictionData } from './advancedDataAnalysis';
 import { getLunarPhase, analyzeLunarPatterns } from './lunarCalculations';
+import { TimeSeriesAnalysis } from './analysis/timeSeriesAnalysis';
+import { performanceMonitor } from './performance/performanceMonitor';
 
 interface LunarData {
   lunarPhase: string;
@@ -17,34 +19,40 @@ export async function makePrediction(
   lunarData?: LunarData,
   historicalData?: { numbers: number[][], dates: Date[] }
 ): Promise<number[]> {
-  if (!trainedModel) return [];
+  if (!trainedModel || !historicalData) return [];
+  
+  const startTime = performance.now();
+  
+  // Análise ARIMA dos dados históricos
+  const timeSeriesAnalyzer = new TimeSeriesAnalysis(historicalData.numbers);
+  const arimaPredictor = timeSeriesAnalyzer.analyzeNumbers();
   
   // Normalização dos dados base
   const normalizedConcursoNumber = concursoNumber / 3184;
   const normalizedDataSorteio = Date.now() / (1000 * 60 * 60 * 24 * 365);
   
-  // Dados base de entrada (mantendo 17 inputs conforme esperado)
   let enrichedInput = [
     ...inputData.slice(0, 15),
     normalizedConcursoNumber,
     normalizedDataSorteio
   ];
   
-  // Análises adicionais (serão usadas apenas para pesos)
+  // Análises adicionais
   const currentDate = new Date();
   const lunarPhase = getLunarPhase(currentDate);
   const lunarWeight = getLunarPhaseWeight(lunarPhase);
-  const frequencyAnalysis = historicalData ? analyzeFrequency(historicalData.numbers) : {};
-  const patterns = historicalData ? analyzeAdvancedPatterns(historicalData.numbers, historicalData.dates) : null;
+  const frequencyAnalysis = analyzeFrequency(historicalData.numbers);
+  const patterns = analyzeAdvancedPatterns(historicalData.numbers, historicalData.dates);
   
-  // Adiciona aleatoriedade inteligente aos pesos do jogador
+  // Integração com previsões ARIMA
   const randomizedWeights = playerWeights.map((weight, index) => {
     const lunarInfluence = lunarWeight * 0.2;
     const frequencyInfluence = getFrequencyInfluence(index + 1, frequencyAnalysis) * 0.3;
     const patternInfluence = patterns ? (patterns.consecutive + patterns.evenOdd) / 2 * 0.2 : 0;
-    const randomFactor = 1 + (Math.random() - 0.5) * 0.3;
+    const arimaInfluence = arimaPredictor.includes(index + 1) ? 0.3 : 0;
+    const randomFactor = 1 + (Math.random() - 0.5) * 0.2;
     
-    return weight * (1 + lunarInfluence + frequencyInfluence + patternInfluence) * randomFactor;
+    return weight * (1 + lunarInfluence + frequencyInfluence + patternInfluence + arimaInfluence) * randomFactor;
   });
   
   const weightedInput = enrichedInput.map((value, index) => 
@@ -63,36 +71,37 @@ export async function makePrediction(
     weights: trainedModel.getWeights().map(w => Array.from(w.dataSync()))
   });
   
-  // Sistema de seleção de números com influência de todas as análises
+  // Sistema de seleção com influência ARIMA
   const weightedNumbers = Array.from({ length: 25 }, (_, i) => {
     const number = i + 1;
     const baseWeight = result[i % result.length];
     const frequencyBonus = getFrequencyInfluence(number, frequencyAnalysis);
     const lunarBonus = getLunarNumberInfluence(number, lunarPhase);
     const patternBonus = patterns ? getNumberPatternInfluence(number, patterns) : 0;
+    const arimaBonus = arimaPredictor.includes(number) ? 0.4 : 0;
     
     return {
       number,
-      weight: baseWeight * (1 + frequencyBonus + lunarBonus + patternBonus)
+      weight: baseWeight * (1 + frequencyBonus + lunarBonus + patternBonus + arimaBonus)
     };
   }).sort((a, b) => b.weight - a.weight);
   
-  // Seleção dos números finais com aleatoriedade controlada
   const uniqueNumbers = new Set<number>();
   let index = 0;
   
-  // Primeiro, seleciona os números com maior peso
   while (uniqueNumbers.size < 10 && index < weightedNumbers.length) {
     uniqueNumbers.add(weightedNumbers[index].number);
     index++;
   }
   
-  // Depois, adiciona alguns números com base em probabilidade
   while (uniqueNumbers.size < 15) {
     const randomIndex = Math.floor(Math.random() * weightedNumbers.length);
     const number = weightedNumbers[randomIndex].number;
     uniqueNumbers.add(number);
   }
+  
+  const endTime = performance.now();
+  performanceMonitor.recordMetrics(result[0], endTime - startTime);
   
   return Array.from(uniqueNumbers).sort((a, b) => a - b);
 }

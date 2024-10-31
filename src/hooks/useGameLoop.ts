@@ -7,8 +7,9 @@ import { calculateReward, logReward } from '@/utils/rewardSystem';
 import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
 import { performCrossValidation } from '@/utils/validation/crossValidation';
 import { calculateConfidenceScore } from '@/utils/prediction/confidenceScoring';
-import { feedbackSystem } from '@/utils/prediction/feedbackSystem';
+import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
 import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
+import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
 
 export const useGameLoop = (
   players: Player[],
@@ -70,16 +71,14 @@ export const useGameLoop = (
           player.weights, 
           concursoNumber,
           setNeuralNetworkVisualization,
-          { lunarPhase, lunarPatterns }
+          { lunarPhase, lunarPatterns },
+          { numbers: [[...currentBoardNumbers]], dates: [currentDate] }
         );
 
-        const confidenceScore = calculateConfidenceScore(
-          prediction,
-          player,
-          [[...currentBoardNumbers]] // Pass as array of arrays with current board numbers
-        );
-
-        feedbackSystem.addFeedback(prediction, currentBoardNumbers, confidenceScore.score);
+        // Monitorar previsões
+        const timeSeriesAnalyzer = new TimeSeriesAnalysis([[...currentBoardNumbers]]);
+        const arimaPredictor = timeSeriesAnalyzer.analyzeNumbers();
+        predictionMonitor.recordPrediction(prediction, currentBoardNumbers, arimaPredictor);
 
         return prediction;
       })
