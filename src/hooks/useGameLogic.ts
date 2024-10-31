@@ -7,7 +7,6 @@ import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
-import { learningQualityMonitor } from '@/utils/monitoring/learningQualityMonitor';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
@@ -71,66 +70,31 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     const bestPlayers = selectBestPlayers(players);
     setGameCount(prev => prev + 1);
 
-    // Análise da qualidade do aprendizado para cada jogador
-    const learningAnalysis = bestPlayers.map(player => 
-      learningQualityMonitor.analyzePlayerLearning(
-        player,
-        numbers,
-        player.predictions as number[][]
-      )
-    );
-
-    // Alerta se muitos jogadores estão com aprendizado comprometido
-    const compromisedLearning = learningAnalysis.filter(a => !a.isLearningEffective).length;
-    if (compromisedLearning > bestPlayers.length * 0.5) {
-      toast({
-        title: "Alerta de Aprendizado",
-        description: `${compromisedLearning} jogadores podem estar com aprendizado comprometido.`,
-        variant: "destructive"
-      });
-    }
-
     if (gameCount % 1000 === 0 && bestPlayers.length > 0) {
       const champion = bestPlayers[0];
+      const clones = cloneChampion(champion, players.length);
+      setPlayers(clones);
       
-      // Verifica qualidade do aprendizado do campeão
-      const championAnalysis = learningQualityMonitor.analyzePlayerLearning(
-        champion,
-        numbers,
-        champion.predictions as number[][]
-      );
-
-      if (championAnalysis.isLearningEffective) {
-        const clones = cloneChampion(champion, players.length);
-        setPlayers(clones);
-        
-        if (trainedModel && championData) {
-          try {
-            const updatedModel = await updateModelWithChampionKnowledge(
-              trainedModel,
-              champion,
-              championData.trainingData
-            );
-            
-            toast({
-              title: "Modelo Atualizado",
-              description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
-            });
-            
-            setChampionData({
-              player: champion,
-              trainingData: trainingData
-            });
-          } catch (error) {
-            console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
-          }
+      if (trainedModel && championData) {
+        try {
+          const updatedModel = await updateModelWithChampionKnowledge(
+            trainedModel,
+            champion,
+            championData.trainingData
+          );
+          
+          toast({
+            title: "Modelo Atualizado",
+            description: `Conhecimento do Campeão (Score: ${champion.score}) incorporado ao modelo`,
+          });
+          
+          setChampionData({
+            player: champion,
+            trainingData: trainingData
+          });
+        } catch (error) {
+          console.error("Erro ao atualizar modelo com conhecimento do campeão:", error);
         }
-      } else {
-        toast({
-          title: "Alerta de Qualidade",
-          description: "Campeão atual pode não estar aprendendo efetivamente. Mantendo geração anterior.",
-          variant: "destructive"
-        });
       }
     } else {
       const newGeneration = bestPlayers.map(player => ({
@@ -160,7 +124,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
         description: `Melhor fitness: ${bestPlayers[0].fitness.toFixed(2)}`,
       });
     }
-  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData, numbers]);
+  }, [players, generation, trainedModel, gameCount, championData, toast, trainingData]);
 
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     setFrequencyData(newFrequencyData);
