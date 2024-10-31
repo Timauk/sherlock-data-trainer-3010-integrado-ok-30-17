@@ -17,6 +17,15 @@ if not exist "node_modules" (
     echo Dependencias ja instaladas.
 )
 
+:: Verifica se a pasta checkpoints existe, se não, cria
+if not exist "checkpoints" (
+    echo Criando pasta checkpoints...
+    mkdir checkpoints
+    echo Pasta checkpoints criada com sucesso!
+) else (
+    echo Pasta checkpoints ja existe.
+)
+
 :: Inicia o servidor em uma nova janela
 echo Iniciando servidor Node.js...
 start cmd /k "node --watch server.js"
