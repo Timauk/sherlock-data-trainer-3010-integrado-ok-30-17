@@ -1,14 +1,11 @@
 import { systemLogger } from '../utils/logging/systemLogger';
+import { lotofacilService } from './lotofacilService';
 
 export const gameService = {
   async fetchLatestGames(limit = 100) {
     try {
-      const response = await fetch(`https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest/${limit}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch games');
-      }
-      const data = await response.json();
-      return { data, error: null };
+      const results = await lotofacilService.getLastResults(limit);
+      return { data: results, error: null };
     } catch (error) {
       systemLogger.log('system', 'Error fetching games', { error });
       return { data: null, error };
@@ -29,8 +26,7 @@ export const gameService = {
 
   async syncWithOfficialAPI() {
     try {
-      const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
-      const data = await response.json();
+      const data = await lotofacilService.fetchLatestFromAPI();
       
       await this.saveGame(
         data.concurso,
