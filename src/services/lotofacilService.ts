@@ -18,8 +18,7 @@ export const lotofacilService = {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        },
-        mode: 'cors'
+        }
       });
       
       if (!response.ok) {
@@ -36,7 +35,6 @@ export const lotofacilService = {
 
   async getLastResults(limit: number = 100): Promise<LotofacilResult[]> {
     try {
-      // Buscar o último resultado primeiro
       const latestResult = await this.fetchLatestFromAPI();
       const results: LotofacilResult[] = [latestResult];
       
@@ -45,31 +43,23 @@ export const lotofacilService = {
         return results;
       }
 
-      // Buscar resultados anteriores
-      for (let i = 1; i < Math.min(limit, latestResult.concurso); i++) {
-        const concurso = latestResult.concurso - i;
-        let result = null;
-        
+      // Buscar resultados anteriores com tratamento de erro individual
+      for (let i = 1; i < Math.min(limit, 10); i++) {
         try {
-          const response = await fetch(`${API_BASE_URL}/${concurso}`, {
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            },
-            mode: 'cors'
-          });
+          const concurso = latestResult.concurso - i;
+          const response = await fetch(`${API_BASE_URL}/${concurso}`);
           
           if (response.ok) {
-            result = await response.json();
+            const result = await response.json();
             results.push(result);
           }
+          
+          // Pequena pausa entre requisições
+          await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
-          console.warn(`Falha ao buscar concurso ${concurso}, continuando...`);
+          console.warn(`Falha ao buscar concurso, continuando...`, error);
           continue;
         }
-        
-        // Pequena pausa entre requisições para evitar sobrecarga
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       return results;
