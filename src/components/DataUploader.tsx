@@ -6,13 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import CheckpointControls from './CheckpointControls';
 
-interface DataUploaderProps {
+export interface DataUploaderProps {
   onCsvUpload: (file: File) => void;
-  onModelUpload: (jsonFile: File, weightsFile: File) => void;
-  onSaveModel: () => void;
+  onModelUpload?: (jsonFile: File, weightsFile: File) => void;
+  onSaveModel?: () => void;
 }
 
-const DataUploader: React.FC<DataUploaderProps> = ({ onCsvUpload, onModelUpload, onSaveModel }) => {
+const DataUploader: React.FC<DataUploaderProps> = ({ 
+  onCsvUpload, 
+  onModelUpload = () => {}, 
+  onSaveModel = () => {} 
+}) => {
   const jsonFileRef = useRef<HTMLInputElement>(null);
   const weightsFileRef = useRef<HTMLInputElement>(null);
   const [timeUntilCheckpoint, setTimeUntilCheckpoint] = useState(1800);

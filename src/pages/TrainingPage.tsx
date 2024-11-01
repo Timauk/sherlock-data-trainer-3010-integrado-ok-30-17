@@ -14,7 +14,6 @@ const TrainingPage = () => {
   const [model, setModel] = useState<tf.LayersModel | null>(null);
   const [trainingHistory, setTrainingHistory] = useState<any[]>([]);
 
-  // Carregar modelo automaticamente ao iniciar
   useEffect(() => {
     loadLatestModel();
     loadTrainingHistory();
@@ -36,6 +35,53 @@ const TrainingPage = () => {
   const loadTrainingHistory = async () => {
     const history = await trainingService.getTrainingHistory();
     setTrainingHistory(history);
+  };
+
+  const handleCsvUpload = async (file: File) => {
+    // Implementar lógica CSV
+    console.log("CSV uploaded:", file);
+  };
+
+  const handleModelUpload = async (jsonFile: File, weightsFile: File) => {
+    try {
+      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
+      setModel(model);
+      toast({
+        title: "Modelo Carregado",
+        description: "Modelo carregado com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveModel = async () => {
+    if (!model) {
+      toast({
+        title: "Erro",
+        description: "Nenhum modelo para salvar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await model.save('downloads://lotofacil-model');
+      toast({
+        title: "Sucesso",
+        description: "Modelo salvo com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleTraining = async (data: number[][]) => {
@@ -107,7 +153,11 @@ const TrainingPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <DataUploader onCsvUpload={(file) => {/* Implementar lógica CSV */}} />
+            <DataUploader 
+              onCsvUpload={handleCsvUpload}
+              onModelUpload={handleModelUpload}
+              onSaveModel={handleSaveModel}
+            />
             <DataUpdateButton />
             
             {isTraining && (

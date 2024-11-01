@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/lib/supabase';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { enhancedLogger } from '@/utils/logging/enhancedLogger';
 
 interface TrainingMetadata {
   timestamp: string;
@@ -30,7 +29,7 @@ export const trainingService = {
 
       if (error) throw error;
 
-      enhancedLogger.log('training', 'Modelo salvo com sucesso', metadata);
+      systemLogger.log('system', 'Modelo salvo com sucesso', { metadata });
       return true;
     } catch (error) {
       systemLogger.log('system', 'Erro ao salvar modelo', { error });
@@ -41,18 +40,16 @@ export const trainingService = {
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
       // Tentar carregar do Supabase primeiro
-      const { data, error } = await supabase
+      const { data: models } = await supabase
         .from('trained_models')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .select()
+        .eq('is_active', true)
         .limit(1)
         .single();
 
-      if (error) throw error;
-
-      if (data) {
-        const model = await tf.models.modelFromJSON(data.model_data);
-        return { model, metadata: data.metadata };
+      if (models) {
+        const model = await tf.models.modelFromJSON(models.model_data);
+        return { model, metadata: models.metadata };
       }
 
       // Se não encontrar no Supabase, tentar carregar do IndexedDB
@@ -68,11 +65,10 @@ export const trainingService = {
     try {
       const { data, error } = await supabase
         .from('trained_models')
-        .select('metadata, created_at')
-        .order('created_at', { ascending: false });
+        .select('metadata, created_at');
 
       if (error) throw error;
-      return data;
+      return data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
