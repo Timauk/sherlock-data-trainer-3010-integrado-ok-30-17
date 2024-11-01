@@ -122,14 +122,19 @@ class HybridSyncService {
 
   private async executeOperation(operation: QueuedOperation) {
     const { type, table, data } = operation;
+    const validTables = ['players', 'predictions', 'historical_games', 'webhooks', 'performance_metrics'] as const;
+    
+    if (!validTables.includes(table as typeof validTables[number])) {
+      throw new Error(`Invalid table: ${table}`);
+    }
     
     switch (type) {
       case 'insert':
-        return await supabase.from(table).insert(data);
+        return await supabase.from(table as typeof validTables[number]).insert(data);
       case 'update':
-        return await supabase.from(table).update(data.changes).eq('id', data.id);
+        return await supabase.from(table as typeof validTables[number]).update(data.changes).eq('id', data.id);
       case 'delete':
-        return await supabase.from(table).delete().eq('id', data.id);
+        return await supabase.from(table as typeof validTables[number]).delete().eq('id', data.id);
       default:
         throw new Error(`Unknown operation type: ${type}`);
     }
