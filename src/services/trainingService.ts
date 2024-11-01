@@ -40,16 +40,17 @@ export const trainingService = {
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
       // Tentar carregar do Supabase primeiro
-      const { data: models } = await supabase
+      const result = await supabase
         .from('trained_models')
         .select()
         .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (models) {
-        const model = await tf.models.modelFromJSON(models.model_data);
-        return { model, metadata: models.metadata };
+      if (result.data) {
+        const model = await tf.models.modelFromJSON(result.data.model_data);
+        return { model, metadata: result.data.metadata };
       }
 
       // Se não encontrar no Supabase, tentar carregar do IndexedDB
@@ -63,12 +64,12 @@ export const trainingService = {
 
   async getTrainingHistory() {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('trained_models')
-        .select('metadata, created_at');
+        .select('metadata, created_at')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      return result.data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
