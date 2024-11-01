@@ -18,15 +18,13 @@ export const trainingService = {
     try {
       const modelJSON = model.toJSON();
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('trained_models')
         .insert({
           model_data: modelJSON,
           metadata,
           is_active: true
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
