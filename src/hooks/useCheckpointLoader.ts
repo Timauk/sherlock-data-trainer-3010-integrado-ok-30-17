@@ -8,7 +8,6 @@ export const useCheckpointLoader = () => {
   const loadCheckpoint = async () => {
     setIsLoading(true);
     try {
-      // Using localStorage instead of server endpoint since we don't have a backend
       const savedCheckpoint = localStorage.getItem('gameCheckpoint');
       if (!savedCheckpoint) {
         return null;

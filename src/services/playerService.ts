@@ -1,10 +1,19 @@
-import { systemLogger } from '@/utils/logging/systemLogger';
+import { systemLogger } from '../utils/logging/systemLogger';
+
+interface PlayerData {
+  id: number;
+  dna: any;
+  score: number;
+  generation: number;
+  parent_id?: number;
+  created_at: string;
+}
 
 export const playerService = {
-  async createPlayer(dna: any, generation: number, parentId?: number) {
+  async createPlayer(dna: any, generation: number, parentId?: number): Promise<{ data: PlayerData | null; error: any }> {
     try {
       const players = JSON.parse(localStorage.getItem('players') || '[]');
-      const newPlayer = {
+      const newPlayer: PlayerData = {
         id: Date.now(),
         dna,
         score: 0,
@@ -24,7 +33,7 @@ export const playerService = {
   async updatePlayerScore(playerId: number, score: number) {
     try {
       const players = JSON.parse(localStorage.getItem('players') || '[]');
-      const updatedPlayers = players.map((p: any) => 
+      const updatedPlayers = players.map((p: PlayerData) => 
         p.id === playerId ? { ...p, score } : p
       );
       localStorage.setItem('players', JSON.stringify(updatedPlayers));
@@ -72,10 +81,10 @@ export const playerService = {
       let currentId = playerId;
       
       while (currentId) {
-        const player = players.find((p: any) => p.id === currentId);
+        const player = players.find((p: PlayerData) => p.id === currentId);
         if (!player) break;
         lineage.push(player);
-        currentId = player.parent_id;
+        currentId = player.parent_id || 0;
       }
       
       return { data: lineage, error: null };

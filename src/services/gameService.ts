@@ -1,5 +1,4 @@
-import { supabase } from '@/lib/supabase';
-import { systemLogger } from '@/utils/logging/systemLogger';
+import { systemLogger } from '../utils/logging/systemLogger';
 
 export const gameService = {
   async fetchLatestGames(limit = 100) {
@@ -18,7 +17,6 @@ export const gameService = {
 
   async saveGame(concurso: number, data: string, numeros: number[]) {
     try {
-      // Store in localStorage since we don't have a backend
       const games = JSON.parse(localStorage.getItem('games') || '[]');
       games.push({ concurso, data, numeros });
       localStorage.setItem('games', JSON.stringify(games));
