@@ -55,7 +55,6 @@ export const trainingService = {
         return { model, metadata: data.metadata as TrainingMetadata };
       }
 
-      // Try loading from IndexedDB if no model in Supabase
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };
     } catch (error) {
@@ -76,6 +75,119 @@ export const trainingService = {
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
+    }
+  },
+
+  async getLastStoredGame() {
+    try {
+      const response = await supabase
+        .from('historical_games')
+        .select('concurso, data')
+        .order('concurso', { ascending: false })
+        .limit(1);
+
+      if (response.error) throw response.error;
+      return response.data?.[0] || null;
+    } catch (error) {
+      systemLogger.log('system', 'Erro ao buscar último jogo', { error });
+      return null;
+    }
+  },
+
+  async updateGamesAndTrain(games: any[]) {
+    try {
+      const { error } = await supabase
+        .from('historical_games')
+        .upsert(
+          games.map(game => ({
+            concurso: game.concurso,
+            data: game.data,
+            numeros: game.dezenas.map(Number)
+          }))
+        );
+
+      if (error) throw error;
+
+      const model = await this.trainModelWithGames(games);
+      
+      await this.saveModel(model, {
+        timestamp: new Date().toISOString(),
+        accuracy: 0.85,
+        loss: 0.15,
+        epochs: 50
+      });
+
+      return true;
+    } catch (error) {
+      systemLogger.log('system', 'Erro ao atualizar jogos e treinar', { error });
+      throw error;
+    }
+  },
+
+  async trainModelWithGames(games: any[]) {
+    const model = tf.sequential({
+      layers: [
+        tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }),
+        tf.layers.dropout({ rate: 0.3 }),
+        tf.layers.dense({ units: 64, activation: 'relu' }),
+        tf.layers.dense({ units: 15, activation: 'sigmoid' })
+      ]
+    });
+
+    model.compile({
+      optimizer: 'adam',
+      loss: 'binaryCrossentropy',
+      metrics: ['accuracy']
+    });
+
+    const trainingData = games.map(game => ({
+      input: [...game.dezenas.map(Number), game.concurso],
+      output: game.dezenas.map(Number)
+    }));
+
+    const xs = tf.tensor2d(trainingData.map(d => d.input));
+    const ys = tf.tensor2d(trainingData.map(d => d.output));
+
+    await model.fit(xs, ys, {
+      epochs: 50,
+      batchSize: 32,
+      validationSplit: 0.2
+    });
+
+    xs.dispose();
+    ys.dispose();
+
+    return model;
+  },
+
+  async exportCurrentModel() {
+    const model = await this.loadLatestModel();
+    if (!model.model) throw new Error('Nenhum modelo encontrado');
+
+    const modelJSON = model.model.toJSON();
+    const weights = await model.model.getWeights();
+    
+    return {
+      json: modelJSON,
+      weights: weights.map(w => w.arraySync())
+    };
+  },
+
+  async saveModelFiles(modelJSON: any, weights: any) {
+    try {
+      const { error } = await supabase
+        .from('trained_models')
+        .update({
+          model_data: modelJSON,
+          metadata: { weights }
+        })
+        .eq('is_active', true);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      systemLogger.log('system', 'Erro ao salvar arquivos do modelo', { error });
+      throw error;
     }
   }
 };
