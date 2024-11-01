@@ -40,7 +40,7 @@ export const trainingService = {
     try {
       const { data, error } = await supabase
         .from('trained_models')
-        .select()
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -86,7 +86,7 @@ export const trainingService = {
         .single();
 
       if (error) throw error;
-      return data || null;
+      return data;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
