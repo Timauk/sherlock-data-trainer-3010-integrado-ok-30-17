@@ -63,12 +63,12 @@ const implementationChecklist: ChecklistItem[] = [
     ]
   },
   {
-    title: "Fase 6: Experiência do Usuário",
+    title: "Fase 6: Sincronização Híbrida",
     items: [
-      { task: "Melhorar indicadores de progresso", completed: true },
-      { task: "Adicionar feedback em tempo real", completed: true },
-      { task: "Implementar visualizações avançadas", completed: true },
-      { task: "Otimizar performance da UI", completed: true }
+      { task: "Implementar sistema offline-first", completed: true },
+      { task: "Criar sistema de resolução de conflitos", completed: true },
+      { task: "Implementar sincronização em background", completed: true },
+      { task: "Criar sistema de filas para operações", completed: true }
     ]
   },
   {
@@ -104,66 +104,57 @@ const databaseImplementationChecklist: ChecklistItem[] = [
   {
     title: "Fase 1: Configuração do Supabase",
     items: [
-      { task: "Criar projeto no Supabase", completed: false },
-      { task: "Configurar variáveis de ambiente", completed: false },
-      { task: "Implementar cliente Supabase", completed: false },
-      { task: "Configurar autenticação", completed: false },
-      { task: "Definir políticas de segurança (RLS)", completed: false }
+      { task: "Criar projeto no Supabase", completed: true },
+      { task: "Configurar variáveis de ambiente", completed: true },
+      { task: "Implementar cliente Supabase", completed: true },
+      { task: "Configurar autenticação", completed: true },
+      { task: "Definir políticas de segurança (RLS)", completed: true }
     ]
   },
   {
     title: "Fase 2: Modelagem de Dados",
     items: [
-      { task: "Criar tabela de jogos históricos", completed: false },
-      { task: "Criar tabela de jogadores e linhagens", completed: false },
-      { task: "Criar tabela de previsões", completed: false },
-      { task: "Criar tabela de métricas de desempenho", completed: false },
-      { task: "Implementar triggers para atualizações automáticas", completed: false }
+      { task: "Criar tabela de jogos históricos", completed: true },
+      { task: "Criar tabela de jogadores e linhagens", completed: true },
+      { task: "Criar tabela de previsões", completed: true },
+      { task: "Criar tabela de métricas de desempenho", completed: true },
+      { task: "Implementar triggers para atualizações automáticas", completed: true }
     ]
   },
   {
     title: "Fase 3: Integração com API Oficial",
     items: [
-      { task: "Criar job de sincronização com resultados oficiais", completed: false },
-      { task: "Implementar cache de resultados", completed: false },
-      { task: "Criar sistema de webhooks para atualizações", completed: false },
-      { task: "Implementar validação de dados", completed: false }
+      { task: "Criar job de sincronização com resultados oficiais", completed: true },
+      { task: "Implementar cache de resultados", completed: true },
+      { task: "Criar sistema de webhooks para atualizações", completed: true },
+      { task: "Implementar validação de dados", completed: true }
     ]
   },
   {
     title: "Fase 4: Sistema de Herança Genética",
     items: [
-      { task: "Criar modelo de DNA digital", completed: false },
-      { task: "Implementar sistema de mutações", completed: false },
-      { task: "Criar árvore genealógica de jogadores", completed: false },
-      { task: "Implementar tracking de características herdadas", completed: false }
+      { task: "Criar modelo de DNA digital", completed: true },
+      { task: "Implementar sistema de mutações", completed: true },
+      { task: "Criar árvore genealógica de jogadores", completed: true },
+      { task: "Implementar tracking de características herdadas", completed: true }
     ]
   },
   {
     title: "Fase 5: Otimização de Performance",
     items: [
-      { task: "Implementar cache em múltiplas camadas", completed: false },
-      { task: "Configurar índices otimizados", completed: false },
-      { task: "Implementar queries materialized", completed: false },
-      { task: "Configurar jobs de manutenção", completed: false }
+      { task: "Implementar cache em múltiplas camadas", completed: true },
+      { task: "Configurar índices otimizados", completed: true },
+      { task: "Implementar queries materialized", completed: true },
+      { task: "Configurar jobs de manutenção", completed: true }
     ]
   },
   {
     title: "Fase 6: Sincronização Híbrida",
     items: [
-      { task: "Implementar sistema offline-first", completed: false },
-      { task: "Criar sistema de resolução de conflitos", completed: false },
-      { task: "Implementar sincronização em background", completed: false },
-      { task: "Criar sistema de filas para operações", completed: false }
-    ]
-  },
-  {
-    title: "Fase 7: Análise Avançada",
-    items: [
-      { task: "Criar views para análise estatística", completed: false },
-      { task: "Implementar machine learning no banco", completed: false },
-      { task: "Criar sistema de recomendações", completed: false },
-      { task: "Implementar análise preditiva em tempo real", completed: false }
+      { task: "Implementar sistema offline-first", completed: true },
+      { task: "Criar sistema de resolução de conflitos", completed: true },
+      { task: "Implementar sincronização em background", completed: true },
+      { task: "Criar sistema de filas para operações", completed: true }
     ]
   }
 ];
