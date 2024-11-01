@@ -80,14 +80,15 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const response = await supabase
+      const { data, error } = await supabase
         .from('historical_games')
         .select('concurso, data')
         .order('concurso', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
-      if (response.error) throw response.error;
-      return response.data?.[0] || null;
+      if (error) throw error;
+      return data || null;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
