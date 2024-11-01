@@ -1,11 +1,18 @@
 import { supabase } from '@/lib/supabase';
 import { systemLogger } from '@/utils/logging/systemLogger';
 import * as tf from '@tensorflow/tfjs';
+import { Database } from '@/lib/database.types';
 
 interface AnalysisResult {
-  statisticalViews: any[];
+  statisticalViews: Array<{
+    view_name: string;
+    data: any;
+  }>;
   predictions: number[];
-  recommendations: string[];
+  recommendations: Array<{
+    recommendation: string;
+    confidence: number;
+  }>;
   realTimeMetrics: {
     accuracy: number;
     confidence: number;
@@ -39,7 +46,7 @@ class AdvancedAnalysisService {
   }
 
   async getStatisticalViews() {
-    const { data: views, error } = await supabase
+    const { data, error } = await supabase
       .rpc('get_statistical_views');
 
     if (error) {
@@ -47,7 +54,7 @@ class AdvancedAnalysisService {
       throw error;
     }
 
-    return views;
+    return data || [];
   }
 
   async getPredictiveAnalysis(numbers: number[]): Promise<number[]> {
@@ -71,8 +78,8 @@ class AdvancedAnalysisService {
     return result;
   }
 
-  async getRecommendations(playerId: number): Promise<string[]> {
-    const { data: recommendations, error } = await supabase
+  async getRecommendations(playerId: number) {
+    const { data, error } = await supabase
       .rpc('get_player_recommendations', { player_id: playerId });
 
     if (error) {
@@ -80,11 +87,11 @@ class AdvancedAnalysisService {
       throw error;
     }
 
-    return recommendations;
+    return data || [];
   }
 
   async getRealTimeMetrics(): Promise<AnalysisResult['realTimeMetrics']> {
-    const { data: metrics, error } = await supabase
+    const { data, error } = await supabase
       .rpc('get_realtime_metrics');
 
     if (error) {
@@ -92,10 +99,14 @@ class AdvancedAnalysisService {
       throw error;
     }
 
+    if (!data) {
+      throw new Error('Não foi possível obter métricas em tempo real');
+    }
+
     return {
-      accuracy: metrics.accuracy,
-      confidence: metrics.confidence,
-      trend: metrics.trend
+      accuracy: data.accuracy,
+      confidence: data.confidence,
+      trend: data.trend
     };
   }
 

@@ -145,6 +145,28 @@ export interface Database {
         Args: { player_id: number; new_dna: Json }
         Returns: boolean
       }
+      get_statistical_views: {
+        Args: Record<string, never>
+        Returns: Array<{
+          view_name: string
+          data: Json
+        }>
+      }
+      get_player_recommendations: {
+        Args: { player_id: number }
+        Returns: Array<{
+          recommendation: string
+          confidence: number
+        }>
+      }
+      get_realtime_metrics: {
+        Args: Record<string, never>
+        Returns: {
+          accuracy: number
+          confidence: number
+          trend: 'up' | 'down' | 'stable'
+        }
+      }
     }
     Views: {
       player_statistics: {
