@@ -16,12 +16,10 @@ type TrainedModel = TrainedModelsTable['Row'];
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
-      const modelJSON = model.toJSON();
-      
       const result = await supabase
         .from('trained_models')
         .insert({
-          model_data: modelJSON,
+          model_data: model.toJSON(),
           metadata,
           is_active: true
         });
@@ -38,18 +36,18 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select()
         .eq('is_active', true)
         .limit(1)
         .single();
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
-      if (result.data) {
-        const model = await tf.models.modelFromJSON(result.data.model_data);
-        return { model, metadata: result.data.metadata as TrainingMetadata };
+      if (data) {
+        const model = await tf.models.modelFromJSON(data.model_data);
+        return { model, metadata: data.metadata as TrainingMetadata };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
@@ -62,13 +60,13 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
         .limit(100);
 
-      if (result.error) throw result.error;
-      return result.data || [];
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
@@ -77,14 +75,14 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('historical_games')
         .select('concurso, data')
         .limit(1)
         .single();
 
-      if (result.error) throw result.error;
-      return result.data;
+      if (error) throw error;
+      return data;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
@@ -93,7 +91,7 @@ export const trainingService = {
 
   async updateGamesAndTrain(games: any[]) {
     try {
-      const result = await supabase
+      const { error } = await supabase
         .from('historical_games')
         .upsert(
           games.map(game => ({
@@ -103,7 +101,7 @@ export const trainingService = {
           }))
         );
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
       const model = await this.trainModelWithGames(games);
       
