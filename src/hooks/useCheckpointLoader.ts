@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 
 export const useCheckpointLoader = () => {
@@ -8,12 +8,12 @@ export const useCheckpointLoader = () => {
   const loadCheckpoint = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/checkpoint/latest');
-      if (!response.ok) {
-        throw new Error('Falha ao carregar checkpoint');
+      // Using localStorage instead of server endpoint since we don't have a backend
+      const savedCheckpoint = localStorage.getItem('gameCheckpoint');
+      if (!savedCheckpoint) {
+        return null;
       }
-      const checkpoint = await response.json();
-      return checkpoint;
+      return JSON.parse(savedCheckpoint);
     } catch (error) {
       toast({
         title: "Erro ao Carregar Checkpoint",

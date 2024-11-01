@@ -72,7 +72,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
             toggleManualMode={gameLogic.toggleManualMode}
             isInfiniteMode={gameLogic.isInfiniteMode}
             isManualMode={gameLogic.isManualMode}
-            disabled={serverStatus === 'checking' || (isServerProcessing && serverStatus === 'offline')}
+            disabled={serverStatus === 'offline' && isServerProcessing}
           />
         </div>
         
