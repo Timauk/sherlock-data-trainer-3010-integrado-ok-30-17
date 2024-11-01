@@ -64,8 +64,7 @@ export const trainingService = {
       const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
-        .order('created_at', { ascending: false })
-        .then(result => result);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -82,7 +81,7 @@ export const trainingService = {
         .select('concurso, data')
         .order('concurso', { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
       return data;
