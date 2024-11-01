@@ -10,6 +10,9 @@ interface TrainingMetadata {
   epochs: number;
 }
 
+type TrainedModelsTable = Database['public']['Tables']['trained_models'];
+type TrainedModel = TrainedModelsTable['Row'];
+
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
@@ -21,7 +24,9 @@ export const trainingService = {
           model_data: modelJSON,
           metadata,
           is_active: true
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -37,7 +42,7 @@ export const trainingService = {
     try {
       const { data, error } = await supabase
         .from('trained_models')
-        .select('*')
+        .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -59,7 +64,7 @@ export const trainingService = {
     }
   },
 
-  async getTrainingHistory() {
+  async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
       const { data, error } = await supabase
         .from('trained_models')
