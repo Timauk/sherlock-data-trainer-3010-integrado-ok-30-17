@@ -7,15 +7,11 @@ export const useSupabaseSync = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const channel = supabase
+    const subscription = supabase
       .channel('db-changes')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'historical_games'
-        },
+        { event: 'INSERT', schema: 'public', table: 'historical_games' },
         (payload) => {
           toast({
             title: "Novo Resultado",
@@ -31,7 +27,7 @@ export const useSupabaseSync = () => {
     }, 6 * 60 * 60 * 1000);
 
     return () => {
-      channel.unsubscribe();
+      subscription.unsubscribe();
       clearInterval(syncInterval);
     };
   }, [toast]);
