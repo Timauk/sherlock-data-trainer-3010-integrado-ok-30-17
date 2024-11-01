@@ -9,6 +9,29 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      trained_models: {
+        Row: {
+          id: number
+          model_data: Json
+          metadata: Json
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          model_data: Json
+          metadata: Json
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          model_data?: Json
+          metadata?: Json
+          is_active?: boolean
+          created_at?: string
+        }
+      }
       historical_games: {
         Row: {
           id: number

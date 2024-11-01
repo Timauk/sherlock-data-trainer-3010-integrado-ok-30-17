@@ -41,7 +41,7 @@ export const trainingService = {
     try {
       const { data: modelData, error } = await supabase
         .from('trained_models')
-        .select()
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -51,7 +51,7 @@ export const trainingService = {
 
       if (modelData) {
         const model = await tf.models.modelFromJSON(modelData.model_data);
-        return { model, metadata: modelData.metadata };
+        return { model, metadata: modelData.metadata as TrainingMetadata };
       }
 
       // Tenta carregar do IndexedDB se não encontrar no Supabase
