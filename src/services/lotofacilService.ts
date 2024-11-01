@@ -6,11 +6,23 @@ interface LotofacilResult {
 
 export const lotofacilService = {
   async fetchLatestFromAPI(): Promise<LotofacilResult> {
-    const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
-    if (!response.ok) {
+    try {
+      const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao buscar dados da API:', error);
       throw new Error('Falha ao buscar dados da API');
     }
-    return response.json();
   },
 
   async getLastResults(limit: number = 100): Promise<LotofacilResult[]> {
@@ -23,12 +35,34 @@ export const lotofacilService = {
       const results: LotofacilResult[] = [];
       results.push(latestResult);
       
-      // Buscar os resultados anteriores
+      // Buscar os resultados anteriores com retry logic
       const promises = Array.from({ length: Math.min(limit - 1, latestConcurso - 1) }, async (_, index) => {
         const concurso = latestConcurso - (index + 1);
-        const response = await fetch(`https://loteriascaixa-api.herokuapp.com/api/lotofacil/${concurso}`);
-        if (response.ok) {
-          return response.json();
+        let retries = 3;
+        
+        while (retries > 0) {
+          try {
+            const response = await fetch(`https://loteriascaixa-api.herokuapp.com/api/lotofacil/${concurso}`, {
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            });
+            
+            if (response.ok) {
+              return response.json();
+            }
+            
+            retries--;
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+          } catch (error) {
+            retries--;
+            if (retries === 0) {
+              console.error(`Falha ao buscar concurso ${concurso} após 3 tentativas`);
+              return null;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
         return null;
       });
@@ -39,7 +73,7 @@ export const lotofacilService = {
       return results;
     } catch (error) {
       console.error('Erro ao buscar resultados:', error);
-      return [];
+      throw new Error('Falha ao buscar resultados da Lotofácil');
     }
   }
 };
