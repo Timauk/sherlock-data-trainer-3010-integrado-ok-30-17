@@ -10,16 +10,12 @@ interface TrainingMetadata {
   epochs: number;
 }
 
-type TrainedModel = Database['public']['Tables']['trained_models']['Row'];
-
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
-      await model.save('indexeddb://current-model');
-      
       const modelJSON = model.toJSON();
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .insert({
           model_data: modelJSON,
@@ -39,7 +35,7 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const { data: modelData, error } = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select('*')
         .eq('is_active', true)
@@ -49,12 +45,12 @@ export const trainingService = {
 
       if (error) throw error;
 
-      if (modelData) {
-        const model = await tf.models.modelFromJSON(modelData.model_data);
-        return { model, metadata: modelData.metadata as TrainingMetadata };
+      if (data) {
+        const model = await tf.models.modelFromJSON(data.model_data);
+        return { model, metadata: data.metadata as TrainingMetadata };
       }
 
-      // Tenta carregar do IndexedDB se não encontrar no Supabase
+      // Try loading from IndexedDB if no model in Supabase
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };
     } catch (error) {
