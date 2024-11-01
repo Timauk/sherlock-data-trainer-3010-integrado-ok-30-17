@@ -6,7 +6,7 @@ import { useGameLoop } from './useGameLoop';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
-import { ModelVisualization, Player } from '@/types/gameTypes';
+import { ModelVisualization, Player, EvolutionData } from '@/types/gameTypes';
 import { systemLogger } from '@/utils/logging/systemLogger';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
@@ -18,12 +18,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     player: Player;
     trainingData: number[][];
   }>();
-  const [evolutionData, setEvolutionData] = useState<Array<{
-    generation: number;
-    playerId: number;
-    score: number;
-    fitness: number;
-  }>>([]);
+  const [evolutionData, setEvolutionData] = useState<EvolutionData[]>([]);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
   const [modelMetrics, setModelMetrics] = useState({
     accuracy: 0,

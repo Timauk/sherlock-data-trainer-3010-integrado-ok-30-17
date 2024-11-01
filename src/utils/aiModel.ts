@@ -115,7 +115,7 @@ export async function updateModel(model: tf.LayersModel, newData: number[][]): P
       onEpochEnd: (epoch, logs) => {
         if (logs && logs.val_loss < logs.loss * 0.8) {
           console.warn('Early stopping due to potential overfitting');
-          return false;
+          return;
         }
       }
     }

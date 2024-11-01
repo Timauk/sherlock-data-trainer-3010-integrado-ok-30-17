@@ -197,3 +197,16 @@ export interface Player {
     }[];
   };
 }
+
+export interface ModelVisualization {
+  input: number[];
+  output: number[];
+  weights: number[][];
+}
+
+export interface EvolutionData {
+  generation: number;
+  playerId: string;
+  score: number;
+  fitness: number;
+}
