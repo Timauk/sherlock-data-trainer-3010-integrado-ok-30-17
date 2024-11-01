@@ -12,12 +12,11 @@ interface TrainingMetadata {
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
-      // Salvar o modelo no IndexedDB primeiro (backup local)
       await model.save('indexeddb://current-model');
       
       const modelJSON = model.toJSON();
       
-      const result = await supabase
+      const { error } = await supabase
         .from('trained_models')
         .insert({
           model_data: modelJSON,
@@ -25,7 +24,7 @@ export const trainingService = {
           is_active: true
         });
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
       systemLogger.log('system', 'Modelo salvo com sucesso', { metadata });
       return true;
@@ -37,22 +36,22 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
-        .select('*')
+        .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
-      if (result.data) {
-        const model = await tf.models.modelFromJSON(result.data.model_data);
-        return { model, metadata: result.data.metadata };
+      if (data) {
+        const model = await tf.models.modelFromJSON(data.model_data);
+        return { model, metadata: data.metadata };
       }
 
-      // Se não encontrar no Supabase, tentar carregar do IndexedDB
+      // Try loading from IndexedDB if not found in Supabase
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };
     } catch (error) {
@@ -63,13 +62,13 @@ export const trainingService = {
 
   async getTrainingHistory() {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
         .order('created_at', { ascending: false });
 
-      if (result.error) throw result.error;
-      return result.data || [];
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
