@@ -1,303 +1,188 @@
-import React, { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import DataUploader from '../components/DataUploader';
+import DataUpdateButton from '../components/DataUpdateButton';
+import { useToast } from "@/components/ui/use-toast";
+import { useGameState } from '@/hooks/useGameState';
+import { useGameLogic } from '@/hooks/useGameLogic';
+import { processCSV, extractDateFromCSV } from '@/utils/csvUtils';
+import { createModel, trainModel, TrainingConfig } from '@/utils/aiModel';
+import { validateData } from '@/utils/validation/dataValidation';
+import { useServerStatus } from '@/hooks/useServerStatus';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import { useCheckpointLoader } from '@/hooks/useCheckpointLoader';
 import * as tf from '@tensorflow/tfjs';
-import { Upload, BarChart2, Save, AlertTriangle } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import TrainingChart from '@/components/TrainingChart';
-import { processarCSV } from '@/utils/dataProcessing';
-import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-const TrainingPage: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [trainingProgress, setTrainingProgress] = useState(0);
-  const [model, setModel] = useState<tf.LayersModel | null>(null);
-  const [logs, setLogs] = useState<{ epoch: number; loss: number; val_loss: number }[]>([]);
-  const [batchSize, setBatchSize] = useState(32);
-  const [epochs, setEpochs] = useState(100);
-  const [learningRate, setLearningRate] = useState(0.001);
-  const [validationSplit, setValidationSplit] = useState(0.2); // 20% para validação
+const TrainingPage = () => {
   const { toast } = useToast();
+  const { status } = useServerStatus();
+  const { loadCheckpoint } = useCheckpointLoader();
+  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const [isTraining, setIsTraining] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setFile(event.target.files[0]);
-    }
+  const {
+    players,
+    setPlayers,
+    generation,
+    setGeneration,
+    gameCount,
+    setGameCount,
+    evolutionData,
+    setEvolutionData,
+    boardNumbers,
+    setBoardNumbers,
+    concursoNumber,
+    setConcursoNumber,
+    isInfiniteMode,
+    setIsInfiniteMode,
+    trainingData,
+    setTrainingData,
+  } = useGameState();
+
+  const gameLogic = useGameLogic(trainingData, trainedModel);
+  useSupabaseSync();
+
+  const addLog = (message: string) => {
+    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
   };
 
-  const { data: trainingData, isLoading, isError } = useQuery({
-    queryKey: ['trainingData', file],
-    queryFn: async () => {
-      if (!file) return null;
-      const text = await file.text();
-      return processarCSV(text);
-    },
-    enabled: !!file,
-  });
-
-  const startTraining = async () => {
-    if (!trainingData) return;
-
-    const numeroDeBolas = trainingData[0].bolas.length;
-
-    // Modelo mais robusto com regularização para evitar overfitting
-    const newModel = tf.sequential();
-    
-    // Camada de entrada com regularização L1 e L2
-    newModel.add(tf.layers.dense({
-      units: 256,
-      activation: 'relu',
-      inputShape: [numeroDeBolas + 2],
-      kernelRegularizer: tf.regularizers.l1l2({ l1: 0.01, l2: 0.01 })
-    }));
-    
-    // Batch Normalization para melhor estabilidade
-    newModel.add(tf.layers.batchNormalization());
-    
-    // Dropout para reduzir overfitting
-    newModel.add(tf.layers.dropout({ rate: 0.3 }));
-    
-    // Camada intermediária
-    newModel.add(tf.layers.dense({
-      units: 128,
-      activation: 'relu',
-      kernelRegularizer: tf.regularizers.l1l2({ l1: 0.01, l2: 0.01 })
-    }));
-    
-    newModel.add(tf.layers.batchNormalization());
-    newModel.add(tf.layers.dropout({ rate: 0.2 }));
-    
-    // Camada de saída
-    newModel.add(tf.layers.dense({
-      units: numeroDeBolas,
-      activation: 'sigmoid'
-    }));
-
-    // Otimizador com learning rate adaptativo
-    const optimizer = tf.train.adamax(learningRate);
-
-    newModel.compile({
-      optimizer,
-      loss: 'binaryCrossentropy',
-      metrics: ['accuracy']
-    });
-
-    const xs = tf.tensor2d(trainingData.map(d => [...d.bolas, d.numeroConcurso, d.dataSorteio]));
-    const ys = tf.tensor2d(trainingData.map(d => d.bolas));
-
+  const handleCsvUpload = async (file: File) => {
     try {
-      await newModel.fit(xs, ys, {
-        epochs,
-        batchSize,
-        validationSplit,
-        callbacks: {
-          onEpochEnd: (epoch, log) => {
-            if (log) {
-              setTrainingProgress(Math.floor(((epoch + 1) / epochs) * 100));
-              setLogs(prevLogs => [...prevLogs, {
-                epoch: epoch + 1,
-                loss: log.loss,
-                val_loss: log.val_loss || 0
-              }]);
+      const text = await file.text();
+      const data = processCSV(text);
+      const dates = extractDateFromCSV(text);
+      const validationResult = validateData(data);
 
-              // Alerta de overfitting
-              if (log.val_loss && log.loss && log.val_loss > log.loss * 1.2) {
-                toast({
-                  title: "Alerta de Overfitting",
-                  description: "O modelo pode estar sofrendo overfitting. Considere ajustar os parâmetros.",
-                  variant: "destructive"
-                });
-              }
-            }
-          }
-        }
-      });
+      if (!validationResult.isValid) {
+        toast({
+          title: "Erro nos dados",
+          description: validationResult.errors.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
 
-      setModel(newModel);
-      toast({
-        title: "Treinamento Concluído",
-        description: "O modelo foi treinado com sucesso!"
-      });
+      setTrainingData(data);
+      addLog(`CSV carregado com ${data.length} registros`);
     } catch (error) {
       toast({
-        title: "Erro no Treinamento",
+        title: "Erro ao processar CSV",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
     }
-
-    xs.dispose();
-    ys.dispose();
   };
 
-  const saveModel = async () => {
-    if (model) {
-      await model.save('downloads://modelo-lotofacil');
+  const handleModelUpload = async (jsonFile: File, weightsFile: File) => {
+    try {
+      const model = await tf.loadLayersModel(tf.io.browserFiles(
+        [jsonFile, weightsFile]
+      ));
+      setTrainedModel(model);
+      addLog("Modelo carregado com sucesso");
+    } catch (error) {
       toast({
-        title: "Modelo Salvo",
-        description: "O modelo foi salvo com sucesso!"
+        title: "Erro ao carregar modelo",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
       });
     }
   };
 
+  const handleSaveModel = async () => {
+    if (!trainedModel) {
+      toast({
+        title: "Erro",
+        description: "Nenhum modelo treinado para salvar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await trainedModel.save('downloads://lotofacil-model');
+      addLog("Modelo salvo com sucesso");
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar modelo",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startTraining = async () => {
+    if (!trainingData.length) {
+      toast({
+        title: "Erro",
+        description: "Carregue os dados de treinamento primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsTraining(true);
+    try {
+      const model = createModel();
+      const config: TrainingConfig = {
+        epochs: 50,
+        batchSize: 32,
+        validationSplit: 0.2,
+        earlyStoppingPatience: 5
+      };
+
+      const history = await trainModel(model, trainingData, config);
+      setTrainedModel(model);
+      addLog(`Treinamento concluído. Loss final: ${history.history.loss.slice(-1)[0]}`);
+    } catch (error) {
+      toast({
+        title: "Erro no treinamento",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadLastCheckpoint = async () => {
+      const checkpoint = await loadCheckpoint();
+      if (checkpoint) {
+        setTrainedModel(checkpoint.model);
+        setTrainingData(checkpoint.trainingData);
+        addLog("Checkpoint carregado com sucesso");
+      }
+    };
+
+    loadLastCheckpoint();
+  }, []);
+
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Configurações de Treinamento</CardTitle>
-          <CardDescription>
-            Ajuste os parâmetros para otimizar o treinamento do modelo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Batch Size</label>
-              <Select onValueChange={(value) => setBatchSize(Number(value))} defaultValue={batchSize.toString()}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Batch Size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="16">16</SelectItem>
-                  <SelectItem value="32">32</SelectItem>
-                  <SelectItem value="64">64</SelectItem>
-                  <SelectItem value="128">128</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Épocas</label>
-              <Select onValueChange={(value) => setEpochs(Number(value))} defaultValue={epochs.toString()}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Épocas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="200">200</SelectItem>
-                  <SelectItem value="500">500</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Taxa de Aprendizado</label>
-              <Select onValueChange={(value) => setLearningRate(Number(value))} defaultValue={learningRate.toString()}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Learning Rate" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.0001">0.0001</SelectItem>
-                  <SelectItem value="0.001">0.001</SelectItem>
-                  <SelectItem value="0.01">0.01</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Validação Split</label>
-              <Select onValueChange={(value) => setValidationSplit(Number(value))} defaultValue={validationSplit.toString()}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Validation Split" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.1">10%</SelectItem>
-                  <SelectItem value="0.2">20%</SelectItem>
-                  <SelectItem value="0.3">30%</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label htmlFor="fileInput" className="block text-sm font-medium mb-2">Carregar dados (CSV):</label>
-            <input
-              type="file"
-              id="fileInput"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
-            />
-          </div>
-
-          {isError && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Erro</AlertTitle>
-              <AlertDescription>
-                Ocorreu um erro ao processar o arquivo CSV.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-4">
-            <Button
-              onClick={startTraining}
-              disabled={!trainingData || isLoading}
-              className="bg-green-500 hover:bg-green-700"
-            >
-              <BarChart2 className="mr-2 h-4 w-4" />
-              Iniciar Treinamento
-            </Button>
-
-            <Button
-              onClick={saveModel}
-              disabled={!model}
-              className="bg-blue-500 hover:bg-blue-700"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Modelo
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {trainingProgress > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Progresso do Treinamento</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Progress value={trainingProgress} className="w-full" />
-            <p className="text-center mt-2">{trainingProgress}% Concluído</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {logs.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Métricas de Treinamento</CardTitle>
-            <CardDescription>
-              Acompanhe a evolução do loss e validation loss durante o treinamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TrainingChart logs={logs} />
-          </CardContent>
-        </Card>
-      )}
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Treinamento</h1>
+        <DataUpdateButton />
+      </div>
+      <DataUploader 
+        onCsvUpload={handleCsvUpload}
+        onModelUpload={handleModelUpload}
+        onSaveModel={handleSaveModel}
+      />
+      <div className="mt-4 space-y-4">
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+          onClick={startTraining}
+          disabled={isTraining || !trainingData.length}
+        >
+          {isTraining ? 'Treinando...' : 'Iniciar Treinamento'}
+        </button>
+        <div className="h-64 overflow-y-auto bg-gray-100 p-4 rounded">
+          {logs.map((log, index) => (
+            <div key={index} className="text-sm">{log}</div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

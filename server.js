@@ -22,10 +22,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 import { modelRouter } from './routes/model.js';
 import { checkpointRouter } from './routes/checkpoint.js';
 import { statusRouter } from './routes/status.js';
+import { lotofacilRouter } from './routes/lotofacil.js';
 
 app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);
+app.use('/api/lotofacil', lotofacilRouter);
 
 // Rota principal
 app.get('/', (req, res) => {
@@ -34,7 +36,8 @@ app.get('/', (req, res) => {
     endpoints: {
       '/api/model': 'Gerenciamento do modelo de IA',
       '/api/checkpoint': 'Gerenciamento de checkpoints',
-      '/api/status': 'Status do servidor'
+      '/api/status': 'Status do servidor',
+      '/api/lotofacil': 'Gerenciamento dos dados da Lotofacil'
     }
   });
 });
