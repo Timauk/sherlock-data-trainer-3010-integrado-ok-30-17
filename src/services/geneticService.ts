@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { systemLogger } from '@/utils/logging/systemLogger';
+import { Json } from '@/lib/database.types';
 
 interface DNA {
+  [key: string]: Json;
   weights: number[];
   learningRate: number;
   mutationRate: number;
@@ -29,12 +31,10 @@ export const geneticService = {
   mutate(dna: DNA, mutationStrength: number = 0.1): DNA {
     const mutated: DNA = JSON.parse(JSON.stringify(dna));
     
-    // Mutação dos pesos
     mutated.weights = mutated.weights.map(weight => 
       Math.random() < mutationStrength ? weight + (Math.random() - 0.5) * 0.2 : weight
     );
 
-    // Mutação das taxas
     if (Math.random() < mutationStrength) {
       mutated.learningRate *= 0.5 + Math.random();
     }
@@ -42,7 +42,6 @@ export const geneticService = {
       mutated.mutationRate *= 0.5 + Math.random();
     }
 
-    // Mutação das características
     Object.keys(mutated.features).forEach(key => {
       if (Math.random() < mutationStrength) {
         mutated.features[key as keyof typeof mutated.features] += (Math.random() - 0.5) * 0.2;
@@ -55,7 +54,7 @@ export const geneticService = {
   async savePlayerDNA(playerId: number, dna: DNA) {
     const { error } = await supabase
       .from('players')
-      .update({ dna })
+      .update({ dna: dna as Json })
       .eq('id', playerId);
 
     if (error) {

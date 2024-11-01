@@ -13,7 +13,7 @@ interface LotofacilResult {
 export const syncService = {
   async syncWithOfficialAPI() {
     try {
-      const cachedResult = resultsCache.get('latest_result');
+      const cachedResult = resultsCache.get<LotofacilResult>('latest_result');
       if (cachedResult) {
         return cachedResult;
       }
@@ -30,12 +30,10 @@ export const syncService = {
 
       const data: LotofacilResult = await response.json();
       
-      // Validação dos dados
       if (!this.validateResult(data)) {
         throw new Error('Dados inválidos recebidos da API');
       }
 
-      // Salvar no Supabase
       const { error } = await supabase
         .from('historical_games')
         .upsert({
@@ -48,10 +46,7 @@ export const syncService = {
         throw error;
       }
 
-      // Atualizar cache
       resultsCache.set('latest_result', data);
-
-      // Disparar webhook
       await this.notifyWebhooks(data);
 
       systemLogger.log('system', 'Sincronização com API oficial concluída', {
@@ -76,14 +71,14 @@ export const syncService = {
   },
 
   async notifyWebhooks(data: LotofacilResult) {
-    const webhooks = await supabase
+    const { data: webhooks, error } = await supabase
       .from('webhooks')
       .select('url')
       .eq('active', true);
 
-    if (webhooks.error || !webhooks.data) return;
+    if (error || !webhooks) return;
 
-    const notifications = webhooks.data.map(webhook =>
+    const notifications = webhooks.map(webhook =>
       fetch(webhook.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

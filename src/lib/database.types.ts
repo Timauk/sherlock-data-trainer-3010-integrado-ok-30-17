@@ -32,6 +32,26 @@ export interface Database {
           created_at?: string
         }
       }
+      webhooks: {
+        Row: {
+          id: number
+          url: string
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          url: string
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          url?: string
+          active?: boolean
+          created_at?: string
+        }
+      }
       players: {
         Row: {
           id: number
@@ -105,6 +125,27 @@ export interface Database {
         }
       }
     }
+    Functions: {
+      get_player_lineage: {
+        Args: { player_id: number }
+        Returns: {
+          id: number
+          generation: number
+          parent_id: number | null
+          dna: Json
+          created_at: string
+          performance_metrics: Json
+        }[]
+      }
+      calculate_player_metrics: {
+        Args: { player_id: number }
+        Returns: { accuracy: number; matches: number }
+      }
+      update_player_dna: {
+        Args: { player_id: number; new_dna: Json }
+        Returns: boolean
+      }
+    }
     Views: {
       player_statistics: {
         Row: {
@@ -113,16 +154,6 @@ export interface Database {
           total_matches: number
           predictions_count: number
         }
-      }
-    }
-    Functions: {
-      calculate_player_metrics: {
-        Args: { player_id: number }
-        Returns: { accuracy: number; matches: number }
-      }
-      update_player_dna: {
-        Args: { player_id: number; new_dna: Json }
-        Returns: boolean
       }
     }
   }
