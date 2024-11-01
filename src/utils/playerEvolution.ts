@@ -1,4 +1,4 @@
-import { Player } from '../types/gameTypes';
+import { Player } from '../types/playerTypes';
 import * as tf from '@tensorflow/tfjs';
 
 export const cloneChampion = (champion: Player, totalPlayers: number): Player[] => {
@@ -15,7 +15,7 @@ export const cloneChampion = (champion: Player, totalPlayers: number): Player[] 
     });
     
     clones.push({
-      id: Math.random(),
+      id: Math.floor(Math.random() * 1000000), // Generate a random number ID
       score: 0,
       predictions: [],
       weights: modifiedWeights,
