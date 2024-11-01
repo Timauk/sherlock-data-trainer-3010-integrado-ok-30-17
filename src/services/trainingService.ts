@@ -38,16 +38,17 @@ export const trainingService = {
     try {
       const { data, error } = await supabase
         .from('trained_models')
-        .select()
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const model = await tf.models.modelFromJSON(data[0].model_data);
-        return { model, metadata: data[0].metadata as TrainingMetadata };
+      if (data) {
+        const model = await tf.models.modelFromJSON(data.model_data);
+        return { model, metadata: data.metadata as TrainingMetadata };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
@@ -63,7 +64,8 @@ export const trainingService = {
       const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .then(result => result);
 
       if (error) throw error;
       return data || [];
@@ -79,10 +81,11 @@ export const trainingService = {
         .from('historical_games')
         .select('concurso, data')
         .order('concurso', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
+      return data;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
