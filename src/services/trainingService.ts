@@ -37,15 +37,13 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
-        .select('*')
+        .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-
-      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -65,12 +63,10 @@ export const trainingService = {
 
   async getTrainingHistory() {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
         .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
