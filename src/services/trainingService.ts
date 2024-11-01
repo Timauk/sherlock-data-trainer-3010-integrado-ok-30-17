@@ -38,21 +38,19 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
-        .select();
-        
-      const result = await query
+        .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
-      if (result.data) {
-        const model = await tf.models.modelFromJSON(result.data.model_data);
-        return { model, metadata: result.data.metadata as TrainingMetadata };
+      if (data) {
+        const model = await tf.models.modelFromJSON(data.model_data);
+        return { model, metadata: data.metadata as TrainingMetadata };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
@@ -65,15 +63,13 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
-        .select('metadata, created_at');
-        
-      const result = await query
+        .select('metadata, created_at')
         .order('created_at', { ascending: false });
 
-      if (result.error) throw result.error;
-      return result.data || [];
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
@@ -82,17 +78,15 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('historical_games')
-        .select('concurso, data');
-        
-      const result = await query
+        .select('concurso, data')
         .order('concurso', { ascending: false })
         .limit(1)
         .single();
 
-      if (result.error) throw result.error;
-      return result.data;
+      if (error) throw error;
+      return data;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
