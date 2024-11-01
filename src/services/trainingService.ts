@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/lib/supabase';
 import { systemLogger } from '@/utils/logging/systemLogger';
+import { Database } from '@/lib/database.types';
 
 interface TrainingMetadata {
   timestamp: string;
@@ -40,6 +41,7 @@ export const trainingService = {
         .from('trained_models')
         .select('*')
         .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
@@ -63,7 +65,8 @@ export const trainingService = {
     try {
       const { data, error } = await supabase
         .from('trained_models')
-        .select('metadata, created_at');
+        .select('metadata, created_at')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
