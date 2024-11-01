@@ -7,6 +7,7 @@ import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
 import LotofacilLogger from '@/components/LotofacilLogger';
+import { lotofacilService } from '@/services/lotofacilService';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,46 +21,27 @@ const PlayPage: React.FC = () => {
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
-  const loadCSV = useCallback(async (file: File) => {
+  const loadCSV = useCallback(async () => {
     try {
-      const text = await file.text();
-      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
-      const data = lines.map(line => {
-        const values = line.split(',');
-        return {
-          concurso: parseInt(values[0], 10),
-          data: new Date(values[1].split('/').reverse().join('-')),
-          bolas: values.slice(2).map(Number)
-        };
-      });
-      setCsvData(data.map(d => d.bolas));
-      setCsvDates(data.map(d => d.data));
-      gameLogic.addLog("CSV carregado e processado com sucesso!");
-      gameLogic.addLog(`Número de registros carregados: ${data.length}`);
+      const results = await lotofacilService.getLastResults(100);
+      const processedData = results.map(result => ({
+        concurso: result.concurso,
+        data: new Date(result.data.split('/').reverse().join('-')),
+        bolas: result.dezenas.map(Number)
+      }));
+      
+      setCsvData(processedData.map(d => d.bolas));
+      setCsvDates(processedData.map(d => d.data));
+      gameLogic.addLog("Dados carregados da API com sucesso!");
+      gameLogic.addLog(`Número de registros carregados: ${processedData.length}`);
     } catch (error) {
-      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      gameLogic.addLog(`Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }, [gameLogic]);
 
-  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
-    try {
-      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      setTrainedModel(model);
-      gameLogic.addLog("Modelo carregado com sucesso!");
-      toast({
-        title: "Modelo Carregado",
-        description: "O modelo foi carregado com sucesso.",
-      });
-    } catch (error) {
-      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      console.error("Detalhes do erro:", error);
-      toast({
-        title: "Erro ao Carregar Modelo",
-        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
-        variant: "destructive",
-      });
-    }
-  }, [gameLogic, toast]);
+  useEffect(() => {
+    loadCSV();
+  }, [loadCSV]);
 
   const saveModel = useCallback(async () => {
     if (trainedModel) {
@@ -164,7 +146,7 @@ const PlayPage: React.FC = () => {
         onReset={resetGame}
         onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onCsvUpload={loadCSV}
-        onModelUpload={loadModel}
+        onModelUpload={async () => {}}
         onSaveModel={saveModel}
         progress={progress}
         generation={gameLogic.generation}
@@ -180,3 +162,4 @@ const PlayPage: React.FC = () => {
 };
 
 export default PlayPage;
+
