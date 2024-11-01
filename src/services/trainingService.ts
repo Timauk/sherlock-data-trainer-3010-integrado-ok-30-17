@@ -16,7 +16,7 @@ type TrainedModel = TrainedModelsTable['Row'];
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
-      const result = await supabase
+      const { error } = await supabase
         .from('trained_models')
         .insert({
           model_data: model.toJSON(),
@@ -24,7 +24,7 @@ export const trainingService = {
           is_active: true
         });
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
       systemLogger.log('system', 'Modelo salvo com sucesso', { metadata });
       return true;
@@ -36,14 +36,12 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1);
-        
-      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -62,12 +60,10 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .select('metadata, created_at')
         .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -79,13 +75,11 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('historical_games')
         .select('concurso, data')
         .order('concurso', { ascending: false })
         .limit(1);
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
