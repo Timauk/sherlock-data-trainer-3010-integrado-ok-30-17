@@ -10,7 +10,7 @@ export const gameService = {
       .limit(limit);
 
     if (error) {
-      systemLogger.log('error', 'Erro ao buscar jogos', { error });
+      systemLogger.log('system', 'Erro ao buscar jogos', { error });
       throw error;
     }
 
@@ -23,7 +23,7 @@ export const gameService = {
       .insert([{ concurso, data, numeros }]);
 
     if (error) {
-      systemLogger.log('error', 'Erro ao salvar jogo', { error });
+      systemLogger.log('system', 'Erro ao salvar jogo', { error });
       throw error;
     }
   },
@@ -41,7 +41,7 @@ export const gameService = {
 
       return true;
     } catch (error) {
-      systemLogger.log('error', 'Erro na sincronização com API oficial', { error });
+      systemLogger.log('system', 'Erro na sincronização com API oficial', { error });
       return false;
     }
   }

@@ -16,7 +16,7 @@ export const playerService = {
       .single();
 
     if (error) {
-      systemLogger.log('error', 'Erro ao criar jogador', { error });
+      systemLogger.log('system', 'Erro ao criar jogador', { error });
       throw error;
     }
 
@@ -30,7 +30,7 @@ export const playerService = {
       .eq('id', playerId);
 
     if (error) {
-      systemLogger.log('error', 'Erro ao atualizar score', { error });
+      systemLogger.log('system', 'Erro ao atualizar score', { error });
       throw error;
     }
   },
@@ -45,7 +45,7 @@ export const playerService = {
       }]);
 
     if (error) {
-      systemLogger.log('error', 'Erro ao salvar previsão', { error });
+      systemLogger.log('system', 'Erro ao salvar previsão', { error });
       throw error;
     }
   },
@@ -55,7 +55,7 @@ export const playerService = {
       .rpc('calculate_player_metrics', { player_id: playerId });
 
     if (error) {
-      systemLogger.log('error', 'Erro ao calcular métricas', { error });
+      systemLogger.log('system', 'Erro ao calcular métricas', { error });
       throw error;
     }
 
@@ -80,7 +80,7 @@ export const playerService = {
       .eq('id', playerId);
 
     if (error) {
-      systemLogger.log('error', 'Erro ao buscar linhagem', { error });
+      systemLogger.log('system', 'Erro ao buscar linhagem', { error });
       throw error;
     }
 
