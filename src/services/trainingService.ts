@@ -36,18 +36,20 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const result = await supabase
+      const query = supabase
         .from('trained_models')
         .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .single();
+        .limit(1);
+        
+      const { data, error } = await query;
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
-      if (result.data) {
-        const model = await tf.models.modelFromJSON(result.data.model_data);
-        return { model, metadata: result.data.metadata as TrainingMetadata };
+      if (data && data.length > 0) {
+        const model = await tf.models.modelFromJSON(data[0].model_data);
+        return { model, metadata: data[0].metadata as TrainingMetadata };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
@@ -60,13 +62,15 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const result = await supabase
+      const query = supabase
         .from('trained_models')
         .select('metadata, created_at')
         .order('created_at', { ascending: false });
 
-      if (result.error) throw result.error;
-      return result.data || [];
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
       return [];
@@ -75,14 +79,16 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const result = await supabase
+      const query = supabase
         .from('historical_games')
         .select('concurso, data')
         .order('concurso', { ascending: false })
-        .single();
+        .limit(1);
 
-      if (result.error) throw result.error;
-      return result.data;
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
     } catch (error) {
       systemLogger.log('system', 'Erro ao buscar último jogo', { error });
       return null;
