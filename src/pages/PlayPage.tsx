@@ -169,6 +169,11 @@ const PlayPage: React.FC = () => {
         generation={gameLogic.generation}
         gameLogic={gameLogic}
       />
+      {csvData.length > 0 && (
+        <div className="mt-6">
+          <LotofacilLogger numbers={csvData} dates={csvDates} />
+        </div>
+      )}
     </div>
   );
 };
