@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Player } from '../types/gameTypes';
+import { Player } from '@/types/playerTypes';
 
 interface Ancestry {
-  parentIds: string[];
+  parentIds: number[];
   generation: number;
   mutationHistory: {
     generation: number;
@@ -21,13 +21,11 @@ export const createOffspring = (
     mutationHistory: []
   };
 
-  // Crossover dos pesos com tracking de genes
   const childWeights = parent1.weights.map((weight, index) => {
     const useParent1 = Math.random() > 0.5;
     return useParent1 ? weight : parent2.weights[index];
   });
 
-  // Mutação com tracking
   const mutatedWeights = childWeights.map((weight, index) => {
     const shouldMutate = Math.random() < 0.1;
     if (shouldMutate) {
@@ -41,7 +39,7 @@ export const createOffspring = (
   });
 
   return {
-    id: uuidv4(),
+    id: Math.floor(Math.random() * 1000000), // Generate numeric ID
     score: 0,
     predictions: [],
     weights: mutatedWeights,
