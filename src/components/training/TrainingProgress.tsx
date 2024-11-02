@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { trainingService } from '@/services/trainingService';
 
 interface TrainingProgressProps {
   progress: number;
@@ -14,9 +15,16 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
   model,
   trainingHistory
 }) => {
-  const totalGames = trainingHistory.reduce((acc, entry) => {
-    return acc + (entry.metadata?.gamesCount || 0);
-  }, 0);
+  const [totalGames, setTotalGames] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchGamesCount = async () => {
+      const count = await trainingService.getStoredGamesCount();
+      setTotalGames(count);
+    };
+
+    fetchGamesCount();
+  }, []);
 
   const lossData = trainingHistory.map((entry, index) => ({
     epoch: index + 1,
@@ -80,27 +88,6 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          )}
-
-          {trainingHistory.length > 0 && (
-            <div className="space-y-2 mt-4">
-              <h3 className="font-medium">Histórico de Treinamentos</h3>
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {trainingHistory.map((entry, index) => (
-                  <div key={index} className="bg-secondary/50 p-2 rounded">
-                    <p className="text-sm">
-                      Data: {new Date(entry.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm">
-                      Precisão: {(entry.metadata?.accuracy * 100).toFixed(2)}%
-                    </p>
-                    <p className="text-sm">
-                      Loss: {entry.metadata?.loss.toFixed(4)}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
