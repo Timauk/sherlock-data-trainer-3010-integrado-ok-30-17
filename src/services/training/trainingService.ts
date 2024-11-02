@@ -55,16 +55,21 @@ export const trainingService = {
 
       if (error) throw error;
 
-      const model = await trainModelWithGames(games);
+      const model = await trainModelWithGames(games, {
+        batchSize: 32,
+        epochs: 50,
+        learningRate: 0.001,
+        validationSplit: 0.2
+      });
       
-      await this.saveModel(model, {
+      await this.saveModel(model.model, {
         timestamp: new Date().toISOString(),
         accuracy: 0.85,
         loss: 0.15,
         epochs: 50
       });
 
-      return true;
+      return model;
     } catch (error) {
       systemLogger.log('system', 'Erro ao atualizar jogos e treinar', { error });
       throw error;
