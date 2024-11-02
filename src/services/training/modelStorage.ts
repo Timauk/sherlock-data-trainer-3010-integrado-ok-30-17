@@ -46,14 +46,19 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1)
+      .single();
 
     if (error) throw error;
 
-    if (data && data.length > 0) {
-      const modelData = data[0];
-      const model = await tf.models.modelFromJSON(modelData.model_data as tf.io.ModelJSON);
-      const metadata = modelData.metadata as TrainingMetadata;
+    if (data) {
+      const modelJson = data.model_data as unknown as tf.io.ModelJSON;
+      if (!modelJson.modelTopology || !modelJson.weightsManifest) {
+        throw new Error('Dados do modelo inválidos');
+      }
+
+      const model = await tf.models.modelFromJSON(modelJson);
+      const metadata = data.metadata as unknown as TrainingMetadata;
       
       systemLogger.log('system', 'Modelo carregado com sucesso do Supabase');
       return { model, metadata };

@@ -1,12 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
-import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
 import { TrainingMetadata, TrainingResult, ModelExport } from './types';
-import { saveModelToSupabase, loadModelFromSupabase } from './modelStorage';
+import { saveModelToSupabase, loadLatestModelFromSupabase } from './modelStorage';
 
 export const trainingService = {
   saveModel: saveModelToSupabase,
-  loadLatestModel: loadModelFromSupabase,
+  loadLatestModel: loadLatestModelFromSupabase,
 
   async getTrainingHistory() {
     try {
