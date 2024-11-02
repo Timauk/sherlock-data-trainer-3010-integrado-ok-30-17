@@ -50,6 +50,12 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
 export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
   try {
+    // First, get the total number of games
+    const { count: gamesCount } = await supabase
+      .from('historical_games')
+      .select('*', { count: 'exact', head: true });
+
+    // Then get the latest active model
     const { data, error } = await supabase
       .from('trained_models')
       .select()
@@ -70,7 +76,10 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       }
 
       const model = await tf.models.modelFromJSON(modelJson);
-      const metadata = modelData.metadata as unknown as TrainingMetadata;
+      const metadata = {
+        ...(modelData.metadata as unknown as TrainingMetadata),
+        gamesCount: gamesCount || 0
+      };
       
       systemLogger.log('system', 'Modelo carregado com sucesso do Supabase');
       return { model, metadata };
@@ -78,14 +87,17 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
 
     // If no active model in Supabase, create a new one
     const model = createInitialModel();
-    await saveModelToSupabase(model, {
+    const metadata: TrainingMetadata = {
       timestamp: new Date().toISOString(),
       accuracy: 0,
       loss: 0,
-      epochs: 0
-    });
+      epochs: 0,
+      gamesCount: gamesCount || 0
+    };
+
+    await saveModelToSupabase(model, metadata);
     
-    return { model, metadata: null };
+    return { model, metadata };
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo do Supabase', { error });
     return { model: null, metadata: null };

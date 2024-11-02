@@ -1,5 +1,4 @@
-import { Json } from '@/integrations/supabase/types';
-import * as tf from '@tensorflow/tfjs';
+import { Json } from '@/lib/database.types';
 
 export interface TrainingMetadata {
   timestamp: string;
