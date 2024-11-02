@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
-import { supabase } from '@/integrations/supabase/client';
 import { lotofacilService } from '@/services/lotofacilService';
 
 const DataUpdateButton = () => {
@@ -15,15 +14,12 @@ const DataUpdateButton = () => {
     mutationFn: async () => {
       // 1. Fetch latest result from Lotofacil API
       const latestResult = await lotofacilService.fetchLatestFromAPI();
-
-      // 2. Check if we already have this result
-      const { data: existingGame, error: queryError } = await supabase
-        .from('historical_games')
-        .select('concurso')
-        .eq('concurso', latestResult.concurso)
-        .maybeSingle();
-
-      if (queryError) throw queryError;
+      
+      // 2. Get stored games from localStorage
+      const storedGames = JSON.parse(localStorage.getItem('historical_games') || '[]');
+      
+      // 3. Check if we already have this result
+      const existingGame = storedGames.find(game => game.concurso === latestResult.concurso);
 
       if (existingGame) {
         return {
@@ -33,21 +29,17 @@ const DataUpdateButton = () => {
         };
       }
 
-      // 3. Get all missing games
+      // 4. Get all missing games
       const allResults = await lotofacilService.getLastResults();
       
-      // 4. Insert new games into database
-      const { error: insertError } = await supabase
-        .from('historical_games')
-        .insert(
-          allResults.map(game => ({
-            concurso: game.concurso,
-            data: game.data.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
-            numeros: game.dezenas.map(Number)
-          }))
-        );
+      // 5. Store new games in localStorage
+      const newGames = allResults.map(game => ({
+        concurso: game.concurso,
+        data: game.data.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
+        numeros: game.dezenas.map(Number)
+      }));
 
-      if (insertError) throw insertError;
+      localStorage.setItem('historical_games', JSON.stringify([...storedGames, ...newGames]));
 
       return {
         updated: true,
