@@ -27,16 +27,16 @@ export const lotofacilService = {
     }
   },
 
-  async getLastResults(limit: number = 500): Promise<LotofacilResult[]> {
+  async getLastResults(): Promise<LotofacilResult[]> {
     try {
       const latestResult = await this.fetchLatestFromAPI();
       const results: LotofacilResult[] = [latestResult];
       
-      // Buscar resultados anteriores
-      for (let i = 1; i < limit; i++) {
+      // Buscar todos os resultados anteriores
+      for (let i = 1; i < latestResult.concurso; i++) {
         try {
           const concurso = latestResult.concurso - i;
-          if (concurso <= 0) break; // Stop if we reach contest #1
+          if (concurso <= 0) break;
           
           const response = await fetch(`${API_BASE_URL}/${concurso}`);
           
