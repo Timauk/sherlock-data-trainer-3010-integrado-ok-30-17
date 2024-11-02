@@ -33,6 +33,30 @@ export type Database = {
         }
         Relationships: []
       }
+      trained_models: {
+        Row: {
+          created_at: string
+          id: number
+          is_active: boolean | null
+          metadata: Json
+          model_data: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          is_active?: boolean | null
+          metadata: Json
+          model_data: Json
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          is_active?: boolean | null
+          metadata?: Json
+          model_data?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
