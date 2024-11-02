@@ -1,7 +1,14 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 
-export async function trainModelWithGames(games: any[]) {
+interface TrainingConfig {
+  batchSize: number;
+  epochs: number;
+  learningRate: number;
+  validationSplit: number;
+}
+
+export async function trainModelWithGames(games: any[], config: TrainingConfig) {
   const model = tf.sequential({
     layers: [
       tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }),
@@ -12,7 +19,7 @@ export async function trainModelWithGames(games: any[]) {
   });
 
   model.compile({
-    optimizer: 'adam',
+    optimizer: tf.train.adam(config.learningRate),
     loss: 'binaryCrossentropy',
     metrics: ['accuracy']
   });
@@ -26,9 +33,9 @@ export async function trainModelWithGames(games: any[]) {
   const ys = tf.tensor2d(trainingData.map(d => d.output));
 
   const history = await model.fit(xs, ys, {
-    epochs: 50,
-    batchSize: 32,
-    validationSplit: 0.2,
+    epochs: config.epochs,
+    batchSize: config.batchSize,
+    validationSplit: config.validationSplit,
     callbacks: {
       onEpochEnd: async (epoch, logs) => {
         if (logs) {
@@ -68,7 +75,12 @@ export async function updateGamesAndTrain(games: any[]) {
 
     if (error) throw error;
 
-    const result = await trainModelWithGames(games);
+    const result = await trainModelWithGames(games, {
+      batchSize: 32,
+      epochs: 50,
+      learningRate: 0.001,
+      validationSplit: 0.2
+    });
     return result;
   } catch (error) {
     console.error('Error in updateGamesAndTrain:', error);

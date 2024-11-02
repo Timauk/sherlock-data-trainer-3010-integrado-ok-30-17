@@ -12,6 +12,12 @@ const TrainingPage = () => {
   const [progress, setProgress] = useState(0);
   const [model, setModel] = useState<tf.LayersModel | null>(null);
   const [trainingHistory, setTrainingHistory] = useState<any[]>([]);
+  const [config, setConfig] = useState({
+    batchSize: 32,
+    epochs: 100,
+    learningRate: 0.001,
+    validationSplit: 0.2
+  });
 
   useEffect(() => {
     loadTrainingHistory();
@@ -28,6 +34,13 @@ const TrainingPage = () => {
     }
   };
 
+  const handleConfigChange = (key: string, value: number) => {
+    setConfig(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const handleTraining = async () => {
     setIsTraining(true);
     setProgress(0);
@@ -42,18 +55,18 @@ const TrainingPage = () => {
         throw new Error('Nenhum jogo encontrado para treinamento');
       }
 
-      const { model: trainedModel, history } = await trainModelWithGames(games);
+      const { model: trainedModel, history } = await trainModelWithGames(games, config);
       setModel(trainedModel);
       setProgress(100);
       
       await loadTrainingHistory();
 
       const finalAccuracy = history.history.acc?.[history.history.acc.length - 1];
-      const accuracyDisplay = finalAccuracy !== undefined ? (Number(finalAccuracy) * 100).toFixed(2) : '0.00';
+      const accuracyPercentage = finalAccuracy !== undefined ? (Number(finalAccuracy) * 100).toFixed(2) : '0.00';
 
       toast({
         title: "Treinamento Concluído",
-        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${accuracyDisplay}%`,
+        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${accuracyPercentage}%`,
       });
     } catch (error) {
       toast({
@@ -71,6 +84,8 @@ const TrainingPage = () => {
       <TrainingControls 
         isTraining={isTraining}
         onStartTraining={handleTraining}
+        config={config}
+        onConfigChange={handleConfigChange}
       />
       <TrainingProgress 
         progress={progress}
