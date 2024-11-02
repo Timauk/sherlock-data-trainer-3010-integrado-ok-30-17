@@ -1,6 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
-import { systemLogger } from '@/utils/logging/systemLogger';
 
 export async function trainModelWithGames(games: any[]) {
   const model = tf.sequential({
@@ -53,4 +52,26 @@ export async function trainModelWithGames(games: any[]) {
   ys.dispose();
 
   return { model, history };
+}
+
+export async function updateGamesAndTrain(games: any[]) {
+  try {
+    const { error } = await supabase
+      .from('historical_games')
+      .upsert(
+        games.map(game => ({
+          concurso: game.concurso,
+          data: game.data,
+          numeros: game.dezenas.map(Number)
+        }))
+      );
+
+    if (error) throw error;
+
+    const result = await trainModelWithGames(games);
+    return result;
+  } catch (error) {
+    console.error('Error in updateGamesAndTrain:', error);
+    throw error;
+  }
 }

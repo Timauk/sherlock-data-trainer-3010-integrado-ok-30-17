@@ -49,7 +49,7 @@ const TrainingPage = () => {
       await loadTrainingHistory();
 
       const finalAccuracy = history.history.acc?.[history.history.acc.length - 1];
-      const accuracyDisplay = finalAccuracy ? (finalAccuracy * 100).toFixed(2) : '0.00';
+      const accuracyDisplay = finalAccuracy !== undefined ? (Number(finalAccuracy) * 100).toFixed(2) : '0.00';
 
       toast({
         title: "Treinamento Concluído",
