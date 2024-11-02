@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import path from 'path';
 import { FileManager } from './fileManager';
 import { logger } from '../../utils/logging/logger.js';
 
