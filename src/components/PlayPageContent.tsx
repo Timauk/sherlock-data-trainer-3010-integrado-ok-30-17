@@ -5,6 +5,7 @@ import ControlPanel from './GameControls/ControlPanel';
 import AnalysisTabs from './GameAnalysis/AnalysisTabs';
 import ChampionPredictions from './ChampionPredictions';
 import ProcessingSelector from './ProcessingSelector';
+import GeneticTreeVisualization from './GeneticTreeVisualization';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
 interface PlayPageContentProps {
@@ -55,6 +56,11 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         progress={progress}
         champion={champion}
         modelMetrics={gameLogic.modelMetrics}
+      />
+      
+      <GeneticTreeVisualization 
+        players={gameLogic.players}
+        generation={gameLogic.generation}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
