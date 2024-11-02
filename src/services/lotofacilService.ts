@@ -27,6 +27,19 @@ export const lotofacilService = {
     }
   },
 
+  async getConcurso(concurso: number): Promise<LotofacilResult> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${concurso}`);
+      if (!response.ok) {
+        throw new Error(`Falha ao buscar concurso ${concurso}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Erro ao buscar concurso ${concurso}:`, error);
+      throw error;
+    }
+  },
+
   async getLastResults(): Promise<LotofacilResult[]> {
     try {
       const latestResult = await this.fetchLatestFromAPI();

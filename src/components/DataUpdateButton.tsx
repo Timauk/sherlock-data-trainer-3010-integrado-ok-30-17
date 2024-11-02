@@ -1,16 +1,11 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
-
-interface LotofacilResponse {
-  concurso: number;
-  data: string;
-  dezenas: string[];
-}
+import { lotofacilService } from '@/services/lotofacilService';
 
 const DataUpdateButton = () => {
   const { toast } = useToast();
@@ -19,11 +14,7 @@ const DataUpdateButton = () => {
   const { mutate: updateData, isPending } = useMutation({
     mutationFn: async () => {
       // 1. Fetch latest result from Lotofacil API
-      const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
-      if (!response.ok) {
-        throw new Error('Falha ao buscar dados da Lotofacil');
-      }
-      const latestResult: LotofacilResponse = await response.json();
+      const latestResult = await lotofacilService.fetchLatestFromAPI();
 
       // 2. Check if we already have this result
       const { data: existingGame, error: queryError } = await supabase
@@ -42,14 +33,19 @@ const DataUpdateButton = () => {
         };
       }
 
-      // 3. Insert new result into database
+      // 3. Get all missing games
+      const allResults = await lotofacilService.getLastResults();
+      
+      // 4. Insert new games into database
       const { error: insertError } = await supabase
         .from('historical_games')
-        .insert({
-          concurso: latestResult.concurso,
-          data: latestResult.data.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
-          numeros: latestResult.dezenas.map(Number)
-        });
+        .insert(
+          allResults.map(game => ({
+            concurso: game.concurso,
+            data: game.data.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
+            numeros: game.dezenas.map(Number)
+          }))
+        );
 
       if (insertError) throw insertError;
 
