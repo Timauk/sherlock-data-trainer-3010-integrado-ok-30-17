@@ -90,6 +90,25 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
               </ResponsiveContainer>
             </div>
           )}
+
+          <div className="space-y-2 mt-4">
+            <h3 className="font-medium">Histórico de Treinamentos</h3>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {trainingHistory.map((entry, index) => (
+                <div key={index} className="bg-secondary/50 p-2 rounded">
+                  <p className="text-sm">
+                    Data: {new Date(entry.created_at).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm">
+                    Precisão: {((entry.metadata?.accuracy || 0) * 100).toFixed(2)}%
+                  </p>
+                  <p className="text-sm">
+                    Loss: {(entry.metadata?.loss || 0).toFixed(4)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
