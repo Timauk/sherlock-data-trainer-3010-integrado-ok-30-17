@@ -1,8 +1,9 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { TrainingMetadata, TrainingResult, ModelExport } from './types';
 import { saveModelToSupabase, loadLatestModelFromSupabase } from './modelStorage';
+import { trainModelWithGames } from './modelTraining';
+import type { TrainingMetadata } from './types';
 
 export const trainingService = {
   saveModel: saveModelToSupabase,
@@ -40,7 +41,7 @@ export const trainingService = {
     }
   },
 
-  async updateGamesAndTrain(games: any[]): Promise<TrainingResult> {
+  async updateGamesAndTrain(games: any[]) {
     try {
       const { error } = await supabase
         .from('historical_games')
@@ -54,7 +55,7 @@ export const trainingService = {
 
       if (error) throw error;
 
-      const model = await this.trainModelWithGames(games);
+      const model = await trainModelWithGames(games);
       
       await this.saveModel(model, {
         timestamp: new Date().toISOString(),
@@ -63,58 +64,19 @@ export const trainingService = {
         epochs: 50
       });
 
-      return {
-        updated: true,
-        message: `Dados atualizados com sucesso!`
-      };
+      return true;
     } catch (error) {
       systemLogger.log('system', 'Erro ao atualizar jogos e treinar', { error });
       throw error;
     }
   },
 
-  async trainModelWithGames(games: any[]) {
-    const model = tf.sequential({
-      layers: [
-        tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }),
-        tf.layers.dropout({ rate: 0.3 }),
-        tf.layers.dense({ units: 64, activation: 'relu' }),
-        tf.layers.dense({ units: 15, activation: 'sigmoid' })
-      ]
-    });
+  async exportCurrentModel() {
+    const result = await this.loadLatestModel();
+    if (!result?.model) throw new Error('Nenhum modelo encontrado');
 
-    model.compile({
-      optimizer: 'adam',
-      loss: 'binaryCrossentropy',
-      metrics: ['accuracy']
-    });
-
-    const trainingData = games.map(game => ({
-      input: [...game.dezenas.map(Number), game.concurso],
-      output: game.dezenas.map(Number)
-    }));
-
-    const xs = tf.tensor2d(trainingData.map(d => d.input));
-    const ys = tf.tensor2d(trainingData.map(d => d.output));
-
-    await model.fit(xs, ys, {
-      epochs: 50,
-      batchSize: 32,
-      validationSplit: 0.2
-    });
-
-    xs.dispose();
-    ys.dispose();
-
-    return model;
-  },
-
-  async exportCurrentModel(): Promise<ModelExport> {
-    const { model } = await this.loadLatestModel();
-    if (!model) throw new Error('Nenhum modelo encontrado');
-
-    const modelJSON = model.toJSON();
-    const weights = await model.getWeights();
+    const modelJSON = result.model.toJSON();
+    const weights = await result.model.getWeights();
     
     return {
       json: modelJSON,

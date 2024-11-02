@@ -6,6 +6,7 @@ import type { Json } from '@/lib/database.types';
 
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
+    // First, deactivate all existing active models
     await supabase
       .from('trained_models')
       .update({ is_active: false })
@@ -47,7 +48,7 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle(); // Using maybeSingle() instead of single()
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -65,16 +66,16 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       return { model, metadata };
     }
 
-    // If no active model in Supabase, try loading from IndexedDB
-    try {
-      const model = await tf.loadLayersModel('indexeddb://current-model');
-      return { model, metadata: null };
-    } catch (error) {
-      systemLogger.log('system', 'Erro ao carregar modelo do IndexedDB', { error });
-      // Create a new model if none exists
-      const model = createInitialModel();
-      return { model, metadata: null };
-    }
+    // If no active model in Supabase, create a new one
+    const model = createInitialModel();
+    await saveModelToSupabase(model, {
+      timestamp: new Date().toISOString(),
+      accuracy: 0,
+      loss: 0,
+      epochs: 0
+    });
+    
+    return { model, metadata: null };
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo do Supabase', { error });
     return null;
