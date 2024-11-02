@@ -8,6 +8,8 @@ interface TrainingMetadata {
   accuracy: number;
   loss: number;
   epochs: number;
+  gamesCount?: number;
+  weights?: any;
 }
 
 type TrainedModelsTable = Database['public']['Tables']['trained_models'];
