@@ -18,8 +18,15 @@ export const trainingService = {
       const { data, error } = await supabase
         .from('trained_models')
         .insert({
-          model_data: model.toJSON() as Json,
-          metadata: metadata as Json,
+          model_data: model.toJSON() as unknown as Json,
+          metadata: {
+            timestamp: metadata.timestamp,
+            accuracy: metadata.accuracy,
+            loss: metadata.loss,
+            epochs: metadata.epochs,
+            gamesCount: metadata.gamesCount,
+            weights: metadata.weights
+          } as unknown as Json,
           is_active: true
         })
         .select()
@@ -48,11 +55,19 @@ export const trainingService = {
       if (error) throw error;
 
       if (data) {
-        const model = await tf.models.modelFromJSON(data.model_data as tf.io.ModelJSON);
-        return { 
-          model, 
-          metadata: data.metadata as unknown as TrainingMetadata 
-        };
+        const modelData = data.model_data as unknown as tf.io.ModelJSON;
+        const model = await tf.models.modelFromJSON(modelData);
+        
+        const metadata = {
+          timestamp: (data.metadata as any).timestamp || '',
+          accuracy: (data.metadata as any).accuracy || 0,
+          loss: (data.metadata as any).loss || 0,
+          epochs: (data.metadata as any).epochs || 0,
+          gamesCount: (data.metadata as any).gamesCount,
+          weights: (data.metadata as any).weights
+        } as TrainingMetadata;
+
+        return { model, metadata };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
