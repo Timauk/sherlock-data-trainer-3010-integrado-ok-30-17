@@ -6,6 +6,12 @@ import { systemLogger } from '@/utils/logging/systemLogger';
 
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
+    // First, deactivate all existing models
+    await supabase
+      .from('trained_models')
+      .update({ is_active: false })
+      .eq('is_active', true);
+
     const modelData: ModelData = {
       model_data: model.toJSON() as unknown as Json,
       metadata: {
@@ -36,13 +42,27 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
 export async function loadModelFromSupabase() {
   try {
+    // First check if there are any models at all
+    const { count, error: countError } = await supabase
+      .from('trained_models')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) throw countError;
+
+    // If no models exist, return null immediately
+    if (count === 0) {
+      systemLogger.log('system', 'Nenhum modelo encontrado no banco de dados');
+      return { model: null, metadata: null };
+    }
+
+    // If models exist, try to get the active one
     const { data, error } = await supabase
       .from('trained_models')
       .select()
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle(); // Using maybeSingle() to handle no results case
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -62,7 +82,7 @@ export async function loadModelFromSupabase() {
       return { model, metadata };
     }
 
-    // Fallback to local storage if no model in Supabase
+    // If no active model found, try to load from IndexedDB
     try {
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };
