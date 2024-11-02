@@ -8,14 +8,17 @@ import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
 import LotofacilLogger from '@/components/LotofacilLogger';
 import { lotofacilService } from '@/services/lotofacilService';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
+  const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
@@ -23,6 +26,7 @@ const PlayPage: React.FC = () => {
 
   const loadCSV = useCallback(async () => {
     try {
+      setIsLoading(true);
       const results = await lotofacilService.getLastResults();
       const processedData = results.map(result => ({
         concurso: result.concurso,
@@ -34,52 +38,39 @@ const PlayPage: React.FC = () => {
       setCsvDates(processedData.map(d => d.data));
       gameLogic.addLog("Dados carregados da API com sucesso!");
       gameLogic.addLog(`Número de registros carregados: ${processedData.length}`);
+      toast({
+        title: "Dados Carregados",
+        description: `${processedData.length} registros foram carregados com sucesso.`,
+      });
     } catch (error) {
+      toast({
+        title: "Erro ao Carregar Dados",
+        description: "Não foi possível carregar os dados do jogo. Tente novamente.",
+        variant: "destructive",
+      });
       gameLogic.addLog(`Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setIsLoading(false);
     }
-  }, [gameLogic]);
+  }, [gameLogic, toast]);
 
   useEffect(() => {
     loadCSV();
   }, [loadCSV]);
 
-  const saveModel = useCallback(async () => {
-    if (trainedModel) {
-      try {
-        await trainedModel.save('downloads://modelo-atual');
-        gameLogic.addLog("Modelo salvo com sucesso!");
-        toast({
-          title: "Modelo Salvo",
-          description: "O modelo atual foi salvo com sucesso.",
-        });
-      } catch (error) {
-        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        console.error("Detalhes do erro:", error);
-        toast({
-          title: "Erro ao Salvar Modelo",
-          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      gameLogic.addLog("Nenhum modelo para salvar.");
-      toast({
-        title: "Nenhum Modelo",
-        description: "Não há nenhum modelo carregado para salvar.",
-        variant: "destructive",
-      });
-    }
-  }, [trainedModel, gameLogic, toast]);
-
   const playGame = useCallback(() => {
     if (!trainedModel || csvData.length === 0) {
-      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
+      toast({
+        title: "Não é possível iniciar",
+        description: "Verifique se o modelo e os dados foram carregados corretamente.",
+        variant: "destructive",
+      });
       return;
     }
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
     gameLogic.gameLoop();
-  }, [trainedModel, csvData, gameLogic]);
+  }, [trainedModel, csvData, gameLogic, toast]);
 
   const pauseGame = useCallback(() => {
     setIsPlaying(false);
@@ -93,26 +84,6 @@ const PlayPage: React.FC = () => {
     gameLogic.addLog("Jogo reiniciado.");
   }, [gameLogic]);
 
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    if (isPlaying) {
-      intervalId = setInterval(() => {
-        gameLogic.gameLoop();
-        setProgress((prevProgress) => {
-          const newProgress = prevProgress + (100 / csvData.length);
-          if (newProgress >= 100) {
-            if (!gameLogic.isManualMode) {
-              gameLogic.evolveGeneration();
-            }
-            return gameLogic.isInfiniteMode ? 0 : 100;
-          }
-          return newProgress;
-        });
-      }, gameSpeed);
-    }
-    return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed]);
-
   const handleSpeedChange = (value: number[]) => {
     const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
     setGameSpeed(newSpeed);
@@ -121,6 +92,35 @@ const PlayPage: React.FC = () => {
       description: `${newSpeed}ms por jogada`,
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+          <p className="text-lg">Carregando dados do jogo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (csvData.length === 0) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Não foi possível carregar os dados do jogo. Por favor, tente novamente.
+          </AlertDescription>
+        </Alert>
+        <button
+          onClick={loadCSV}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+        >
+          Tentar Novamente
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -147,7 +147,7 @@ const PlayPage: React.FC = () => {
         onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onCsvUpload={loadCSV}
         onModelUpload={async () => {}}
-        onSaveModel={saveModel}
+        onSaveModel={async () => {}}
         progress={progress}
         generation={gameLogic.generation}
         gameLogic={gameLogic}
@@ -162,4 +162,3 @@ const PlayPage: React.FC = () => {
 };
 
 export default PlayPage;
-
