@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import confetti from 'canvas-confetti';
 import { trainingService } from '@/services/trainingService';
 import { lotofacilService } from '@/services/lotofacilService';
 
@@ -30,14 +29,8 @@ const TrainingUpdateButton = () => {
       // 3. Buscar novos jogos
       const newGames = await lotofacilService.getLastResults();
       
-      // 4. Salvar no banco e treinar
-      const { model: trainedModel } = await trainingService.updateGamesAndTrain(newGames);
-      
-      // 5. Exportar modelo treinado
-      const modelExport = await trainingService.exportCurrentModel();
-      
-      // 6. Salvar arquivos no banco
-      await trainingService.saveModelFiles(modelExport.json, modelExport.weights);
+      // 4. Salvar no banco
+      await trainingService.updateGames(newGames);
 
       return { 
         updated: true,
@@ -45,14 +38,6 @@ const TrainingUpdateButton = () => {
       };
     },
     onSuccess: (result) => {
-      if (result.updated) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
-      
       toast({
         title: result.updated ? "Atualização Concluída!" : "Verificação Concluída",
         description: result.message,

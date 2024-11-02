@@ -1,29 +1,7 @@
-import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { saveModelOperation, loadLatestModelOperation } from './training/modelOperations';
-import { trainModelWithGames } from './training/modelTraining';
-import type { TrainingMetadata } from './training/types';
 
 export const trainingService = {
-  saveModel: saveModelOperation,
-  loadLatestModel: loadLatestModelOperation,
-
-  async getTrainingHistory() {
-    try {
-      const { data, error } = await supabase
-        .from('trained_models')
-        .select('metadata, created_at')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      systemLogger.log('system', 'Erro ao buscar histórico de treinamento', { error });
-      return [];
-    }
-  },
-
   async getLastStoredGame() {
     try {
       const { data, error } = await supabase
@@ -41,7 +19,7 @@ export const trainingService = {
     }
   },
 
-  async updateGamesAndTrain(games: any[]) {
+  async updateGames(games: any[]) {
     try {
       const { error } = await supabase
         .from('historical_games')
@@ -54,55 +32,9 @@ export const trainingService = {
         );
 
       if (error) throw error;
-
-      const model = await trainModelWithGames(games, {
-        batchSize: 32,
-        epochs: 50,
-        learningRate: 0.001,
-        validationSplit: 0.2
-      });
-      
-      await this.saveModel(model.model, {
-        timestamp: new Date().toISOString(),
-        accuracy: 0.85,
-        loss: 0.15,
-        epochs: 50
-      });
-
-      return model;
-    } catch (error) {
-      systemLogger.log('system', 'Erro ao atualizar jogos e treinar', { error });
-      throw error;
-    }
-  },
-
-  async exportCurrentModel() {
-    const result = await this.loadLatestModel();
-    if (!result?.model) throw new Error('Nenhum modelo encontrado');
-
-    const modelJSON = result.model.toJSON();
-    const weights = await result.model.getWeights();
-    
-    return {
-      json: modelJSON,
-      weights: weights.map(w => w.arraySync())
-    };
-  },
-
-  async saveModelFiles(modelJSON: any, weights: any) {
-    try {
-      const { error } = await supabase
-        .from('trained_models')
-        .update({
-          model_data: modelJSON,
-          metadata: { weights }
-        })
-        .eq('is_active', true);
-
-      if (error) throw error;
       return true;
     } catch (error) {
-      systemLogger.log('system', 'Erro ao salvar arquivos do modelo', { error });
+      systemLogger.log('system', 'Erro ao atualizar jogos', { error });
       throw error;
     }
   }
