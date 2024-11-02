@@ -38,13 +38,15 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('trained_models')
         .select()
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
+
+      const { data, error } = result;
 
       if (error) throw error;
 
