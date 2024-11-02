@@ -26,11 +26,13 @@ const DataUpdateButton = () => {
       const latestResult: LotofacilResponse = await response.json();
 
       // 2. Check if we already have this result
-      const { data: existingGame } = await supabase
+      const { data: existingGame, error: queryError } = await supabase
         .from('historical_games')
         .select('concurso')
         .eq('concurso', latestResult.concurso)
-        .single();
+        .maybeSingle();
+
+      if (queryError) throw queryError;
 
       if (existingGame) {
         return {
