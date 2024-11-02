@@ -38,59 +38,123 @@ class CheckpointManager {
     logger.info({
       checkpoint: checkpointDir,
       timestamp
-    }, 'Iniciando salvamento de checkpoint');
+    }, 'Iniciando salvamento de checkpoint completo');
 
-    // Save game state JSON with logs
-    const gameStatePath = path.join(checkpointDir, 'gameState.json');
-    const gameState = {
-      ...data.gameState,
-      logs: data.gameState.logs || [],
-      systemLogs: data.gameState.systemLogs || []
-    };
-
-    await fs.promises.writeFile(gameStatePath, JSON.stringify(gameState, null, 2));
-    logger.debug('Estado do jogo salvo');
-
-    // Save separate logs file for better organization
-    const logsPath = path.join(checkpointDir, 'logs.json');
-    await fs.promises.writeFile(logsPath, JSON.stringify({
-      timestamp: new Date().toISOString(),
-      logs: data.gameState.logs || [],
-      systemLogs: data.gameState.systemLogs || []
-    }, null, 2));
-    logger.debug('Logs salvos');
-
-    // Save neural network model if exists
-    if (data.gameState.model) {
-      const modelPath = path.join(checkpointDir, 'model.json');
-      const modelData = await data.gameState.model.save('file://' + modelPath);
-      await fs.promises.writeFile(
-        path.join(checkpointDir, 'model-topology.json'),
-        JSON.stringify(modelData.modelTopology)
-      );
-      if (modelData.weightData) {
+    try {
+      // 1. Salvar CSV original
+      if (data.csvData) {
         await fs.promises.writeFile(
-          path.join(checkpointDir, 'model-weights.bin'),
-          Buffer.from(modelData.weightData)
+          path.join(checkpointDir, 'dataset.csv'),
+          data.csvData
         );
+        logger.debug('Dataset CSV salvo');
       }
-      logger.debug('Modelo neural salvo');
+
+      // 2. Salvar estado do jogo completo
+      const gameState = {
+        ...data.gameState,
+        logs: data.gameState.logs || [],
+        systemLogs: data.gameState.systemLogs || [],
+        players: data.gameState.players || [],
+        generation: data.gameState.generation || 0,
+        concursoNumber: data.gameState.concursoNumber || 0,
+        boardNumbers: data.gameState.boardNumbers || [],
+        trainingData: data.gameState.trainingData || [],
+        evolutionData: data.gameState.evolutionData || [],
+        frequencyAnalysis: data.gameState.frequencyAnalysis || {},
+        championData: data.gameState.championData || null
+      };
+
+      await fs.promises.writeFile(
+        path.join(checkpointDir, 'gameState.json'),
+        JSON.stringify(gameState, null, 2)
+      );
+      logger.debug('Estado do jogo salvo');
+
+      // 3. Salvar modelo neural completo
+      if (data.gameState.model) {
+        const modelPath = path.join(checkpointDir, 'model');
+        await data.gameState.model.save(`file://${modelPath}`);
+        logger.debug('Modelo neural salvo');
+      }
+
+      // 4. Salvar pesos dos jogadores
+      const playersWeights = path.join(checkpointDir, 'players-weights.bin');
+      const weightsBuffer = Buffer.from(
+        data.gameState.players.map(p => p.weights).flat()
+      );
+      await fs.promises.writeFile(playersWeights, weightsBuffer);
+      logger.debug('Pesos dos jogadores salvos');
+
+      // 5. Salvar configurações do modelo
+      if (data.gameState.modelConfig) {
+        await fs.promises.writeFile(
+          path.join(checkpointDir, 'model-config.json'),
+          JSON.stringify(data.gameState.modelConfig, null, 2)
+        );
+        logger.debug('Configurações do modelo salvas');
+      }
+
+      // 6. Salvar métricas e histórico
+      await fs.promises.writeFile(
+        path.join(checkpointDir, 'metrics.json'),
+        JSON.stringify({
+          accuracy: data.gameState.metrics?.accuracy || 0,
+          loss: data.gameState.metrics?.loss || 0,
+          predictions: data.gameState.metrics?.predictions || [],
+          evolutionStats: data.gameState.metrics?.evolutionStats || [],
+          trainingProgress: data.gameState.metrics?.trainingProgress || 0
+        }, null, 2)
+      );
+      logger.debug('Métricas salvas');
+
+      // 7. Salvar índices e mapeamentos
+      await fs.promises.writeFile(
+        path.join(checkpointDir, 'indexes.json'),
+        JSON.stringify({
+          playerIndex: data.gameState.playerIndex || {},
+          generationMap: data.gameState.generationMap || {},
+          trainingIndex: data.gameState.trainingIndex || []
+        }, null, 2)
+      );
+      logger.debug('Índices salvos');
+
+      // 8. Criar arquivo manifest.json com metadados do checkpoint
+      await fs.promises.writeFile(
+        path.join(checkpointDir, 'manifest.json'),
+        JSON.stringify({
+          version: '1.0',
+          timestamp,
+          files: [
+            'dataset.csv',
+            'gameState.json',
+            'model.json',
+            'model.weights.bin',
+            'players-weights.bin',
+            'model-config.json',
+            'metrics.json',
+            'indexes.json'
+          ],
+          modelInfo: {
+            architecture: data.gameState.modelConfig?.architecture,
+            optimizer: data.gameState.modelConfig?.optimizer,
+            loss: data.gameState.modelConfig?.loss
+          }
+        }, null, 2)
+      );
+      logger.debug('Manifest do checkpoint criado');
+
+      await this.cleanOldCheckpoints();
+      logger.info(`Checkpoint completo salvo com sucesso: ${path.basename(checkpointDir)}`);
+      return path.basename(checkpointDir);
+
+    } catch (error) {
+      logger.error({
+        error,
+        checkpoint: checkpointDir
+      }, 'Erro ao salvar checkpoint');
+      throw error;
     }
-
-    // Save training metrics and charts data
-    const metricsPath = path.join(checkpointDir, 'metrics.json');
-    await fs.promises.writeFile(metricsPath, JSON.stringify({
-      accuracy: data.gameState.metrics?.accuracy || 0,
-      loss: data.gameState.metrics?.loss || 0,
-      predictions: data.gameState.metrics?.predictions || [],
-      evolutionStats: data.gameState.metrics?.evolutionStats || [],
-      trainingProgress: data.gameState.metrics?.trainingProgress || 0
-    }, null, 2));
-    logger.debug('Métricas salvas');
-
-    await this.cleanOldCheckpoints();
-    logger.info(`Checkpoint salvo com sucesso: ${path.basename(checkpointDir)}`);
-    return path.basename(checkpointDir);
   }
 
   async loadLatestCheckpoint() {
@@ -108,40 +172,80 @@ class CheckpointManager {
     const checkpointDir = path.join(this.checkpointPath, latestCheckpoint);
     logger.info(`Carregando último checkpoint: ${latestCheckpoint}`);
 
-    // Load game state
-    const gameStatePath = path.join(checkpointDir, 'gameState.json');
-    const gameState = JSON.parse(await fs.promises.readFile(gameStatePath, 'utf8'));
+    try {
+      // 1. Verificar manifest
+      const manifest = JSON.parse(
+        await fs.promises.readFile(path.join(checkpointDir, 'manifest.json'), 'utf8')
+      );
 
-    // Load model if exists
-    const modelPath = path.join(checkpointDir, 'model.json');
-    if (fs.existsSync(modelPath)) {
-      try {
-        const modelTopology = JSON.parse(
-          await fs.promises.readFile(path.join(checkpointDir, 'model-topology.json'), 'utf8')
-        );
-        const weightsData = await fs.promises.readFile(path.join(checkpointDir, 'model-weights.bin'));
-        
-        gameState.model = await tf.loadLayersModel(tf.io.fromMemory(modelTopology, weightsData));
-        logger.debug('Modelo neural carregado com sucesso');
-      } catch (error) {
-        logger.error({ error }, 'Erro ao carregar modelo neural');
+      // 2. Carregar CSV
+      const csvPath = path.join(checkpointDir, 'dataset.csv');
+      const csvData = fs.existsSync(csvPath) ? 
+        await fs.promises.readFile(csvPath, 'utf8') : null;
+
+      // 3. Carregar estado do jogo
+      const gameState = JSON.parse(
+        await fs.promises.readFile(path.join(checkpointDir, 'gameState.json'), 'utf8')
+      );
+
+      // 4. Carregar modelo neural
+      const modelPath = path.join(checkpointDir, 'model');
+      if (fs.existsSync(`${modelPath}.json`)) {
+        gameState.model = await tf.loadLayersModel(`file://${modelPath}`);
+        logger.debug('Modelo neural carregado');
       }
-    }
 
-    // Load logs if they exist
-    const logsPath = path.join(checkpointDir, 'logs.json');
-    if (fs.existsSync(logsPath)) {
-      const logs = JSON.parse(await fs.promises.readFile(logsPath, 'utf8'));
-      gameState.logs = logs.logs;
-      gameState.systemLogs = logs.systemLogs;
-      logger.debug('Logs carregados com sucesso');
-    }
+      // 5. Carregar pesos dos jogadores
+      const weightsPath = path.join(checkpointDir, 'players-weights.bin');
+      if (fs.existsSync(weightsPath)) {
+        const weightsBuffer = await fs.promises.readFile(weightsPath);
+        const weights = new Float32Array(weightsBuffer.buffer);
+        gameState.players = gameState.players.map((player, idx) => ({
+          ...player,
+          weights: Array.from(weights.slice(idx * player.weights.length, (idx + 1) * player.weights.length))
+        }));
+        logger.debug('Pesos dos jogadores carregados');
+      }
 
-    logger.info('Checkpoint carregado com sucesso');
-    return {
-      timestamp: latestCheckpoint.replace('checkpoint-', ''),
-      gameState
-    };
+      // 6. Carregar configurações do modelo
+      const configPath = path.join(checkpointDir, 'model-config.json');
+      if (fs.existsSync(configPath)) {
+        gameState.modelConfig = JSON.parse(
+          await fs.promises.readFile(configPath, 'utf8')
+        );
+      }
+
+      // 7. Carregar métricas
+      const metricsPath = path.join(checkpointDir, 'metrics.json');
+      if (fs.existsSync(metricsPath)) {
+        gameState.metrics = JSON.parse(
+          await fs.promises.readFile(metricsPath, 'utf8')
+        );
+      }
+
+      // 8. Carregar índices
+      const indexesPath = path.join(checkpointDir, 'indexes.json');
+      if (fs.existsSync(indexesPath)) {
+        const indexes = JSON.parse(
+          await fs.promises.readFile(indexesPath, 'utf8')
+        );
+        Object.assign(gameState, indexes);
+      }
+
+      logger.info('Checkpoint carregado com sucesso');
+      return {
+        timestamp: latestCheckpoint.replace('checkpoint-', ''),
+        gameState,
+        csvData
+      };
+
+    } catch (error) {
+      logger.error({
+        error,
+        checkpoint: checkpointDir
+      }, 'Erro ao carregar checkpoint');
+      throw error;
+    }
   }
 
   async cleanOldCheckpoints() {
