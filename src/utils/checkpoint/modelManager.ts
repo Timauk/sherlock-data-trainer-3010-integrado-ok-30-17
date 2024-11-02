@@ -4,6 +4,11 @@ import path from 'path';
 import { FileManager } from './fileManager';
 import { logger } from '../../utils/logging/logger.js';
 
+interface WeightData {
+  name: string;
+  tensor: tf.Tensor;
+}
+
 export class ModelManager {
   constructor(private fileManager: FileManager) {}
 
@@ -38,13 +43,15 @@ export class ModelManager {
     );
     
     if (optimizerBuffer && model.optimizer) {
-      const weightSpecs = model.optimizer.getConfig().weightSpecs || [];
-      const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
-      const weightList = Object.entries(weights).map(([name, tensor]) => ({
-        name,
-        tensor
-      }));
-      await model.optimizer.setWeights(weightList);
+      const weightSpecs = model.optimizer.getConfig()?.weightSpecs as tf.io.WeightsManifestEntry[];
+      if (weightSpecs) {
+        const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
+        const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
+          name,
+          tensor: tensor as tf.Tensor
+        }));
+        await model.optimizer.setWeights(weightList);
+      }
     }
     
     return model;
