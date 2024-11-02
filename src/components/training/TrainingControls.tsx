@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from 'lucide-react';
-import { trainingService } from '@/services/trainingService';
+import TrainingUpdateButton from '../TrainingUpdateButton';
 
 interface TrainingControlsProps {
   isTraining: boolean;
@@ -48,6 +48,7 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
             'Iniciar Treinamento'
           )}
         </Button>
+        <TrainingUpdateButton />
       </div>
     </div>
   );

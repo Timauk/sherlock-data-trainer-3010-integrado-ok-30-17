@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import TrainingControls from '@/components/training/TrainingControls';
 import TrainingProgress from '@/components/training/TrainingProgress';
 import { supabase } from '@/integrations/supabase/client';

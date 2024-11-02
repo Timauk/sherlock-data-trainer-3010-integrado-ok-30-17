@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
@@ -31,8 +31,8 @@ const TrainingUpdateButton = () => {
       const newGames = await lotofacilService.getLastResults();
       
       // 4. Salvar no banco e treinar
-      await trainingService.updateGamesAndTrain(newGames);
-
+      const { model: trainedModel } = await trainingService.updateGamesAndTrain(newGames);
+      
       // 5. Exportar modelo treinado
       const modelExport = await trainingService.exportCurrentModel();
       
@@ -46,7 +46,6 @@ const TrainingUpdateButton = () => {
     },
     onSuccess: (result) => {
       if (result.updated) {
-        // Dispara confetti se houve atualização
         confetti({
           particleCount: 100,
           spread: 70,
