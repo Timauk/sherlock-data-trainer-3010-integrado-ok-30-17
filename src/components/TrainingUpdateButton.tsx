@@ -28,7 +28,7 @@ const TrainingUpdateButton = () => {
       }
 
       // 3. Buscar novos jogos
-      const newGames = await lotofacilService.getLastResults(100);
+      const newGames = await lotofacilService.getLastResults();
       
       // 4. Salvar no banco e treinar
       await trainingService.updateGamesAndTrain(newGames);

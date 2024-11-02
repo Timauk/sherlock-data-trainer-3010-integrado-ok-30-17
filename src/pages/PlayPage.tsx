@@ -23,7 +23,7 @@ const PlayPage: React.FC = () => {
 
   const loadCSV = useCallback(async () => {
     try {
-      const results = await lotofacilService.getLastResults(100);
+      const results = await lotofacilService.getLastResults();
       const processedData = results.map(result => ({
         concurso: result.concurso,
         data: new Date(result.data.split('/').reverse().join('-')),

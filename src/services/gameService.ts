@@ -2,9 +2,9 @@ import { systemLogger } from '../utils/logging/systemLogger';
 import { lotofacilService } from './lotofacilService';
 
 export const gameService = {
-  async fetchLatestGames(limit = 100) {
+  async fetchLatestGames() {
     try {
-      const results = await lotofacilService.getLastResults(limit);
+      const results = await lotofacilService.getLastResults();
       return { data: results, error: null };
     } catch (error) {
       systemLogger.log('system', 'Error fetching games', { error });
