@@ -4,14 +4,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+const API_URL = import.meta.env.PROD 
+  ? 'https://your-production-api.com/api/lotofacil/update'
+  : 'http://localhost:3001/api/lotofacil/update';
+
 const DataUpdateButton = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { mutate: updateData, isPending } = useMutation({
     mutationFn: async () => {
-      const response = await fetch('http://localhost:3001/api/lotofacil/update', {
-        method: 'POST'
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       if (!response.ok) {
         throw new Error('Falha ao atualizar dados');
