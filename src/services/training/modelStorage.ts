@@ -1,35 +1,22 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { TrainingMetadata, ModelData } from './types';
-import type { Json } from '@/integrations/supabase/types';
+import { TrainingMetadata } from './types';
 
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
-    // Primeiro, desativa todos os modelos ativos
     await supabase
       .from('trained_models')
       .update({ is_active: false })
       .eq('is_active', true);
 
-    // Prepara os dados do novo modelo
-    const modelData: ModelData = {
-      model_data: model.toJSON() as Json,
-      metadata: {
-        timestamp: metadata.timestamp,
-        accuracy: metadata.accuracy,
-        loss: metadata.loss,
-        epochs: metadata.epochs,
-        gamesCount: metadata.gamesCount,
-        weights: metadata.weights
-      } as Json,
-      is_active: true
-    };
-
-    // Insere o novo modelo
     const { error } = await supabase
       .from('trained_models')
-      .insert(modelData);
+      .insert({
+        model_data: model.toJSON(),
+        metadata: metadata,
+        is_active: true
+      });
 
     if (error) throw error;
     
@@ -73,7 +60,6 @@ export async function loadModelFromSupabase() {
       return { model, metadata };
     }
 
-    // Se não encontrou modelo ativo, tenta carregar do IndexedDB
     try {
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };

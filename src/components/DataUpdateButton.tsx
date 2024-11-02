@@ -4,9 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const API_URL = import.meta.env.PROD 
-  ? 'https://your-production-api.com/api/lotofacil/update'
-  : '/api/lotofacil/update'; // Remove http://localhost:3001 to use relative path
+const API_URL = 'https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest';
 
 const DataUpdateButton = () => {
   const { toast } = useToast();
@@ -15,11 +13,10 @@ const DataUpdateButton = () => {
   const { mutate: updateData, isPending } = useMutation({
     mutationFn: async () => {
       const response = await fetch(API_URL, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+        }
       });
       
       if (!response.ok) {
@@ -30,7 +27,7 @@ const DataUpdateButton = () => {
     onSuccess: (data) => {
       toast({
         title: "Dados Atualizados",
-        description: `Último concurso: ${data.lastConcurso}`,
+        description: `Último concurso: ${data.concurso}`,
       });
       queryClient.invalidateQueries({ queryKey: ['lotofacilData'] });
     },
