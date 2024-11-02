@@ -1,3 +1,3 @@
 export interface Functions {
-  [_ in never]: never
+  // No functions defined yet
 }

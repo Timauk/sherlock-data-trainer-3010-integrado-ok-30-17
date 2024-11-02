@@ -1,3 +1,3 @@
 export interface Enums {
-  [_ in never]: never
+  // No enums defined yet
 }

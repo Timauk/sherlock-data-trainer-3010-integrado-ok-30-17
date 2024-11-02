@@ -1,3 +1,3 @@
 export interface Views {
-  [_ in never]: never
+  // No views defined yet
 }
