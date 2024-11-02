@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import * as tf from '@tensorflow/tfjs';
 
 export const saveTrainingHistory = async (modelId: string, metrics: any) => {
   try {
@@ -19,13 +18,13 @@ export const saveTrainingHistory = async (modelId: string, metrics: any) => {
 
 export const getTrainingHistory = async (modelId: string) => {
   try {
-    const { data, error } = await supabase
+    const response = await supabase
       .from('training_history')
-      .select('*')
+      .select()
       .eq('model_id', modelId);
 
-    if (error) throw error;
-    return { data };
+    if (response.error) throw response.error;
+    return { data: response.data };
   } catch (error) {
     console.error('Error loading training history:', error);
     return { error };
