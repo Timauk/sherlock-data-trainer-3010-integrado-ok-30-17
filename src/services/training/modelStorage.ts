@@ -43,47 +43,43 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
 export async function loadModelFromSupabase() {
   try {
-    // Primeiro verifica se existem modelos
-    const { count, error: countError } = await supabase
-      .from('trained_models')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) throw countError;
-    
-    // Se não houver modelos, retorna null
-    if (count === 0) {
-      return { model: null, metadata: null };
-    }
-
     const { data, error } = await supabase
       .from('trained_models')
       .select()
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
     if (error) throw error;
 
-    if (data) {
-      const modelData = data.model_data as tf.io.ModelJSON;
+    if (data && data.length > 0) {
+      const modelData = data[0].model_data as unknown as tf.io.ModelJSON;
+      
+      if (!modelData.modelTopology || !modelData.weightsManifest) {
+        throw new Error('Dados do modelo inválidos');
+      }
+
       const model = await tf.models.modelFromJSON(modelData);
       
       const metadata = {
-        timestamp: (data.metadata as any).timestamp || '',
-        accuracy: (data.metadata as any).accuracy || 0,
-        loss: (data.metadata as any).loss || 0,
-        epochs: (data.metadata as any).epochs || 0,
-        gamesCount: (data.metadata as any).gamesCount,
-        weights: (data.metadata as any).weights
+        timestamp: (data[0].metadata as any).timestamp || '',
+        accuracy: (data[0].metadata as any).accuracy || 0,
+        loss: (data[0].metadata as any).loss || 0,
+        epochs: (data[0].metadata as any).epochs || 0,
+        gamesCount: (data[0].metadata as any).gamesCount,
+        weights: (data[0].metadata as any).weights
       } as TrainingMetadata;
 
       return { model, metadata };
     }
 
     // Se não encontrou modelo ativo, tenta carregar do IndexedDB
-    const model = await tf.loadLayersModel('indexeddb://current-model');
-    return { model, metadata: null };
+    try {
+      const model = await tf.loadLayersModel('indexeddb://current-model');
+      return { model, metadata: null };
+    } catch {
+      return { model: null, metadata: null };
+    }
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo', { error });
     return { model: null, metadata: null };
