@@ -19,6 +19,7 @@ const PlayPage: React.FC = () => {
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
@@ -27,7 +28,17 @@ const PlayPage: React.FC = () => {
   const loadCSV = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
+      
+      console.log("Iniciando carregamento dos dados...");
       const results = await lotofacilService.getLastResults();
+      
+      if (!results || results.length === 0) {
+        throw new Error("Nenhum resultado foi retornado da API");
+      }
+
+      console.log(`Dados recebidos: ${results.length} registros`);
+      
       const processedData = results.map(result => ({
         concurso: result.concurso,
         data: new Date(result.data.split('/').reverse().join('-')),
@@ -36,25 +47,33 @@ const PlayPage: React.FC = () => {
       
       setCsvData(processedData.map(d => d.bolas));
       setCsvDates(processedData.map(d => d.data));
+      
       gameLogic.addLog("Dados carregados da API com sucesso!");
       gameLogic.addLog(`Número de registros carregados: ${processedData.length}`);
+      
       toast({
         title: "Dados Carregados",
         description: `${processedData.length} registros foram carregados com sucesso.`,
       });
     } catch (error) {
+      console.error("Erro detalhado:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setLoadError(errorMessage);
+      
       toast({
         title: "Erro ao Carregar Dados",
         description: "Não foi possível carregar os dados do jogo. Tente novamente.",
         variant: "destructive",
       });
-      gameLogic.addLog(`Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      
+      gameLogic.addLog(`Erro ao carregar dados: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   }, [gameLogic, toast]);
 
   useEffect(() => {
+    console.log("Iniciando carregamento inicial...");
     loadCSV();
   }, [loadCSV]);
 
@@ -85,7 +104,7 @@ const PlayPage: React.FC = () => {
   }, [gameLogic]);
 
   const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
+    const newSpeed = 2000 - value[0];
     setGameSpeed(newSpeed);
     toast({
       title: "Velocidade Ajustada",
@@ -99,17 +118,18 @@ const PlayPage: React.FC = () => {
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin mx-auto" />
           <p className="text-lg">Carregando dados do jogo...</p>
+          <p className="text-sm text-muted-foreground">Por favor, aguarde enquanto carregamos os resultados anteriores.</p>
         </div>
       </div>
     );
   }
 
-  if (csvData.length === 0) {
+  if (loadError || csvData.length === 0) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
           <AlertDescription>
-            Não foi possível carregar os dados do jogo. Por favor, tente novamente.
+            {loadError || "Não foi possível carregar os dados do jogo. Por favor, tente novamente."}
           </AlertDescription>
         </Alert>
         <button
