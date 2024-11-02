@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { trainingService } from '@/services/trainingService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TrainingProgressProps {
   progress: number;
@@ -19,8 +19,10 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
 
   useEffect(() => {
     const fetchGamesCount = async () => {
-      const count = await trainingService.getStoredGamesCount();
-      setTotalGames(count);
+      const { count } = await supabase
+        .from('historical_games')
+        .select('*', { count: 'exact', head: true });
+      setTotalGames(count || 0);
     };
 
     fetchGamesCount();
@@ -29,7 +31,9 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
   const lossData = trainingHistory.map((entry, index) => ({
     epoch: index + 1,
     loss: entry.metadata?.loss || 0,
-    accuracy: entry.metadata?.accuracy || 0
+    accuracy: entry.metadata?.accuracy || 0,
+    val_loss: entry.metadata?.val_loss || 0,
+    val_accuracy: entry.metadata?.val_accuracy || 0
   }));
 
   return (
@@ -70,8 +74,8 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lossData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="epoch" label={{ value: 'Época', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Valor', angle: -90, position: 'insideLeft' }} />
+                  <XAxis dataKey="epoch" />
+                  <YAxis />
                   <Tooltip />
                   <Legend />
                   <Line 
@@ -85,6 +89,18 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
                     dataKey="accuracy" 
                     stroke="#10b981" 
                     name="Accuracy" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="val_loss" 
+                    stroke="#f97316" 
+                    name="Validation Loss" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="val_accuracy" 
+                    stroke="#3b82f6" 
+                    name="Validation Accuracy" 
                   />
                 </LineChart>
               </ResponsiveContainer>

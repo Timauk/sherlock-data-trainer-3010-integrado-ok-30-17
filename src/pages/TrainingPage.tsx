@@ -3,7 +3,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { trainingService } from '@/services/trainingService';
 import TrainingControls from '@/components/training/TrainingControls';
 import TrainingProgress from '@/components/training/TrainingProgress';
+import { supabase } from '@/integrations/supabase/client';
 import * as tf from '@tensorflow/tfjs';
+import { trainModelWithGames } from '@/services/training/modelTraining';
 
 const TrainingPage = () => {
   const { toast } = useToast();
@@ -13,26 +15,18 @@ const TrainingPage = () => {
   const [trainingHistory, setTrainingHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    loadLatestModel();
     loadTrainingHistory();
   }, []);
 
-  const loadLatestModel = async () => {
-    const { model, metadata } = await trainingService.loadLatestModel();
-    if (model) {
-      setModel(model);
-      toast({
-        title: "Modelo Carregado",
-        description: metadata 
-          ? `Último treino: ${new Date(metadata.timestamp).toLocaleDateString()} - Precisão: ${(metadata.accuracy * 100).toFixed(2)}%`
-          : "Modelo carregado do armazenamento local",
-      });
-    }
-  };
-
   const loadTrainingHistory = async () => {
-    const history = await trainingService.getTrainingHistory();
-    setTrainingHistory(history);
+    const { data } = await supabase
+      .from('trained_models')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      setTrainingHistory(data);
+    }
   };
 
   const handleTraining = async () => {
@@ -40,51 +34,26 @@ const TrainingPage = () => {
     setProgress(0);
 
     try {
-      const newModel = tf.sequential({
-        layers: [
-          tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }),
-          tf.layers.dropout({ rate: 0.3 }),
-          tf.layers.dense({ units: 64, activation: 'relu' }),
-          tf.layers.dense({ units: 15, activation: 'sigmoid' })
-        ]
-      });
+      const { data: games } = await supabase
+        .from('historical_games')
+        .select('*')
+        .order('concurso', { ascending: true });
 
-      newModel.compile({
-        optimizer: 'adam',
-        loss: 'binaryCrossentropy',
-        metrics: ['accuracy']
-      });
+      if (!games || games.length === 0) {
+        throw new Error('Nenhum jogo encontrado para treinamento');
+      }
 
-      // Simular progresso do treinamento
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 5;
-        });
-      }, 500);
-
-      const metadata = {
-        timestamp: new Date().toISOString(),
-        accuracy: 0.85,
-        loss: 0.15,
-        epochs: 50,
-        gamesCount: trainingHistory.length + 1
-      };
-
-      await trainingService.saveModel(newModel, metadata);
-      setModel(newModel);
-      await loadTrainingHistory();
-
-      // Finalizar progresso
+      const { model: trainedModel, history } = await trainModelWithGames(games);
+      setModel(trainedModel);
       setProgress(100);
-      clearInterval(progressInterval);
+      
+      await loadTrainingHistory();
 
       toast({
         title: "Treinamento Concluído",
-        description: "Modelo salvo e pronto para uso",
+        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${
+          ((history.history.acc?.[history.history.acc.length - 1] || 0) * 100).toFixed(2)
+        }%`,
       });
     } catch (error) {
       toast({
