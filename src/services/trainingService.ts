@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
+import { Json } from '@/integrations/supabase/types';
 
 interface TrainingMetadata {
   timestamp: string;
@@ -17,8 +18,8 @@ export const trainingService = {
       const { data, error } = await supabase
         .from('trained_models')
         .insert({
-          model_data: model.toJSON(),
-          metadata,
+          model_data: model.toJSON() as Json,
+          metadata: metadata as Json,
           is_active: true
         })
         .select()
@@ -47,8 +48,11 @@ export const trainingService = {
       if (error) throw error;
 
       if (data) {
-        const model = await tf.models.modelFromJSON(data.model_data);
-        return { model, metadata: data.metadata as TrainingMetadata };
+        const model = await tf.models.modelFromJSON(data.model_data as tf.io.ModelJSON);
+        return { 
+          model, 
+          metadata: data.metadata as unknown as TrainingMetadata 
+        };
       }
 
       const model = await tf.loadLayersModel('indexeddb://current-model');
