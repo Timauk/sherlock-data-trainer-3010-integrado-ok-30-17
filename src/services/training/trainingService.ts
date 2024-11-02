@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 export const saveTrainingHistory = async (modelId: string, metrics: any) => {
   try {
@@ -18,13 +18,13 @@ export const saveTrainingHistory = async (modelId: string, metrics: any) => {
 
 export const getTrainingHistory = async (modelId: string) => {
   try {
-    const response = await supabase
+    const result = supabase
       .from('training_history')
       .select()
       .eq('model_id', modelId);
 
-    if (response.error) throw response.error;
-    return { data: response.data };
+    if (result.error) throw result.error;
+    return { data: result.data };
   } catch (error) {
     console.error('Error loading training history:', error);
     return { error };

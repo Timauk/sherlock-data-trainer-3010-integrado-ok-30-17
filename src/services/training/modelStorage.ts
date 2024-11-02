@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import * as tf from '@tensorflow/tfjs';
 import type { Database } from '@/lib/database.types';
 
@@ -24,15 +24,15 @@ export const saveModel = async (model: tf.LayersModel, name: string, metrics: an
 
 export const loadModel = async (modelId: string) => {
   try {
-    const response = await supabase
+    const result = supabase
       .from('models')
       .select()
       .eq('id', modelId);
 
-    if (response.error) throw response.error;
-    if (!response.data || response.data.length === 0) throw new Error('Model not found');
+    if (result.error) throw result.error;
+    if (!result.data || result.data.length === 0) throw new Error('Model not found');
 
-    const data = response.data[0];
+    const data = result.data[0];
 
     // Load model from local storage
     const model = await tf.loadLayersModel('localstorage://temp-model');

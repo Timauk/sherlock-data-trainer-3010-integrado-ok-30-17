@@ -1,24 +1,23 @@
 // Temporary local storage implementation to replace Supabase
 export const supabase = {
   from: (table: string) => ({
-    select: async (columns: string = '*') => {
+    select: (columns: string = '*') => {
       const data = localStorage.getItem(table);
-      return { 
-        data: data ? JSON.parse(data) : null, 
+      const items = data ? JSON.parse(data) : [];
+      
+      return {
+        data: items,
         error: null,
         eq: (field: string, value: any) => {
-          const items = data ? JSON.parse(data) : [];
-          return Promise.resolve({
-            data: items.filter((item: any) => item[field] === value),
+          const filtered = items.filter((item: any) => item[field] === value);
+          return {
+            data: filtered,
             error: null,
-            single: () => {
-              const filtered = items.filter((item: any) => item[field] === value);
-              return Promise.resolve({
-                data: filtered.length > 0 ? filtered[0] : null,
-                error: null
-              });
-            }
-          });
+            single: () => ({
+              data: filtered.length > 0 ? filtered[0] : null,
+              error: null
+            })
+          };
         }
       };
     },
