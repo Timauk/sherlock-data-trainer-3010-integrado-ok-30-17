@@ -5,76 +5,45 @@ interface LotofacilResult {
 }
 
 const API_BASE_URL = 'https://loteriascaixa-api.herokuapp.com/api/lotofacil';
-const MOCK_DATA = {
-  concurso: 2999,
-  data: "10/01/2024",
-  dezenas: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15"]
-};
-
-const FALLBACK_RESULTS = Array.from({ length: 10 }, (_, i) => ({
-  ...MOCK_DATA,
-  concurso: MOCK_DATA.concurso - i,
-  data: new Date(2024, 0, 10 - i).toLocaleDateString('pt-BR')
-}));
 
 export const lotofacilService = {
   async fetchLatestFromAPI(): Promise<LotofacilResult> {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
       const response = await fetch(`${API_BASE_URL}/latest`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        },
-        signal: controller.signal
+        }
       });
       
-      clearTimeout(timeoutId);
-      
       if (!response.ok) {
-        console.warn('API indisponível, usando dados mockados');
-        return MOCK_DATA;
+        throw new Error('Falha ao buscar dados da API');
       }
       
       return await response.json();
     } catch (error) {
-      console.warn('Erro ao buscar dados da API, usando dados mockados:', error);
-      return MOCK_DATA;
+      console.error('Erro ao buscar dados da API:', error);
+      throw error;
     }
   },
 
   async getLastResults(limit: number = 100): Promise<LotofacilResult[]> {
     try {
       const latestResult = await this.fetchLatestFromAPI();
-      
-      // Se estiver usando dados mockados, retorna array de resultados mockados
-      if (latestResult === MOCK_DATA) {
-        return FALLBACK_RESULTS.slice(0, limit);
-      }
-
       const results: LotofacilResult[] = [latestResult];
-      const controller = new AbortController();
-
-      // Buscar resultados anteriores com tratamento de erro individual
-      for (let i = 1; i < Math.min(limit, 10); i++) {
+      
+      // Buscar resultados anteriores
+      for (let i = 1; i < limit; i++) {
         try {
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
           const concurso = latestResult.concurso - i;
-          
-          const response = await fetch(`${API_BASE_URL}/${concurso}`, {
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
+          const response = await fetch(`${API_BASE_URL}/${concurso}`);
           
           if (response.ok) {
             const result = await response.json();
             results.push(result);
           }
           
-          // Pequena pausa entre requisições
+          // Pequena pausa entre requisições para não sobrecarregar a API
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
           console.warn(`Falha ao buscar concurso, continuando...`, error);
@@ -82,10 +51,10 @@ export const lotofacilService = {
         }
       }
 
-      return results.length > 0 ? results : FALLBACK_RESULTS.slice(0, limit);
+      return results.sort((a, b) => b.concurso - a.concurso);
     } catch (error) {
       console.error('Erro ao buscar resultados:', error);
-      return FALLBACK_RESULTS.slice(0, limit);
+      throw error;
     }
   }
 };
