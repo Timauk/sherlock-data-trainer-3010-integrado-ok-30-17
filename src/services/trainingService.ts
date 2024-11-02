@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { Database } from '@/lib/database.types';
 
 interface TrainingMetadata {
   timestamp: string;
@@ -12,9 +11,6 @@ interface TrainingMetadata {
   weights?: any;
 }
 
-type TrainedModelsTable = Database['public']['Tables']['trained_models'];
-type TrainedModel = TrainedModelsTable['Row'];
-
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
@@ -24,7 +20,9 @@ export const trainingService = {
           model_data: model.toJSON(),
           metadata,
           is_active: true
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -61,7 +59,7 @@ export const trainingService = {
     }
   },
 
-  async getTrainingHistory(): Promise<TrainedModel[]> {
+  async getTrainingHistory() {
     try {
       const { data, error } = await supabase
         .from('trained_models')
