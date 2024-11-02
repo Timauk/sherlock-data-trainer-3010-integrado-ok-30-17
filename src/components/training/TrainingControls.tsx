@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import DataUpdateButton from '../DataUpdateButton';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface TrainingControlsProps {
@@ -15,11 +15,13 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
   onStartTraining
 }) => {
   const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsUploading(true);
     try {
       const text = await file.text();
       const lines = text.trim().split('\n');
@@ -44,9 +46,14 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
 
       if (error) throw error;
 
+      // Verificar quantos jogos estão no banco após o upload
+      const { count } = await supabase
+        .from('historical_games')
+        .select('*', { count: 'exact', head: true });
+
       toast({
         title: "Dados Carregados",
-        description: `${games.length} jogos foram importados com sucesso!`,
+        description: `${games.length} jogos foram importados com sucesso! Total no banco: ${count} jogos`,
       });
     } catch (error) {
       toast({
@@ -54,10 +61,10 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
     }
-
-    // Reset input
-    event.target.value = '';
   };
 
   return (
@@ -76,11 +83,16 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
             type="file"
             accept=".csv"
             onChange={handleCsvUpload}
+            disabled={isUploading}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
-          <Button className="w-full md:w-auto">
-            <Upload className="mr-2 h-4 w-4" />
-            Carregar CSV Inicial
+          <Button className="w-full md:w-auto" disabled={isUploading}>
+            {isUploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            {isUploading ? 'Carregando...' : 'Carregar CSV Inicial'}
           </Button>
         </div>
       </div>
