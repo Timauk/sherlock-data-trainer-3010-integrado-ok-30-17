@@ -43,18 +43,19 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
   try {
     const { data, error } = await supabase
       .from('trained_models')
-      .select('*')
+      .select()
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle(); // Using maybeSingle() instead of single()
 
     if (error) throw error;
 
     if (data) {
-      const modelJson = data.model_data as unknown as tf.io.ModelJSON;
-      if (!modelJson.modelTopology || !modelJson.weightsManifest) {
-        throw new Error('Dados do modelo inválidos');
+      // Validate model data structure
+      const modelJson = data.model_data as any;
+      if (!modelJson?.modelTopology || !modelJson?.weightsManifest) {
+        throw new Error('Invalid model data structure');
       }
 
       const model = await tf.models.modelFromJSON(modelJson);
@@ -64,15 +65,34 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       return { model, metadata };
     }
 
+    // If no active model in Supabase, try loading from IndexedDB
     try {
       const model = await tf.loadLayersModel('indexeddb://current-model');
       return { model, metadata: null };
     } catch (error) {
       systemLogger.log('system', 'Erro ao carregar modelo do IndexedDB', { error });
-      return null;
+      // Create a new model if none exists
+      const model = createInitialModel();
+      return { model, metadata: null };
     }
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo do Supabase', { error });
     return null;
   }
+}
+
+function createInitialModel(): tf.LayersModel {
+  const model = tf.sequential();
+  model.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }));
+  model.add(tf.layers.dropout({ rate: 0.3 }));
+  model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
+  model.add(tf.layers.dense({ units: 15, activation: 'sigmoid' }));
+  
+  model.compile({
+    optimizer: 'adam',
+    loss: 'binaryCrossentropy',
+    metrics: ['accuracy']
+  });
+
+  return model;
 }
