@@ -6,12 +6,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const API_URL = 'https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest';
 
+interface LotofacilResponse {
+  concurso: number;
+  data: string;
+  dezenas: string[];
+  acumulou: boolean;
+  premiacoes: Array<{
+    descricao: string;
+    faixa: number;
+    ganhadores: number;
+    valorPremio: number;
+  }>;
+}
+
 const DataUpdateButton = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { mutate: updateData, isPending } = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<LotofacilResponse> => {
       const response = await fetch(API_URL, {
         method: 'GET',
         headers: {
@@ -27,7 +40,7 @@ const DataUpdateButton = () => {
     onSuccess: (data) => {
       toast({
         title: "Dados Atualizados",
-        description: `Último concurso: ${data.concurso}`,
+        description: `Concurso #${data.concurso} - ${new Date(data.data).toLocaleDateString('pt-BR')}`,
       });
       queryClient.invalidateQueries({ queryKey: ['lotofacilData'] });
     },

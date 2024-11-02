@@ -1,11 +1,12 @@
 import express from 'express';
-import { cacheMiddleware } from '../src/utils/performance/serverCache';
+import { cacheMiddleware } from '../src/utils/performance/serverCache.js';
 
 const router = express.Router();
+const API_BASE_URL = 'https://loteriascaixa-api.herokuapp.com/api/lotofacil';
 
 async function fetchLatestLotofacil() {
   try {
-    const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
+    const response = await fetch(`${API_BASE_URL}/latest`);
     if (!response.ok) {
       throw new Error('Falha ao buscar dados da Lotofacil');
     }
@@ -30,7 +31,7 @@ router.get('/update', async (req, res) => {
     const data = await fetchLatestLotofacil();
     res.json({ 
       success: true, 
-      lastConcurso: data.concurso,
+      concurso: data.concurso,
       message: 'Dados atualizados com sucesso'
     });
   } catch (error) {
