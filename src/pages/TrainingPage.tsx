@@ -1,97 +1,121 @@
-import React, { useState, useEffect } from 'react';
-import { useToast } from "@/hooks/use-toast";
-import TrainingControls from '@/components/training/TrainingControls';
-import TrainingProgress from '@/components/training/TrainingProgress';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import * as tf from '@tensorflow/tfjs';
-import { trainModelWithGames } from '@/services/training/modelTraining';
+import { Upload, BarChart2, Save } from 'lucide-react';
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import TrainingChart from '@/components/TrainingChart';
+import { processarCSV } from '@/utils/dataProcessing';
 
-const TrainingPage = () => {
-  const { toast } = useToast();
-  const [isTraining, setIsTraining] = useState(false);
-  const [progress, setProgress] = useState(0);
+const TrainingPage: React.FC = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [trainingProgress, setTrainingProgress] = useState(0);
   const [model, setModel] = useState<tf.LayersModel | null>(null);
-  const [trainingHistory, setTrainingHistory] = useState<any[]>([]);
-  const [config, setConfig] = useState({
-    batchSize: 32,
-    epochs: 100,
-    learningRate: 0.001,
-    validationSplit: 0.2
-  });
+  const [logs, setLogs] = useState<{ epoch: number; loss: number; val_loss: number }[]>([]);
 
-  useEffect(() => {
-    loadTrainingHistory();
-  }, []);
-
-  const loadTrainingHistory = async () => {
-    const { data } = await supabase
-      .from('trained_models')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      setTrainingHistory(data);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setFile(event.target.files[0]);
     }
   };
 
-  const handleConfigChange = (key: string, value: number) => {
-    setConfig(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const { data: trainingData, isLoading, isError } = useQuery({
+    queryKey: ['trainingData', file],
+    queryFn: async () => {
+      if (!file) return null;
+      const text = await file.text();
+      return processarCSV(text);
+    },
+    enabled: !!file,
+  });
+
+  const startTraining = async () => {
+    if (!trainingData) return;
+
+    const numeroDeBolas = trainingData[0].bolas.length;
+
+    const newModel = tf.sequential();
+    newModel.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [numeroDeBolas + 2] }));
+    newModel.add(tf.layers.batchNormalization());
+    newModel.add(tf.layers.dense({ units: 128, activation: 'relu' }));
+    newModel.add(tf.layers.dense({ units: numeroDeBolas, activation: 'sigmoid' }));
+
+    newModel.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
+
+    const xs = tf.tensor2d(trainingData.map(d => [...d.bolas, d.numeroConcurso, d.dataSorteio]));
+    const ys = tf.tensor2d(trainingData.map(d => d.bolas));
+
+    await newModel.fit(xs, ys, {
+      epochs: 100,
+      validationSplit: 0.1,
+      callbacks: {
+        onEpochEnd: (epoch, log) => {
+          if (log) {
+            setTrainingProgress(Math.floor(((epoch + 1) / 100) * 100));
+            setLogs(prevLogs => [...prevLogs, { epoch: epoch + 1, loss: log.loss, val_loss: log.val_loss }]);
+          }
+        }
+      }
+    });
+
+    setModel(newModel);
   };
 
-  const handleTraining = async () => {
-    setIsTraining(true);
-    setProgress(0);
-
-    try {
-      const { data: games } = await supabase
-        .from('historical_games')
-        .select('*')
-        .order('concurso', { ascending: true });
-
-      if (!games || games.length === 0) {
-        throw new Error('Nenhum jogo encontrado para treinamento');
-      }
-
-      const { model: trainedModel, history } = await trainModelWithGames(games, config);
-      setModel(trainedModel);
-      setProgress(100);
-      
-      await loadTrainingHistory();
-
-      const finalAccuracy = history.history.acc?.[history.history.acc.length - 1];
-      const accuracyPercentage = finalAccuracy !== undefined ? (Number(finalAccuracy) * 100).toFixed(2) : '0.00';
-
-      toast({
-        title: "Treinamento Concluído",
-        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${accuracyPercentage}%`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro no Treinamento",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTraining(false);
+  const saveModel = async () => {
+    if (model) {
+      await model.save('downloads://modelo-aprendiz');
     }
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <TrainingControls 
-        isTraining={isTraining}
-        onStartTraining={handleTraining}
-        config={config}
-        onConfigChange={handleConfigChange}
-      />
-      <TrainingProgress 
-        progress={progress}
-        model={model}
-        trainingHistory={trainingHistory}
-      />
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Página de Treinamento</h2>
+      
+      <div className="mb-4">
+        <label htmlFor="fileInput" className="block mb-2">Carregar dados (CSV):</label>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".csv"
+          onChange={handleFileUpload}
+          className="block w-full text-sm text-gray-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100"
+        />
+      </div>
+
+      <Button
+        onClick={startTraining}
+        disabled={!trainingData}
+        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+      >
+        <BarChart2 className="inline-block mr-2" />
+        Iniciar Treinamento
+      </Button>
+
+      <Button
+        onClick={saveModel}
+        disabled={!model}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        <Save className="inline-block mr-2" />
+        Salvar Modelo
+      </Button>
+
+      {trainingProgress > 0 && (
+        <div className="mt-4">
+          <Progress value={trainingProgress} className="w-full" />
+          <p className="text-center mt-2">{trainingProgress}% Concluído</p>
+        </div>
+      )}
+
+      <div className="mt-8">
+        <h3 className="text-xl font-bold mb-4">Gráfico de Perda de Treinamento e Validação</h3>
+        <TrainingChart logs={logs} />
+      </div>
     </div>
   );
 };

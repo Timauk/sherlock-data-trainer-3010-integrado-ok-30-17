@@ -6,90 +6,97 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
-import LotofacilLogger from '@/components/LotofacilLogger';
-import { lotofacilService } from '@/services/lotofacilService';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000);
+  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
-  const loadCSV = useCallback(async () => {
+  const loadCSV = useCallback(async (file: File) => {
     try {
-      setIsLoading(true);
-      setLoadError(null);
-      
-      console.log("Iniciando carregamento dos dados...");
-      const results = await lotofacilService.getLastResults();
-      
-      if (!results || results.length === 0) {
-        throw new Error("Nenhum resultado foi retornado da API");
-      }
+      const text = await file.text();
+      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
+      const data = lines.map(line => {
+        const values = line.split(',');
+        return {
+          concurso: parseInt(values[0], 10),
+          data: new Date(values[1].split('/').reverse().join('-')),
+          bolas: values.slice(2).map(Number)
+        };
+      });
+      setCsvData(data.map(d => d.bolas));
+      setCsvDates(data.map(d => d.data));
+      gameLogic.addLog("CSV carregado e processado com sucesso!");
+      gameLogic.addLog(`Número de registros carregados: ${data.length}`);
+    } catch (error) {
+      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  }, [gameLogic]);
 
-      console.log(`Dados recebidos: ${results.length} registros`);
-      
-      const processedData = results.map(result => ({
-        concurso: result.concurso,
-        data: new Date(result.data.split('/').reverse().join('-')),
-        bolas: result.dezenas.map(Number)
-      }));
-      
-      setCsvData(processedData.map(d => d.bolas));
-      setCsvDates(processedData.map(d => d.data));
-      
-      gameLogic.addLog("Dados carregados da API com sucesso!");
-      gameLogic.addLog(`Número de registros carregados: ${processedData.length}`);
-      
+  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
+    try {
+      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
+      setTrainedModel(model);
+      gameLogic.addLog("Modelo carregado com sucesso!");
       toast({
-        title: "Dados Carregados",
-        description: `${processedData.length} registros foram carregados com sucesso.`,
+        title: "Modelo Carregado",
+        description: "O modelo foi carregado com sucesso.",
       });
     } catch (error) {
-      console.error("Erro detalhado:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      setLoadError(errorMessage);
-      
+      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error("Detalhes do erro:", error);
       toast({
-        title: "Erro ao Carregar Dados",
-        description: "Não foi possível carregar os dados do jogo. Tente novamente.",
+        title: "Erro ao Carregar Modelo",
+        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
         variant: "destructive",
       });
-      
-      gameLogic.addLog(`Erro ao carregar dados: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
     }
   }, [gameLogic, toast]);
 
-  useEffect(() => {
-    console.log("Iniciando carregamento inicial...");
-    loadCSV();
-  }, [loadCSV]);
+  const saveModel = useCallback(async () => {
+    if (trainedModel) {
+      try {
+        await trainedModel.save('downloads://modelo-atual');
+        gameLogic.addLog("Modelo salvo com sucesso!");
+        toast({
+          title: "Modelo Salvo",
+          description: "O modelo atual foi salvo com sucesso.",
+        });
+      } catch (error) {
+        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        console.error("Detalhes do erro:", error);
+        toast({
+          title: "Erro ao Salvar Modelo",
+          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      gameLogic.addLog("Nenhum modelo para salvar.");
+      toast({
+        title: "Nenhum Modelo",
+        description: "Não há nenhum modelo carregado para salvar.",
+        variant: "destructive",
+      });
+    }
+  }, [trainedModel, gameLogic, toast]);
 
   const playGame = useCallback(() => {
     if (!trainedModel || csvData.length === 0) {
-      toast({
-        title: "Não é possível iniciar",
-        description: "Verifique se o modelo e os dados foram carregados corretamente.",
-        variant: "destructive",
-      });
+      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
       return;
     }
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
     gameLogic.gameLoop();
-  }, [trainedModel, csvData, gameLogic, toast]);
+  }, [trainedModel, csvData, gameLogic]);
 
   const pauseGame = useCallback(() => {
     setIsPlaying(false);
@@ -103,44 +110,34 @@ const PlayPage: React.FC = () => {
     gameLogic.addLog("Jogo reiniciado.");
   }, [gameLogic]);
 
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (isPlaying) {
+      intervalId = setInterval(() => {
+        gameLogic.gameLoop();
+        setProgress((prevProgress) => {
+          const newProgress = prevProgress + (100 / csvData.length);
+          if (newProgress >= 100) {
+            if (!gameLogic.isManualMode) {
+              gameLogic.evolveGeneration();
+            }
+            return gameLogic.isInfiniteMode ? 0 : 100;
+          }
+          return newProgress;
+        });
+      }, gameSpeed);
+    }
+    return () => clearInterval(intervalId);
+  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+
   const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0];
+    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
     setGameSpeed(newSpeed);
     toast({
       title: "Velocidade Ajustada",
       description: `${newSpeed}ms por jogada`,
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto" />
-          <p className="text-lg">Carregando dados do jogo...</p>
-          <p className="text-sm text-muted-foreground">Por favor, aguarde enquanto carregamos os resultados anteriores.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError || csvData.length === 0) {
-    return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertDescription>
-            {loadError || "Não foi possível carregar os dados do jogo. Por favor, tente novamente."}
-          </AlertDescription>
-        </Alert>
-        <button
-          onClick={loadCSV}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-        >
-          Tentar Novamente
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">
@@ -166,17 +163,12 @@ const PlayPage: React.FC = () => {
         onReset={resetGame}
         onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onCsvUpload={loadCSV}
-        onModelUpload={async () => {}}
-        onSaveModel={async () => {}}
+        onModelUpload={loadModel}
+        onSaveModel={saveModel}
         progress={progress}
         generation={gameLogic.generation}
         gameLogic={gameLogic}
       />
-      {csvData.length > 0 && (
-        <div className="mt-6">
-          <LotofacilLogger numbers={csvData} dates={csvDates} />
-        </div>
-      )}
     </div>
   );
 };

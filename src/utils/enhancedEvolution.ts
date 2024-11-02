@@ -1,5 +1,4 @@
-import { Player } from '@/types/playerTypes';
-import { v4 as uuidv4 } from 'uuid';
+import { Player } from '../types/gameTypes';
 
 export const calculateFitness = (player: Player, boardNumbers: number[]): number => {
   const matches = player.predictions.filter(num => boardNumbers.includes(num)).length;
@@ -35,20 +34,21 @@ const calculateAdaptabilityScore = (player: Player): number => {
   const validPredictions = recentPredictions.map(pred => pred as number[]);
   const uniqueNumbers = new Set(validPredictions.flat());
   
-  return (uniqueNumbers.size / (25 * 0.6)) * 5;
+  return (uniqueNumbers.size / (25 * 0.6)) * 5; // 60% de cobertura dos números possíveis
 };
 
 export const createMutatedClone = (player: Player, mutationRate: number = 0.1): Player => {
   const mutatedWeights = player.weights.map(weight => {
     if (Math.random() < mutationRate) {
-      const mutation = (Math.random() - 0.5) * 0.2;
+      const mutation = (Math.random() - 0.5) * 0.2; // Mutação de ±10%
       return weight * (1 + mutation);
     }
     return weight;
   });
 
   return {
-    id: Math.floor(Math.random() * 1000000), // Generate numeric ID
+    ...player,
+    id: Math.random(),
     score: 0,
     predictions: [],
     weights: mutatedWeights,
@@ -65,7 +65,7 @@ export const crossoverPlayers = (parent1: Player, parent2: Player): Player => {
   ];
 
   return {
-    id: Math.floor(Math.random() * 1000000), // Generate numeric ID
+    id: Math.random(),
     score: 0,
     predictions: [],
     weights: childWeights,

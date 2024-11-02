@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 
 export const useServerStatus = () => {
-  const [status, setStatus] = useState<'online' | 'offline'>('offline');
+  const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
 
   const checkServerStatus = async () => {
     try {
-      // Usando a API da Lotofácil diretamente ao invés do servidor local
-      const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
-      setStatus(response.ok ? 'online' : 'offline');
+      const response = await fetch('http://localhost:3001/api/status');
+      if (response.ok) {
+        setStatus('online');
+      } else {
+        setStatus('offline');
+      }
     } catch (error) {
       setStatus('offline');
     }
@@ -15,9 +18,9 @@ export const useServerStatus = () => {
 
   useEffect(() => {
     checkServerStatus();
-    const interval = setInterval(checkServerStatus, 30000); // Check every 30 seconds
+    const interval = setInterval(checkServerStatus, 30000); // Verifica a cada 30 segundos
     return () => clearInterval(interval);
   }, []);
 
-  return { status };
+  return { status, checkServerStatus };
 };

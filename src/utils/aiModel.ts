@@ -50,7 +50,6 @@ export function denormalizeData(data: number[][]): number[][] {
 }
 
 export function addDerivedFeatures(data: number[][]): number[][] {
-  // Frequency analysis
   const frequencyMap = new Map<number, number>();
   data.forEach(row => {
     row.forEach(n => {
@@ -58,45 +57,9 @@ export function addDerivedFeatures(data: number[][]): number[][] {
     });
   });
 
-  // Calculate global statistics
-  const allNumbers = data.flat();
-  const globalMean = allNumbers.reduce((a, b) => a + b, 0) / allNumbers.length;
-  const globalStd = Math.sqrt(
-    allNumbers.reduce((a, b) => a + Math.pow(b - globalMean, 2), 0) / allNumbers.length
-  );
-
   return data.map(row => {
-    // Basic features
     const frequencies = row.map(n => frequencyMap.get(n) || 0);
-    const evenCount = row.filter(n => n % 2 === 0).length;
-    const oddCount = row.length - evenCount;
-    const sum = row.reduce((a, b) => a + b, 0);
-    const mean = sum / row.length;
-    
-    // Statistical features
-    const variance = row.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / row.length;
-    const std = Math.sqrt(variance);
-    const zScores = row.map(n => (n - globalMean) / globalStd);
-    
-    // Pattern features
-    const consecutivePairs = row.slice(1).filter((n, i) => n === row[i] + 1).length;
-    const gaps = row.slice(1).map((n, i) => n - row[i]);
-    const maxGap = Math.max(...gaps);
-    const minGap = Math.min(...gaps);
-    
-    return [
-      ...row,
-      ...frequencies,
-      evenCount,
-      oddCount,
-      sum,
-      mean,
-      std,
-      ...zScores,
-      consecutivePairs,
-      maxGap,
-      minGap
-    ];
+    return [...row, ...frequencies];
   });
 }
 
@@ -104,21 +67,9 @@ export async function updateModel(model: tf.LayersModel, newData: number[][]): P
   const xs = tf.tensor2d(newData.map(row => row.slice(0, -15)));
   const ys = tf.tensor2d(newData.map(row => row.slice(-15)));
 
-  // Adaptive epochs based on data size
-  const epochs = Math.min(Math.ceil(newData.length / 100), 10);
-  
   await model.fit(xs, ys, {
-    epochs,
+    epochs: 1,
     batchSize: 32,
-    validationSplit: 0.2,
-    callbacks: {
-      onEpochEnd: (epoch, logs) => {
-        if (logs && logs.val_loss < logs.loss * 0.8) {
-          console.warn('Early stopping due to potential overfitting');
-          return;
-        }
-      }
-    }
   });
 
   xs.dispose();

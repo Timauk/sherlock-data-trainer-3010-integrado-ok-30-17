@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { Player } from '@/types/playerTypes';
+import { Player } from '@/types/gameTypes';
 
 export const useGameInitialization = () => {
   const [players, setPlayers] = useState<Player[]>([]);
 
   const initializePlayers = useCallback(() => {
-    const newPlayers = Array.from({ length: 10 }, (_, index) => ({
-      id: index + 1, // Using sequential numbers for IDs
+    const newPlayers = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
       score: 0,
       predictions: [],
       weights: Array.from({ length: 17 }, () => Math.floor(Math.random() * 1001)),
