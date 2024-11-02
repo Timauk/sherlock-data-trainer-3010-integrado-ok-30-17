@@ -4,6 +4,14 @@ import { systemLogger } from '@/utils/logging/systemLogger';
 import { TrainingMetadata } from './types';
 import type { Json } from '@/lib/database.types';
 
+interface ModelTopology {
+  modelTopology: any;
+  weightsManifest?: any[];
+  format?: string;
+  generatedBy?: string;
+  convertedBy?: string;
+}
+
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
     // First, deactivate all existing active models
@@ -54,13 +62,14 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
     // If we found an active model
     if (data && data.length > 0) {
       const modelData = data[0];
+      const modelJson = modelData.model_data as unknown as ModelTopology;
       
       // Validate model data structure
-      if (!modelData.model_data?.modelTopology) {
+      if (!modelJson?.modelTopology) {
         throw new Error('Invalid model data structure');
       }
 
-      const model = await tf.models.modelFromJSON(modelData.model_data);
+      const model = await tf.models.modelFromJSON(modelJson);
       const metadata = modelData.metadata as unknown as TrainingMetadata;
       
       systemLogger.log('system', 'Modelo carregado com sucesso do Supabase');
