@@ -1,9 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { loadLatestModel } from './modelOperations';
+import { loadLatestModelOperation } from './modelOperations';
 
 export async function exportCurrentModel() {
-  const result = await loadLatestModel();
+  const result = await loadLatestModelOperation();
   if (!result?.model) throw new Error('Nenhum modelo encontrado');
 
   const modelJSON = result.model.toJSON();
