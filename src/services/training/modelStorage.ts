@@ -23,12 +23,16 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
     const modelJson = model.toJSON();
     const weights = await model.getWeights();
     const weightsData = await Promise.all(
-      weights.map(w => w.data())
+      weights.map(w => Array.from(w.dataSync())) // Convert to regular arrays
     );
 
     const metadataJson: Json = {
-      ...metadata,
-      weights: weightsData
+      timestamp: metadata.timestamp,
+      accuracy: typeof metadata.accuracy === 'number' ? metadata.accuracy : 0,
+      loss: typeof metadata.loss === 'number' ? metadata.loss : 0,
+      epochs: metadata.epochs,
+      gamesCount: metadata.gamesCount,
+      weightsData: weightsData // Now it's a regular array
     };
 
     const { error } = await supabase
@@ -51,7 +55,6 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
 export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
   try {
-    // Busca o modelo ativo mais recente
     const { data, error } = await supabase
       .from('trained_models')
       .select()
@@ -70,8 +73,8 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
       const model = await tf.models.modelFromJSON(modelJson);
       
       // Se tiver pesos salvos, carrega eles
-      if (metadata.weights) {
-        const tensors = metadata.weights.map(w => tf.tensor(w));
+      if (metadata.weightsData) {
+        const tensors = metadata.weightsData.map(w => tf.tensor(w));
         model.setWeights(tensors);
       }
 

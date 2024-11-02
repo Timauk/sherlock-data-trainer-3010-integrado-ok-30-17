@@ -6,7 +6,7 @@ export interface TrainingMetadata {
   loss: number;
   epochs: number;
   gamesCount?: number;
-  weights?: any;
+  weightsData?: number[][];
 }
 
 export interface ModelData {
@@ -22,5 +22,5 @@ export interface TrainingResult {
 
 export interface ModelExport {
   json: any;
-  weights: any[];
+  weights: number[][];
 }
