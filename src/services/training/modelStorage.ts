@@ -40,27 +40,28 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
   }
 }
 
-export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersModel; metadata: TrainingMetadata | null; } | null> {
+export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
   try {
     const { data, error } = await supabase
       .from('trained_models')
       .select()
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
     if (error) throw error;
 
-    if (data) {
+    // If we found an active model
+    if (data && data.length > 0) {
+      const modelData = data[0];
+      
       // Validate model data structure
-      const modelJson = data.model_data as any;
-      if (!modelJson?.modelTopology || !modelJson?.weightsManifest) {
+      if (!modelData.model_data?.modelTopology) {
         throw new Error('Invalid model data structure');
       }
 
-      const model = await tf.models.modelFromJSON(modelJson);
-      const metadata = data.metadata as unknown as TrainingMetadata;
+      const model = await tf.models.modelFromJSON(modelData.model_data);
+      const metadata = modelData.metadata as unknown as TrainingMetadata;
       
       systemLogger.log('system', 'Modelo carregado com sucesso do Supabase');
       return { model, metadata };
@@ -78,7 +79,7 @@ export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersM
     return { model, metadata: null };
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo do Supabase', { error });
-    return null;
+    return { model: null, metadata: null };
   }
 }
 
