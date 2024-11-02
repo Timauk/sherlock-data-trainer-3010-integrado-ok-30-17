@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as tf from '@tensorflow/tfjs';
+import { logger } from '../../src/utils/logging/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,7 @@ class CheckpointManager {
   ensureCheckpointDirectory() {
     if (!fs.existsSync(this.checkpointPath)) {
       fs.mkdirSync(this.checkpointPath, { recursive: true });
+      logger.info(`Diretório de checkpoints criado: ${this.checkpointPath}`);
     }
   }
 
@@ -32,6 +34,11 @@ class CheckpointManager {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
     fs.mkdirSync(checkpointDir);
+
+    logger.info({
+      checkpoint: checkpointDir,
+      timestamp
+    }, 'Iniciando salvamento de checkpoint');
 
     // Save game state JSON with logs
     const gameStatePath = path.join(checkpointDir, 'gameState.json');
@@ -42,6 +49,7 @@ class CheckpointManager {
     };
 
     await fs.promises.writeFile(gameStatePath, JSON.stringify(gameState, null, 2));
+    logger.debug('Estado do jogo salvo');
 
     // Save separate logs file for better organization
     const logsPath = path.join(checkpointDir, 'logs.json');
@@ -50,6 +58,7 @@ class CheckpointManager {
       logs: data.gameState.logs || [],
       systemLogs: data.gameState.systemLogs || []
     }, null, 2));
+    logger.debug('Logs salvos');
 
     // Save neural network model if exists
     if (data.gameState.model) {
@@ -65,6 +74,7 @@ class CheckpointManager {
           Buffer.from(modelData.weightData)
         );
       }
+      logger.debug('Modelo neural salvo');
     }
 
     // Save training metrics and charts data
@@ -76,8 +86,10 @@ class CheckpointManager {
       evolutionStats: data.gameState.metrics?.evolutionStats || [],
       trainingProgress: data.gameState.metrics?.trainingProgress || 0
     }, null, 2));
+    logger.debug('Métricas salvas');
 
     await this.cleanOldCheckpoints();
+    logger.info(`Checkpoint salvo com sucesso: ${path.basename(checkpointDir)}`);
     return path.basename(checkpointDir);
   }
 
@@ -87,10 +99,14 @@ class CheckpointManager {
       .sort()
       .reverse();
 
-    if (checkpoints.length === 0) return null;
+    if (checkpoints.length === 0) {
+      logger.warn('Nenhum checkpoint encontrado para carregar');
+      return null;
+    }
 
     const latestCheckpoint = checkpoints[0];
     const checkpointDir = path.join(this.checkpointPath, latestCheckpoint);
+    logger.info(`Carregando último checkpoint: ${latestCheckpoint}`);
 
     // Load game state
     const gameStatePath = path.join(checkpointDir, 'gameState.json');
@@ -106,8 +122,9 @@ class CheckpointManager {
         const weightsData = await fs.promises.readFile(path.join(checkpointDir, 'model-weights.bin'));
         
         gameState.model = await tf.loadLayersModel(tf.io.fromMemory(modelTopology, weightsData));
+        logger.debug('Modelo neural carregado com sucesso');
       } catch (error) {
-        console.error('Error loading model:', error);
+        logger.error({ error }, 'Erro ao carregar modelo neural');
       }
     }
 
@@ -117,8 +134,10 @@ class CheckpointManager {
       const logs = JSON.parse(await fs.promises.readFile(logsPath, 'utf8'));
       gameState.logs = logs.logs;
       gameState.systemLogs = logs.systemLogs;
+      logger.debug('Logs carregados com sucesso');
     }
 
+    logger.info('Checkpoint carregado com sucesso');
     return {
       timestamp: latestCheckpoint.replace('checkpoint-', ''),
       gameState
@@ -135,6 +154,7 @@ class CheckpointManager {
       for (const checkpoint of checkpointsToDelete) {
         const checkpointPath = path.join(this.checkpointPath, checkpoint);
         await fs.promises.rm(checkpointPath, { recursive: true });
+        logger.info(`Checkpoint antigo removido: ${checkpoint}`);
       }
     }
   }

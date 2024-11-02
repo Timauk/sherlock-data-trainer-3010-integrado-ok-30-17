@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
+import { logger } from './src/utils/logging/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,16 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  logger.info({
+    method: req.method,
+    url: req.url,
+    ip: req.ip
+  }, 'Incoming request');
+  next();
+});
 
 // Rotas
 import { modelRouter } from './routes/model.js';
@@ -41,26 +52,44 @@ app.get('/', (req, res) => {
 
 // Rota para verificar se o servidor está online
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const healthInfo = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  };
+  logger.info(healthInfo, 'Health check');
+  res.json(healthInfo);
 });
 
 // Middleware de erro
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error({
+    err,
+    method: req.method,
+    url: req.url,
+    body: req.body
+  }, 'Error occurred');
+  
   res.status(500).json({
     error: 'Erro interno do servidor',
     message: err.message
   });
 });
 
-// Cria a pasta checkpoints se não existir
+// Cria a pasta checkpoints e logs se não existirem
 import fs from 'fs';
 const checkpointsDir = path.join(__dirname, 'checkpoints');
-if (!fs.existsSync(checkpointsDir)) {
-  fs.mkdirSync(checkpointsDir, { recursive: true });
-}
+const logsDir = path.join(__dirname, 'logs');
+
+[checkpointsDir, logsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log(`Diretório de checkpoints: ${checkpointsDir}`);
+  logger.info(`Servidor rodando em http://localhost:${PORT}`);
+  logger.info(`Diretório de checkpoints: ${checkpointsDir}`);
+  logger.info(`Diretório de logs: ${logsDir}`);
 });
