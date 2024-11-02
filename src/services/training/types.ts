@@ -10,13 +10,18 @@ export interface TrainingMetadata {
   weights?: any;
 }
 
-export interface ModelResponse {
-  model: tf.LayersModel | null;
-  metadata: TrainingMetadata | null;
-}
-
 export interface ModelData {
   model_data: Json;
   metadata: Json;
   is_active?: boolean;
+}
+
+export interface TrainingResult {
+  updated: boolean;
+  message: string;
+}
+
+export interface ModelExport {
+  json: any;
+  weights: any[];
 }

@@ -1,12 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { TrainingMetadata } from './types';
+import { TrainingMetadata, TrainingResult, ModelExport } from './types';
 import { saveModelToSupabase, loadModelFromSupabase } from './modelStorage';
 
 export const trainingService = {
   saveModel: saveModelToSupabase,
-  
   loadLatestModel: loadModelFromSupabase,
 
   async getTrainingHistory() {
@@ -31,7 +30,7 @@ export const trainingService = {
         .select('concurso, data')
         .order('concurso', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -41,7 +40,7 @@ export const trainingService = {
     }
   },
 
-  async updateGamesAndTrain(games: any[]) {
+  async updateGamesAndTrain(games: any[]): Promise<TrainingResult> {
     try {
       const { error } = await supabase
         .from('historical_games')
@@ -64,7 +63,10 @@ export const trainingService = {
         epochs: 50
       });
 
-      return true;
+      return {
+        updated: true,
+        message: `Dados atualizados com sucesso!`
+      };
     } catch (error) {
       systemLogger.log('system', 'Erro ao atualizar jogos e treinar', { error });
       throw error;
@@ -107,12 +109,12 @@ export const trainingService = {
     return model;
   },
 
-  async exportCurrentModel() {
-    const model = await this.loadLatestModel();
-    if (!model.model) throw new Error('Nenhum modelo encontrado');
+  async exportCurrentModel(): Promise<ModelExport> {
+    const { model } = await this.loadLatestModel();
+    if (!model) throw new Error('Nenhum modelo encontrado');
 
-    const modelJSON = model.model.toJSON();
-    const weights = await model.model.getWeights();
+    const modelJSON = model.toJSON();
+    const weights = await model.getWeights();
     
     return {
       json: modelJSON,

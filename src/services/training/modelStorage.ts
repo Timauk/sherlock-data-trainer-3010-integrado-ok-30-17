@@ -1,8 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
-import { ModelData, TrainingMetadata } from "./types";
 import * as tf from '@tensorflow/tfjs';
-import { Json } from "@/integrations/supabase/types";
+import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
+import { TrainingMetadata, ModelData } from './types';
 
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
@@ -27,8 +26,7 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
     const { error } = await supabase
       .from('trained_models')
-      .insert(modelData)
-      .select();
+      .insert(modelData);
 
     if (error) throw error;
     
