@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { trainingService } from '@/services/trainingService';
 import TrainingControls from '@/components/training/TrainingControls';
 import TrainingProgress from '@/components/training/TrainingProgress';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,11 +48,12 @@ const TrainingPage = () => {
       
       await loadTrainingHistory();
 
+      const finalAccuracy = history.history.acc?.[history.history.acc.length - 1];
+      const accuracyDisplay = finalAccuracy ? (finalAccuracy * 100).toFixed(2) : '0.00';
+
       toast({
         title: "Treinamento Concluído",
-        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${
-          ((history.history.acc?.[history.history.acc.length - 1] || 0) * 100).toFixed(2)
-        }%`,
+        description: `Modelo treinado com ${games.length} jogos. Precisão final: ${accuracyDisplay}%`,
       });
     } catch (error) {
       toast({
