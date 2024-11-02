@@ -16,7 +16,7 @@ type TrainedModel = TrainedModelsTable['Row'];
 export const trainingService = {
   async saveModel(model: tf.LayersModel, metadata: TrainingMetadata) {
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('trained_models')
         .insert({
           model_data: model.toJSON(),
@@ -24,7 +24,7 @@ export const trainingService = {
           is_active: true
         });
 
-      if (result.error) throw result.error;
+      if (error) throw error;
 
       systemLogger.log('system', 'Modelo salvo com sucesso', { metadata });
       return true;

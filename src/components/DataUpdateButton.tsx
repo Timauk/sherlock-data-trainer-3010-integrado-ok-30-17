@@ -18,8 +18,12 @@ const DataUpdateButton = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+          'Access-Control-Allow-Origin': '*'
+        },
+        mode: 'cors',
+        credentials: 'include'
       });
+      
       if (!response.ok) {
         throw new Error('Falha ao atualizar dados');
       }
