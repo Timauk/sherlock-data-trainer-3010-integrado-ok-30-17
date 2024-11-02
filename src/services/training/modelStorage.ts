@@ -14,20 +14,21 @@ interface ModelTopology {
 
 export async function saveModelToSupabase(model: tf.LayersModel, metadata: TrainingMetadata): Promise<boolean> {
   try {
-    // First, deactivate all existing active models
+    // Desativa modelos anteriores
     await supabase
       .from('trained_models')
       .update({ is_active: false })
       .eq('is_active', true);
 
     const modelJson = model.toJSON();
+    const weights = await model.getWeights();
+    const weightsData = await Promise.all(
+      weights.map(w => w.data())
+    );
+
     const metadataJson: Json = {
-      timestamp: metadata.timestamp,
-      accuracy: metadata.accuracy,
-      loss: metadata.loss,
-      epochs: metadata.epochs,
-      gamesCount: metadata.gamesCount,
-      weights: metadata.weights
+      ...metadata,
+      weights: weightsData
     };
 
     const { error } = await supabase
@@ -50,72 +51,37 @@ export async function saveModelToSupabase(model: tf.LayersModel, metadata: Train
 
 export async function loadLatestModelFromSupabase(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
   try {
-    // First, get the total number of games
-    const { count: gamesCount } = await supabase
-      .from('historical_games')
-      .select('*', { count: 'exact', head: true });
-
-    // Then get the latest active model
+    // Busca o modelo ativo mais recente
     const { data, error } = await supabase
       .from('trained_models')
       .select()
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1)
+      .single();
 
     if (error) throw error;
 
-    // If we found an active model
-    if (data && data.length > 0) {
-      const modelData = data[0];
-      const modelJson = modelData.model_data as unknown as ModelTopology;
+    if (data) {
+      const modelJson = data.model_data as unknown as ModelTopology;
+      const metadata = data.metadata as unknown as TrainingMetadata;
       
-      // Validate model data structure
-      if (!modelJson?.modelTopology) {
-        throw new Error('Invalid model data structure');
+      // Reconstrói o modelo do JSON
+      const model = await tf.models.modelFromJSON(modelJson);
+      
+      // Se tiver pesos salvos, carrega eles
+      if (metadata.weights) {
+        const tensors = metadata.weights.map(w => tf.tensor(w));
+        model.setWeights(tensors);
       }
 
-      const model = await tf.models.modelFromJSON(modelJson);
-      const metadata = {
-        ...(modelData.metadata as unknown as TrainingMetadata),
-        gamesCount: gamesCount || 0
-      };
-      
       systemLogger.log('system', 'Modelo carregado com sucesso do Supabase');
       return { model, metadata };
     }
 
-    // If no active model in Supabase, create a new one
-    const model = createInitialModel();
-    const metadata: TrainingMetadata = {
-      timestamp: new Date().toISOString(),
-      accuracy: 0,
-      loss: 0,
-      epochs: 0,
-      gamesCount: gamesCount || 0
-    };
-
-    await saveModelToSupabase(model, metadata);
-    
-    return { model, metadata };
+    return { model: null, metadata: null };
   } catch (error) {
     systemLogger.log('system', 'Erro ao carregar modelo do Supabase', { error });
     return { model: null, metadata: null };
   }
-}
-
-function createInitialModel(): tf.LayersModel {
-  const model = tf.sequential();
-  model.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }));
-  model.add(tf.layers.dropout({ rate: 0.3 }));
-  model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
-  model.add(tf.layers.dense({ units: 15, activation: 'sigmoid' }));
-  
-  model.compile({
-    optimizer: 'adam',
-    loss: 'binaryCrossentropy',
-    metrics: ['accuracy']
-  });
-
-  return model;
 }
