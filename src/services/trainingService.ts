@@ -38,13 +38,15 @@ export const trainingService = {
 
   async loadLatestModel(): Promise<{ model: tf.LayersModel | null; metadata: TrainingMetadata | null }> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('trained_models')
-        .select()
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .select();
+        
+      query = query.eq('is_active', true);
+      query = query.order('created_at', { ascending: false });
+      query = query.limit(1);
+      
+      const { data, error } = await query.single();
 
       if (error) throw error;
 
@@ -63,10 +65,13 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('trained_models')
-        .select('metadata, created_at')
-        .order('created_at', { ascending: false });
+        .select('metadata, created_at');
+        
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -78,12 +83,14 @@ export const trainingService = {
 
   async getLastStoredGame() {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('historical_games')
-        .select('concurso, data')
-        .order('concurso', { ascending: false })
-        .limit(1)
-        .single();
+        .select('concurso, data');
+        
+      query = query.order('concurso', { ascending: false });
+      query = query.limit(1);
+      
+      const { data, error } = await query.single();
 
       if (error) throw error;
       return data;
