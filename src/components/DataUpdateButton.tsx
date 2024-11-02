@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const API_URL = import.meta.env.PROD 
   ? 'https://your-production-api.com/api/lotofacil/update'
-  : 'http://localhost:3001/api/lotofacil/update';
+  : '/api/lotofacil/update'; // Remove http://localhost:3001 to use relative path
 
 const DataUpdateButton = () => {
   const { toast } = useToast();
@@ -17,10 +17,8 @@ const DataUpdateButton = () => {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          'Content-Type': 'application/json'
         },
-        mode: 'cors',
         credentials: 'include'
       });
       
