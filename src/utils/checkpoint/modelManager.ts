@@ -1,5 +1,4 @@
 import * as tf from '@tensorflow/tfjs';
-import * as fs from 'fs';
 import path from 'path';
 import { FileManager } from './fileManager';
 import { logger } from '../../utils/logging/logger.js';
@@ -7,6 +6,12 @@ import { logger } from '../../utils/logging/logger.js';
 interface WeightData {
   name: string;
   tensor: tf.Tensor;
+}
+
+interface OptimizerWeightSpecs extends tf.io.WeightsManifestEntry {
+  name: string;
+  shape: number[];
+  dtype: string;
 }
 
 export class ModelManager {
@@ -43,8 +48,10 @@ export class ModelManager {
     );
     
     if (optimizerBuffer && model.optimizer) {
-      const weightSpecs = model.optimizer.getConfig()?.weightSpecs as tf.io.WeightsManifestEntry[];
-      if (weightSpecs) {
+      const config = model.optimizer.getConfig();
+      const weightSpecs = (config?.weightSpecs || []) as OptimizerWeightSpecs[];
+      
+      if (weightSpecs.length > 0) {
         const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
         const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
           name,
