@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import DataUpdateButton from '../DataUpdateButton';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, Database } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface TrainingControlsProps {
@@ -16,6 +16,24 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
 }) => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [totalGames, setTotalGames] = useState<number | null>(null);
+
+  const fetchGameCount = async () => {
+    const { count, error } = await supabase
+      .from('historical_games')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Error fetching game count:', error);
+      return;
+    }
+    
+    setTotalGames(count);
+  };
+
+  useEffect(() => {
+    fetchGameCount();
+  }, []);
 
   const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -46,14 +64,11 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
 
       if (error) throw error;
 
-      // Verificar quantos jogos estão no banco após o upload
-      const { count } = await supabase
-        .from('historical_games')
-        .select('*', { count: 'exact', head: true });
+      await fetchGameCount();
 
       toast({
         title: "Dados Carregados",
-        description: `${games.length} jogos foram importados com sucesso! Total no banco: ${count} jogos`,
+        description: `${games.length} jogos foram importados com sucesso!`,
       });
     } catch (error) {
       toast({
@@ -95,6 +110,14 @@ const TrainingControls: React.FC<TrainingControlsProps> = ({
             {isUploading ? 'Carregando...' : 'Carregar CSV Inicial'}
           </Button>
         </div>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Database className="h-4 w-4" />
+        <span>
+          {totalGames === null 
+            ? 'Carregando contagem de jogos...' 
+            : `Total de jogos no banco: ${totalGames}`}
+        </span>
       </div>
     </div>
   );
