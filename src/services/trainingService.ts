@@ -65,10 +65,12 @@ export const trainingService = {
 
   async getTrainingHistory(): Promise<TrainedModel[]> {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('trained_models')
         .select('metadata, created_at')
         .order('created_at', { ascending: false });
+
+      const { data, error } = result;
 
       if (error) throw error;
       return data || [];
