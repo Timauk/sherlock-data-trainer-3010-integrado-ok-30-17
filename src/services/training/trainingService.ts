@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { supabase } from '@/integrations/supabase/client';
 import { systemLogger } from '@/utils/logging/systemLogger';
 import { TrainingMetadata, TrainingResult, ModelExport } from './types';
 import { saveModelToSupabase, loadLatestModelFromSupabase } from './modelStorage';
