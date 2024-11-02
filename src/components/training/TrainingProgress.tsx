@@ -34,7 +34,7 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-muted-foreground">
-              Progresso: {progress}%
+              Progresso: {progress.toFixed(1)}%
             </p>
           </div>
         )}
@@ -93,10 +93,10 @@ const TrainingProgress: React.FC<TrainingProgressProps> = ({
                       Data: {new Date(entry.created_at).toLocaleDateString()}
                     </p>
                     <p className="text-sm">
-                      Precisão: {(entry.metadata.accuracy * 100).toFixed(2)}%
+                      Precisão: {(entry.metadata?.accuracy * 100).toFixed(2)}%
                     </p>
                     <p className="text-sm">
-                      Loss: {entry.metadata.loss.toFixed(4)}
+                      Loss: {entry.metadata?.loss.toFixed(4)}
                     </p>
                   </div>
                 ))}

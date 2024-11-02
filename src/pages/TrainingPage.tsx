@@ -55,16 +55,32 @@ const TrainingPage = () => {
         metrics: ['accuracy']
       });
 
+      // Simular progresso do treinamento
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 500);
+
       const metadata = {
         timestamp: new Date().toISOString(),
         accuracy: 0.85,
         loss: 0.15,
-        epochs: 50
+        epochs: 50,
+        gamesCount: trainingHistory.length + 1
       };
 
       await trainingService.saveModel(newModel, metadata);
       setModel(newModel);
       await loadTrainingHistory();
+
+      // Finalizar progresso
+      setProgress(100);
+      clearInterval(progressInterval);
 
       toast({
         title: "Treinamento Concluído",
@@ -78,7 +94,6 @@ const TrainingPage = () => {
       });
     } finally {
       setIsTraining(false);
-      setProgress(100);
     }
   };
 
