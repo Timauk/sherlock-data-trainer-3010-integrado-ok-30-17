@@ -3,20 +3,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-const API_URL = 'https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest';
+import confetti from 'canvas-confetti';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LotofacilResponse {
   concurso: number;
   data: string;
   dezenas: string[];
-  acumulou: boolean;
-  premiacoes: Array<{
-    descricao: string;
-    faixa: number;
-    ganhadores: number;
-    valorPremio: number;
-  }>;
 }
 
 const DataUpdateButton = () => {
@@ -24,24 +17,60 @@ const DataUpdateButton = () => {
   const queryClient = useQueryClient();
 
   const { mutate: updateData, isPending } = useMutation({
-    mutationFn: async (): Promise<LotofacilResponse> => {
-      const response = await fetch(API_URL, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    mutationFn: async () => {
+      // 1. Fetch latest result from Lotofacil API
+      const response = await fetch('https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest');
+      if (!response.ok) {
+        throw new Error('Falha ao buscar dados da Lotofacil');
+      }
+      const latestResult: LotofacilResponse = await response.json();
+
+      // 2. Check if we already have this result
+      const { data: existingGame } = await supabase
+        .from('historical_games')
+        .select('concurso')
+        .eq('concurso', latestResult.concurso)
+        .single();
+
+      if (existingGame) {
+        return {
+          updated: false,
+          message: 'Dados já estão atualizados!',
+          concurso: latestResult.concurso
+        };
+      }
+
+      // 3. Insert new result into database
+      const { error: insertError } = await supabase
+        .from('historical_games')
+        .insert({
+          concurso: latestResult.concurso,
+          data: latestResult.data.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
+          numeros: latestResult.dezenas.map(Number)
+        });
+
+      if (insertError) throw insertError;
+
+      return {
+        updated: true,
+        message: `Dados atualizados até concurso ${latestResult.concurso}!`,
+        concurso: latestResult.concurso
+      };
+    },
+    onSuccess: (result) => {
+      if (result.updated) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+      
+      toast({
+        title: result.updated ? "Atualização Concluída!" : "Verificação Concluída",
+        description: result.message,
       });
       
-      if (!response.ok) {
-        throw new Error('Falha ao atualizar dados');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Dados Atualizados",
-        description: `Concurso #${data.concurso} - ${new Date(data.data).toLocaleDateString('pt-BR')}`,
-      });
       queryClient.invalidateQueries({ queryKey: ['lotofacilData'] });
     },
     onError: (error) => {
