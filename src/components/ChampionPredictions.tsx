@@ -19,13 +19,12 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
   lastConcursoNumbers,
   isServerProcessing = false
 }) => {
-  const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number, matchesWithSelected: number }>>([]);
+  const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number, matchesWithSelected: number, isNeuralReduced?: boolean }>>([]);
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const { toast } = useToast();
 
   const handleNumbersSelected = (numbers: number[]) => {
     setSelectedNumbers(numbers);
-    // Atualiza os matches para todas as previsões existentes
     if (predictions.length > 0) {
       setPredictions(predictions.map(pred => ({
         ...pred,
@@ -46,6 +45,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
 
     try {
       const newPredictions = [];
+      // Primeiros 8 jogos (originais)
       const targets = [
         { matches: 11, count: 2 },
         { matches: 12, count: 2 },
@@ -54,6 +54,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         { matches: 15, count: 1 }
       ];
       
+      // Gera os 8 jogos originais
       for (const target of targets) {
         for (let i = 0; i < target.count; i++) {
           const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
@@ -94,7 +95,69 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
             numbers: selectedNumbers,
             estimatedAccuracy,
             targetMatches: target.matches,
-            matchesWithSelected: 0 // Placeholder for matches with selected numbers
+            matchesWithSelected: 0,
+            isNeuralReduced: false
+          });
+
+          prediction.dispose();
+          inputTensor.dispose();
+        }
+      }
+
+      // Gera os 12 jogos adicionais com 80% do peso neural
+      const additionalTargets = [
+        { matches: 11, count: 3 },
+        { matches: 12, count: 3 },
+        { matches: 13, count: 3 },
+        { matches: 14, count: 2 },
+        { matches: 15, count: 1 }
+      ];
+
+      for (const target of additionalTargets) {
+        for (let i = 0; i < target.count; i++) {
+          const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
+          
+          const normalizedInput = [
+            ...lastConcursoNumbers.slice(0, 15).map(n => {
+              const variation = (Math.random() - 0.5) * variationFactor;
+              return (n / 25) * (1 + variation);
+            }),
+            (champion.generation + i) / 1000,
+            (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365)
+          ];
+          
+          const inputTensor = tf.tensor2d([normalizedInput]);
+          const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
+          const predictionArray = Array.from(await prediction.data());
+          
+          // Aplica 80% do peso neural
+          const neuralWeight = 0.8;
+          const weightAdjustment = (target.matches / 15) * neuralWeight;
+          
+          const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
+            number: idx + 1,
+            weight: (predictionArray[idx % predictionArray.length] * neuralWeight) * 
+                   (champion.weights[idx % champion.weights.length] / 1000) *
+                   weightAdjustment *
+                   (1 + (Math.random() - 0.5) * 0.2)
+          }));
+          
+          const selectedNumbers = weightedNumbers
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 20)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 15)
+            .map(n => n.number)
+            .sort((a, b) => a - b);
+          
+          const estimatedAccuracy = (target.matches / 15) * 100 * neuralWeight;
+          
+          newPredictions.push({
+            numbers: selectedNumbers,
+            estimatedAccuracy,
+            targetMatches: target.matches,
+            matchesWithSelected: 0,
+            isNeuralReduced: true
           });
 
           prediction.dispose();
@@ -112,7 +175,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       
       toast({
         title: "Previsões Geradas",
-        description: `8 jogos foram gerados com diferentes objetivos de acertos! ${isServerProcessing ? '(Processado no servidor)' : '(Processado no navegador)'}`
+        description: `20 jogos foram gerados! (8 originais + 12 com peso neural reduzido) ${isServerProcessing ? '(Processado no servidor)' : '(Processado no navegador)'}`
       });
     } catch (error) {
       console.error("Erro ao gerar previsões:", error);
@@ -133,7 +196,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
           <CardTitle className="flex justify-between items-center">
             <span>Previsões do Campeão {isServerProcessing ? '(Servidor)' : '(Local)'}</span>
             <Button onClick={generatePredictions} className="bg-green-600 hover:bg-green-700">
-              Gerar 8 Jogos
+              Gerar 20 Jogos
             </Button>
           </CardTitle>
         </CardHeader>
@@ -142,8 +205,13 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
             <div className="space-y-4">
               {predictions.map((pred, idx) => (
                 <div key={idx} className="p-4 bg-gray-100 rounded-lg dark:bg-gray-800">
-                  <div className="font-semibold mb-2">
-                    Jogo {idx + 1} (Objetivo: {pred.targetMatches} acertos)
+                  <div className="font-semibold mb-2 flex justify-between items-center">
+                    <span>Jogo {idx + 1} (Objetivo: {pred.targetMatches} acertos)</span>
+                    {pred.isNeuralReduced && (
+                      <span className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Peso Neural: 80%
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {pred.numbers.map((num, numIdx) => (
@@ -172,7 +240,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
             </div>
           ) : (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              Clique no botão para gerar 8 previsões para o próximo concurso
+              Clique no botão para gerar 20 previsões para o próximo concurso
             </div>
           )}
         </CardContent>
