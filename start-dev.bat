@@ -38,9 +38,15 @@ if %ERRORLEVEL% NEQ 0 (
     call npm install -g typescript
 )
 
-:: Compila TypeScript
-echo Compilando TypeScript...
-call tsc --build
+:: Compila TypeScript para o servidor
+echo Compilando TypeScript do servidor...
+call tsc --project tsconfig.server.json
+
+:: Verifica se a pasta dist existe
+if not exist "dist" (
+    echo Criando pasta dist...
+    mkdir dist
+)
 
 :: Verifica se a pasta checkpoints existe
 if not exist "checkpoints" (
