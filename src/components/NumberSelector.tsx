@@ -25,10 +25,26 @@ const NumberSelector: React.FC<NumberSelectorProps> = ({ onNumbersSelected }) =>
     }
   };
 
+  const clearSelection = () => {
+    setSelectedNumbers([]);
+    toast({
+      title: "Seleção Limpa",
+      description: "Todos os números foram desmarcados",
+    });
+  };
+
   return (
     <Card className="w-full mb-4">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Selecione 15 Números para Comparação</CardTitle>
+        <Button 
+          variant="outline" 
+          onClick={clearSelection}
+          className="ml-2"
+          disabled={selectedNumbers.length === 0}
+        >
+          Limpar Seleção
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-5 gap-2">
