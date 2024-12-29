@@ -28,7 +28,7 @@ const SystemEvaluation = () => {
         predictionMetrics
       };
     },
-    refetchInterval: 5000 // Atualiza a cada 5 segundos
+    refetchInterval: 5000
   });
 
   if (!metrics) return null;
@@ -45,8 +45,7 @@ const SystemEvaluation = () => {
               <p className="text-sm font-medium">Status Geral</p>
               <Progress 
                 value={metrics.systemStatus.health} 
-                className="h-2"
-                variant={metrics.systemStatus.health > 90 ? "default" : "destructive"}
+                className={`h-2 ${metrics.systemStatus.health > 90 ? 'bg-green-200' : 'bg-red-200'}`}
               />
               <p className="text-sm text-muted-foreground mt-1">
                 {metrics.systemStatus.health}% operacional
