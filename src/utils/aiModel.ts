@@ -9,7 +9,7 @@ export interface TrainingConfig {
 
 export function createModel(): tf.LayersModel {
   const model = tf.sequential();
-  model.add(tf.layers.lstm({ units: 64, inputShape: [null, 17], returnSequences: true }));
+  model.add(tf.layers.lstm({ units: 64, inputShape: [null, 19], returnSequences: true })); // Aumentado para 19 inputs
   model.add(tf.layers.lstm({ units: 32 }));
   model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
   model.add(tf.layers.dropout({ rate: 0.2 }));
@@ -23,8 +23,8 @@ export async function trainModel(
   data: number[][],
   config: TrainingConfig
 ): Promise<tf.History> {
-  const xs = tf.tensor3d(data.map(row => [row.slice(0, 17)]));
-  const ys = tf.tensor2d(data.map(row => row.slice(17)));
+  const xs = tf.tensor3d(data.map(row => [row.slice(0, 19)]));
+  const ys = tf.tensor2d(data.map(row => row.slice(19)));
 
   const history = await model.fit(xs, ys, {
     epochs: config.epochs,
