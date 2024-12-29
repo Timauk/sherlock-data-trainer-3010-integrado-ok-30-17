@@ -42,22 +42,20 @@ if %ERRORLEVEL% NEQ 0 (
 echo Compilando TypeScript do servidor...
 call tsc --project tsconfig.server.json
 
-:: Verifica se a pasta dist existe
-if not exist "dist" (
-    echo Criando pasta dist...
-    mkdir dist
-)
+:: Verifica e cria todas as pastas necessárias
+echo Verificando e criando pastas necessarias...
 
-:: Verifica se a pasta checkpoints existe
-if not exist "checkpoints" (
-    echo Criando pasta checkpoints...
-    mkdir checkpoints
-)
+:: Array de pastas necessárias
+set "FOLDERS=dist src/utils/logging logs checkpoints public temp data models cache uploads"
 
-:: Verifica se a pasta logs existe
-if not exist "logs" (
-    echo Criando pasta logs...
-    mkdir logs
+:: Loop através das pastas
+for %%F in (%FOLDERS%) do (
+    if not exist "%%F" (
+        echo Criando pasta %%F...
+        mkdir "%%F"
+    ) else (
+        echo Pasta %%F ja existe.
+    )
 )
 
 :: Inicia o servidor em uma nova janela
