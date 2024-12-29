@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
-import SystemEvaluation from '@/components/SystemEvaluation';
 import { Slider } from "@/components/ui/slider";
 
 const PlayPage: React.FC = () => {
@@ -157,12 +156,6 @@ const PlayPage: React.FC = () => {
           Intervalo atual: {gameSpeed}ms
         </p>
       </div>
-      
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Avaliação do Sistema</h2>
-        <SystemEvaluation />
-      </div>
-
       <PlayPageContent
         isPlaying={isPlaying}
         onPlay={playGame}
