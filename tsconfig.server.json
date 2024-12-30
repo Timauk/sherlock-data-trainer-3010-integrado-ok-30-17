@@ -15,7 +15,6 @@
     "isolatedModules": true,
     "noEmit": false,
     "downlevelIteration": true,
-    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
