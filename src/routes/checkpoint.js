@@ -1,5 +1,6 @@
 import express from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
+import { logger } from '../utils/logging/logger.js';
 
 const router = express.Router();
 
@@ -15,12 +16,13 @@ router.post('/', async (req, res) => {
       gameState: req.body
     });
 
+    logger.info({ filename }, 'Checkpoint saved successfully');
     res.json({ 
       message: 'Checkpoint salvo com sucesso', 
       filename 
     });
   } catch (error) {
-    console.error('Erro ao salvar checkpoint:', error);
+    logger.error({ error }, 'Error saving checkpoint');
     res.status(500).json({ 
       message: 'Erro ao salvar checkpoint', 
       error: error.message 
@@ -33,12 +35,14 @@ router.get('/latest', async (req, res) => {
     const checkpoint = await checkpointManager.loadLatestCheckpoint();
     
     if (!checkpoint) {
+      logger.warn('No checkpoint found');
       return res.status(404).json({ message: 'Nenhum checkpoint encontrado' });
     }
     
+    logger.info('Latest checkpoint loaded successfully');
     res.json(checkpoint);
   } catch (error) {
-    console.error('Erro ao carregar checkpoint:', error);
+    logger.error({ error }, 'Error loading checkpoint');
     res.status(500).json({ 
       message: 'Erro ao carregar checkpoint', 
       error: error.message 

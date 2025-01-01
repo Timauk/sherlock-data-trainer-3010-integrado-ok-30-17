@@ -4,12 +4,16 @@ import { StateManager } from './stateManager.js';
 import { logger } from '../logging/logger.js';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class CheckpointManager {
   static instance = null;
   
   constructor() {
-    this.checkpointPath = path.join(process.cwd(), 'checkpoints');
+    this.checkpointPath = path.join(__dirname, '../../../checkpoints');
     this.maxCheckpoints = 50;
     
     this.fileManager = new FileManager(this.checkpointPath);
