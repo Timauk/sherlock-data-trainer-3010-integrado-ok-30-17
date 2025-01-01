@@ -5,10 +5,12 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
-import { logger } from './src/utils/logging/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Importar logger após definir __dirname
+import { logger } from './src/utils/logging/logger.js';
 
 const app = express();
 const PORT = 3001;
@@ -30,9 +32,9 @@ app.use((req, res, next) => {
 });
 
 // Rotas
-import { modelRouter } from './routes/model.js';
-import { checkpointRouter } from './routes/checkpoint.js';
-import { statusRouter } from './routes/status.js';
+import { modelRouter } from './src/routes/model.js';
+import { checkpointRouter } from './src/routes/checkpoint.js';
+import { statusRouter } from './src/routes/status.js';
 
 app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
