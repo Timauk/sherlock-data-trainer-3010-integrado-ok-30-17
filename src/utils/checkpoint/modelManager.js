@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
-import { logger } from '../logging/logger.js';
 import path from 'path';
+import { logger } from '../logging/logger.js';
 
 export class ModelManager {
   constructor(fileManager) {

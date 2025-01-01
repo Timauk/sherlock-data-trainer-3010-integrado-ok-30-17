@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
-import { logger } from './dist/utils/logging/logger.js';
+import { logger } from './src/utils/logging/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

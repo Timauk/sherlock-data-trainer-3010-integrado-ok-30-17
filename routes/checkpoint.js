@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkpointManager } from './utils/checkpointManager.js';
+import { checkpointManager } from '../routes/utils/checkpointManager.js';
 
 const router = express.Router();
 
