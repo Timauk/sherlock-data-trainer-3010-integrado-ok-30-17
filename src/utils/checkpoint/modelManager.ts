@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import path from 'path';
-import { FileManager } from './fileManager';
-import { logger } from '../../utils/logging/logger.js';
+import { logger } from '../logging/logger.js';
 import fs from 'fs';
 
 interface WeightData {
