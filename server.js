@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,7 +81,6 @@ app.use((err, req, res, next) => {
 });
 
 // Cria a pasta checkpoints e logs se não existirem
-import fs from 'fs';
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 const logsDir = path.join(__dirname, 'logs');
 
