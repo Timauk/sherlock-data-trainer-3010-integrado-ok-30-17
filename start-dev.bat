@@ -27,8 +27,14 @@ if exist "package-lock.json" (
     del /f "package-lock.json"
 )
 
-:: Instala dependências
-echo Instalando dependencias...
+:: Instala dependências específicas primeiro
+echo Instalando dependencias especificas...
+call npm install @swc/plugin-transform-typescript@latest
+call npm install @swc/core@latest
+call npm install ts-node@latest
+
+:: Instala todas as outras dependências
+echo Instalando demais dependencias...
 call npm install
 
 :: Verifica se TypeScript está instalado globalmente
