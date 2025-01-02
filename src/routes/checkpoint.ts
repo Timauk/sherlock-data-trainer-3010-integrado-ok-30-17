@@ -1,8 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 interface CheckpointData {
   timestamp: string;
@@ -14,7 +14,7 @@ interface CheckpointData {
   gameState: any; // You can make this more specific based on your game state type
 }
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const checkpointData: CheckpointData = {
       timestamp: new Date().toISOString(),
@@ -42,13 +42,14 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/latest', async (req: Request, res: Response) => {
+router.get('/latest', async (req: Request, res: Response): Promise<void> => {
   try {
     const checkpoint = await checkpointManager.loadLatestCheckpoint();
     
     if (!checkpoint) {
       logger.warn('No checkpoint found');
-      return res.status(404).json({ message: 'Nenhum checkpoint encontrado' });
+      res.status(404).json({ message: 'Nenhum checkpoint encontrado' });
+      return;
     }
     
     logger.info('Latest checkpoint loaded successfully');
