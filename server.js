@@ -10,7 +10,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Importar logger após definir __dirname
+// Import logger after defining __dirname
 import { logger } from './src/utils/logging/logger.js';
 
 const app = express();
@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rotas
+// Routes
 import { modelRouter } from './src/routes/model.js';
 import { checkpointRouter } from './src/routes/checkpoint.js';
 import { statusRouter } from './src/routes/status.js';
@@ -80,7 +80,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Cria a pasta checkpoints e logs se não existirem
+// Create checkpoints and logs directories if they don't exist
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 const logsDir = path.join(__dirname, 'logs');
 
@@ -91,7 +91,7 @@ const logsDir = path.join(__dirname, 'logs');
 });
 
 app.listen(PORT, () => {
-  logger.info(`Servidor rodando em http://localhost:${PORT}`);
-  logger.info(`Diretório de checkpoints: ${checkpointsDir}`);
-  logger.info(`Diretório de logs: ${logsDir}`);
+  logger.info(`Server running at http://localhost:${PORT}`);
+  logger.info(`Checkpoints directory: ${checkpointsDir}`);
+  logger.info(`Logs directory: ${logsDir}`);
 });
