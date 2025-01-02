@@ -9,7 +9,11 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      plugins: [
+        ['@swc/plugin-transform-typescript', {}]
+      ]
+    }),
     mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
