@@ -17,7 +17,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": false,
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "server.ts"],
   "exclude": ["node_modules"]

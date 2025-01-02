@@ -38,56 +38,14 @@ if %ERRORLEVEL% NEQ 0 (
     call npm install -g typescript
 )
 
-:: Limpa a pasta dist antes de compilar
-if exist "dist" (
-    echo Limpando pasta dist...
-    rmdir /s /q "dist"
-)
-
-:: Compila TypeScript para o servidor
-echo Compilando TypeScript do servidor...
-call tsc --project tsconfig.server.json
-
-:: Verifica se a compilação foi bem sucedida
-if %ERRORLEVEL% NEQ 0 (
-    echo Erro na compilacao do TypeScript!
-    pause
-    exit
-)
-
-:: Verifica e cria todas as pastas necessárias
-echo Verificando e criando pastas necessarias...
-
-:: Array de pastas necessárias
-set "FOLDERS=dist src/utils/logging logs checkpoints public temp data models cache uploads"
-
-:: Loop através das pastas
-for %%F in (%FOLDERS%) do (
-    if not exist "%%F" (
-        echo Criando pasta %%F...
-        mkdir "%%F"
-    ) else (
-        echo Pasta %%F ja existe.
-    )
-)
-
-:: Verifica se os arquivos essenciais existem
-echo Verificando arquivos essenciais...
-if not exist "dist/utils/logging/logger.js" (
-    echo ERRO: logger.js nao foi compilado corretamente!
-    echo Verifique se o arquivo src/utils/logging/logger.ts existe e esta correto.
-    pause
-    exit
-)
-
-:: Inicia o servidor em uma nova janela
+:: Inicia o servidor em uma nova janela usando ts-node-dev
 echo Iniciando servidor Node.js...
-start cmd /k "node --watch server.js"
+start cmd /k "npx ts-node-dev --respawn --transpile-only server.ts"
 
 :: Aguarda 2 segundos
 timeout /t 2 /nobreak
 
-:: Inicia a aplicação React
+:: Inicia a aplicação React com Vite
 echo Iniciando aplicacao React...
 start cmd /k "npm run dev"
 
