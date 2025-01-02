@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import path from 'path';
+import fs from 'fs';
 import { logger } from '../logging/logger.js';
 import { FileManager } from './fileManager';
 
