@@ -9,12 +9,10 @@ interface WeightData {
   tensor: tf.Tensor;
 }
 
-type OptimizerDType = "string" | "float32" | "int32" | "bool" | "complex64";
-
 interface OptimizerWeightSpecs {
   name: string;
   shape: number[];
-  dtype: OptimizerDType;
+  dtype: "string" | "float32" | "int32" | "bool" | "complex64";
 }
 
 export class ModelManager {
