@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import path from 'path';
 import { logger } from '../logging/logger.js';
-import fs from 'fs';
 import { FileManager } from './fileManager';
 
 interface WeightData {
@@ -16,13 +15,16 @@ interface OptimizerWeightSpecs {
 }
 
 export class ModelManager {
-  constructor(private fileManager: FileManager) {}
+  private readonly fileManager: FileManager;
 
-  async saveModel(model: tf.LayersModel, checkpointDir: string) {
+  constructor(fileManager: FileManager) {
+    this.fileManager = fileManager;
+  }
+
+  async saveModel(model: tf.LayersModel, checkpointDir: string): Promise<void> {
     const modelPath = path.join(checkpointDir, 'model');
     await model.save(`file://${modelPath}`);
     
-    // Salvar estado do otimizador
     const optimizerState = await model.optimizer?.getWeights();
     if (optimizerState) {
       const optimizerBuffer = await tf.io.encodeWeights(optimizerState);
@@ -33,7 +35,7 @@ export class ModelManager {
       );
     }
     
-    logger.debug('Modelo e otimizador salvos');
+    logger.debug('Model and optimizer saved');
   }
 
   async loadModel(checkpointDir: string): Promise<tf.LayersModel | null> {
@@ -42,7 +44,6 @@ export class ModelManager {
 
     const model = await tf.loadLayersModel(`file://${modelPath}`);
     
-    // Carregar estado do otimizador
     const optimizerBuffer = await this.fileManager.readFile(
       path.join(checkpointDir, 'optimizer_state.bin'),
       true

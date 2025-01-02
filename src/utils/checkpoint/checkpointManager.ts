@@ -1,19 +1,20 @@
-import { FileManager } from './fileManager.js';
-import { ModelManager } from './modelManager.js';
-import { StateManager } from './stateManager.js';
+import { FileManager } from './fileManager';
+import { ModelManager } from './modelManager';
+import { StateManager } from './stateManager';
 import { logger } from '../logging/logger.js';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-class CheckpointManager {
-  static instance = null;
+export class CheckpointManager {
+  private static instance: CheckpointManager | null = null;
+  private readonly checkpointPath: string;
+  private readonly maxCheckpoints: number;
+  private readonly fileManager: FileManager;
+  private readonly modelManager: ModelManager;
+  private readonly stateManager: StateManager;
   
   constructor() {
-    this.checkpointPath = path.join(__dirname, '../../../checkpoints');
+    this.checkpointPath = path.join(process.cwd(), 'checkpoints');
     this.maxCheckpoints = 50;
     
     this.fileManager = new FileManager(this.checkpointPath);
@@ -21,24 +22,23 @@ class CheckpointManager {
     this.stateManager = new StateManager(this.fileManager);
   }
 
-  static getInstance() {
+  static getInstance(): CheckpointManager {
     if (!CheckpointManager.instance) {
       CheckpointManager.instance = new CheckpointManager();
     }
     return CheckpointManager.instance;
   }
 
-  async saveCheckpoint(data) {
+  async saveCheckpoint(data: any): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
     logger.info({
       checkpoint: checkpointDir,
       timestamp
-    }, 'Iniciando salvamento de checkpoint completo');
+    }, 'Starting complete checkpoint save');
 
     try {
-      // 1. Salvar CSV original
       if (data.csvData) {
         await this.fileManager.writeFile(
           path.join(checkpointDir, 'dataset.csv'),
@@ -46,15 +46,12 @@ class CheckpointManager {
         );
       }
 
-      // 2. Salvar estado completo do jogo
       await this.stateManager.saveGameState(checkpointDir, data);
 
-      // 3. Salvar modelo neural e otimizador
       if (data.gameState.model) {
         await this.modelManager.saveModel(data.gameState.model, checkpointDir);
       }
 
-      // 4. Criar manifest
       await this.fileManager.writeFile(
         path.join(checkpointDir, 'manifest.json'),
         {
@@ -75,23 +72,23 @@ class CheckpointManager {
       );
 
       await this.cleanOldCheckpoints();
-      logger.info(`Checkpoint completo salvo: ${path.basename(checkpointDir)}`);
+      logger.info(`Complete checkpoint saved: ${path.basename(checkpointDir)}`);
       return path.basename(checkpointDir);
 
     } catch (error) {
-      logger.error({ error, checkpoint: checkpointDir }, 'Erro ao salvar checkpoint');
+      logger.error({ error, checkpoint: checkpointDir }, 'Error saving checkpoint');
       throw error;
     }
   }
 
-  async loadLatestCheckpoint() {
+  async loadLatestCheckpoint(): Promise<any> {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort()
       .reverse();
 
     if (checkpoints.length === 0) {
-      logger.warn('Nenhum checkpoint encontrado');
+      logger.warn('No checkpoints found');
       return null;
     }
 
@@ -99,25 +96,21 @@ class CheckpointManager {
     const checkpointDir = path.join(this.checkpointPath, latestCheckpoint);
 
     try {
-      // 1. Verificar manifest
       const manifest = await this.fileManager.readFile(
         path.join(checkpointDir, 'manifest.json')
       );
 
-      // 2. Carregar CSV
       const csvData = await this.fileManager.readFile(
         path.join(checkpointDir, 'dataset.csv')
       );
 
-      // 3. Carregar estado do jogo completo
       const gameState = await this.stateManager.loadGameState(checkpointDir);
 
-      // 4. Carregar modelo neural e otimizador
       if (gameState) {
         gameState.model = await this.modelManager.loadModel(checkpointDir);
       }
 
-      logger.info('Checkpoint carregado com sucesso');
+      logger.info('Checkpoint loaded successfully');
       return {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
         gameState,
@@ -125,12 +118,12 @@ class CheckpointManager {
       };
 
     } catch (error) {
-      logger.error({ error, checkpoint: checkpointDir }, 'Erro ao carregar checkpoint');
+      logger.error({ error, checkpoint: checkpointDir }, 'Error loading checkpoint');
       throw error;
     }
   }
 
-  async cleanOldCheckpoints() {
+  private async cleanOldCheckpoints(): Promise<void> {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort();
@@ -140,7 +133,7 @@ class CheckpointManager {
       for (const checkpoint of checkpointsToDelete) {
         const checkpointPath = path.join(this.checkpointPath, checkpoint);
         await fs.promises.rm(checkpointPath, { recursive: true });
-        logger.info(`Checkpoint antigo removido: ${checkpoint}`);
+        logger.info(`Old checkpoint removed: ${checkpoint}`);
       }
     }
   }

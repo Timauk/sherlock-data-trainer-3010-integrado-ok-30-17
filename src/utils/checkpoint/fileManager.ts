@@ -3,18 +3,20 @@ import path from 'path';
 import { logger } from '../logging/logger.js';
 
 export class FileManager {
-  constructor(basePath) {
+  private basePath: string;
+
+  constructor(basePath: string) {
     this.basePath = basePath;
     this.ensureDirectory(basePath);
   }
 
-  ensureDirectory(dir) {
+  ensureDirectory(dir: string): void {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   }
 
-  async writeFile(relativePath, data, isBinary = false) {
+  async writeFile(relativePath: string, data: any, isBinary = false): Promise<void> {
     const fullPath = path.join(this.basePath, relativePath);
     this.ensureDirectory(path.dirname(fullPath));
     
@@ -31,7 +33,7 @@ export class FileManager {
     }
   }
 
-  async readFile(relativePath, isBinary = false) {
+  async readFile(relativePath: string, isBinary = false): Promise<any> {
     const fullPath = path.join(this.basePath, relativePath);
     
     try {

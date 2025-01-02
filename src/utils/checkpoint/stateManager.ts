@@ -1,12 +1,15 @@
 import path from 'path';
+import { FileManager } from './fileManager';
 import { logger } from '../logging/logger.js';
 
 export class StateManager {
-  constructor(fileManager) {
+  private readonly fileManager: FileManager;
+
+  constructor(fileManager: FileManager) {
     this.fileManager = fileManager;
   }
 
-  async saveGameState(checkpointDir, data) {
+  async saveGameState(checkpointDir: string, data: any): Promise<void> {
     try {
       await this.fileManager.writeFile(
         path.join(checkpointDir, 'gameState.json'),
@@ -19,7 +22,7 @@ export class StateManager {
     }
   }
 
-  async loadGameState(checkpointDir) {
+  async loadGameState(checkpointDir: string): Promise<any> {
     try {
       return await this.fileManager.readFile(
         path.join(checkpointDir, 'gameState.json')
