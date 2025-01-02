@@ -13,29 +13,20 @@ if %ERRORLEVEL% NEQ 0 (
 node -v
 echo.
 
-:: Limpa cache do npm
-echo Limpando cache do npm...
-call npm cache clean --force
+:: Verifica e instala dependências específicas se necessário
+echo Verificando dependencias especificas...
 
-:: Remove node_modules e package-lock se existirem
-if exist "node_modules" (
-    echo Removendo node_modules antigo...
-    rmdir /s /q "node_modules"
-)
-if exist "package-lock.json" (
-    echo Removendo package-lock.json antigo...
-    del /f "package-lock.json"
-)
+:: Verifica @swc/core
+call npm list @swc/core || npm install @swc/core@latest
 
-:: Instala dependências específicas primeiro
-echo Instalando dependencias especificas...
-call npm install @swc/plugin-transform-typescript@latest
-call npm install @swc/core@latest
-call npm install ts-node@latest
-call npm install typescript@latest
+:: Verifica ts-node
+call npm list ts-node || npm install ts-node@latest
 
-:: Instala todas as outras dependências
-echo Instalando demais dependencias...
+:: Verifica typescript
+call npm list typescript || npm install typescript@latest
+
+:: Verifica demais dependências sem remover as existentes
+echo Verificando demais dependencias...
 call npm install
 
 :: Verifica se TypeScript está instalado globalmente
