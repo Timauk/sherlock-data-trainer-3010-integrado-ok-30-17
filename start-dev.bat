@@ -38,9 +38,9 @@ if %ERRORLEVEL% NEQ 0 (
     call npm install -g typescript
 )
 
-:: Inicia o servidor em uma nova janela usando ts-node-dev
+:: Inicia o servidor em uma nova janela usando ts-node-esm
 echo Iniciando servidor Node.js...
-start cmd /k "npx ts-node-dev --respawn --transpile-only server.ts"
+start cmd /k "npx ts-node-esm --experimental-specifier-resolution=node server.ts"
 
 :: Aguarda 2 segundos
 timeout /t 2 /nobreak
