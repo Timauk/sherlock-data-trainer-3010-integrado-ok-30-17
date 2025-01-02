@@ -1,6 +1,6 @@
-import { FileManager } from './fileManager';
-import { ModelManager } from './modelManager';
-import { StateManager } from './stateManager';
+import { FileManager } from './fileManager.js';
+import { ModelManager } from './modelManager.js';
+import { StateManager } from './stateManager.js';
 import { logger } from '../logging/logger.js';
 import path from 'path';
 import fs from 'fs';
@@ -10,12 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class CheckpointManager {
-  private static instance: CheckpointManager | null = null;
-  private checkpointPath: string;
-  private maxCheckpoints: number;
-  private fileManager: FileManager;
-  private modelManager: ModelManager;
-  private stateManager: StateManager;
+  static instance = null;
   
   constructor() {
     this.checkpointPath = path.join(__dirname, '../../../checkpoints');
@@ -26,14 +21,14 @@ class CheckpointManager {
     this.stateManager = new StateManager(this.fileManager);
   }
 
-  static getInstance(): CheckpointManager {
+  static getInstance() {
     if (!CheckpointManager.instance) {
       CheckpointManager.instance = new CheckpointManager();
     }
     return CheckpointManager.instance;
   }
 
-  async saveCheckpoint(data: any) {
+  async saveCheckpoint(data) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
