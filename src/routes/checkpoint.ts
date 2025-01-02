@@ -1,12 +1,22 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+interface CheckpointData {
+  timestamp: string;
+  systemInfo: {
+    totalMemory: number;
+    freeMemory: number;
+    uptime: number;
+  };
+  gameState: any; // You can make this more specific based on your game state type
+}
+
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const filename = await checkpointManager.saveCheckpoint({
+    const checkpointData: CheckpointData = {
       timestamp: new Date().toISOString(),
       systemInfo: {
         totalMemory: process.memoryUsage().heapTotal,
@@ -14,7 +24,9 @@ router.post('/', async (req, res) => {
         uptime: process.uptime()
       },
       gameState: req.body
-    });
+    };
+
+    const filename = await checkpointManager.saveCheckpoint(checkpointData);
 
     logger.info({ filename }, 'Checkpoint saved successfully');
     res.json({ 
@@ -25,12 +37,12 @@ router.post('/', async (req, res) => {
     logger.error({ error }, 'Error saving checkpoint');
     res.status(500).json({ 
       message: 'Erro ao salvar checkpoint', 
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 });
 
-router.get('/latest', async (req, res) => {
+router.get('/latest', async (req: Request, res: Response) => {
   try {
     const checkpoint = await checkpointManager.loadLatestCheckpoint();
     
@@ -45,7 +57,7 @@ router.get('/latest', async (req, res) => {
     logger.error({ error }, 'Error loading checkpoint');
     res.status(500).json({ 
       message: 'Erro ao carregar checkpoint', 
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
