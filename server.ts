@@ -41,19 +41,19 @@ app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);
 
-// Rota principal
+// Main route
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     endpoints: {
-      '/api/model': 'Gerenciamento do modelo de IA',
-      '/api/checkpoint': 'Gerenciamento de checkpoints',
-      '/api/status': 'Status do servidor'
+      '/api/model': 'AI Model Management',
+      '/api/checkpoint': 'Checkpoint Management',
+      '/api/status': 'Server Status'
     }
   });
 });
 
-// Rota para verificar se o servidor está online
+// Health check route
 app.get('/health', (req, res) => {
   const healthInfo = {
     status: 'ok',
@@ -65,7 +65,7 @@ app.get('/health', (req, res) => {
   res.json(healthInfo);
 });
 
-// Middleware de erro
+// Error middleware
 app.use((err, req, res, next) => {
   logger.error({
     err,
@@ -75,7 +75,7 @@ app.use((err, req, res, next) => {
   }, 'Error occurred');
   
   res.status(500).json({
-    error: 'Erro interno do servidor',
+    error: 'Internal server error',
     message: err.message
   });
 });

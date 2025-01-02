@@ -1,62 +1,62 @@
 @echo off
-echo Iniciando ambiente de desenvolvimento...
+echo Starting development environment...
 
-:: Verifica se o Node.js está instalado
+:: Check if Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo Node.js nao encontrado! Por favor, instale o Node.js primeiro.
+    echo Node.js not found! Please install Node.js first.
     pause
     exit
 )
 
-:: Verifica versão do Node e exibe
-echo Versao do Node.js:
+:: Display Node version
+echo Node.js version:
 node -v
 echo.
 
-:: Verifica e instala dependências específicas sem remover existentes
-echo Verificando dependencias especificas...
+:: Check and install specific dependencies without removing existing ones
+echo Checking specific dependencies...
 
-:: Verifica @swc/core
+:: Check @swc/core
 call npm list @swc/core || npm install @swc/core@latest
 
-:: Verifica ts-node
+:: Check ts-node
 call npm list ts-node || npm install ts-node@latest
 
-:: Verifica typescript
+:: Check typescript
 call npm list typescript || npm install typescript@latest
 
-:: Verifica @types/node
+:: Check @types/node
 call npm list @types/node || npm install @types/node@latest
 
-:: Verifica demais dependências sem remover as existentes
-echo Verificando demais dependencias...
+:: Check remaining dependencies without removing existing ones
+echo Checking remaining dependencies...
 call npm install
 
-:: Verifica se TypeScript está instalado globalmente
+:: Check if TypeScript is installed globally
 call npm list -g typescript >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo Instalando TypeScript globalmente...
+    echo Installing TypeScript globally...
     call npm install -g typescript
 )
 
-:: Compila TypeScript para JavaScript
-echo Compilando TypeScript para JavaScript...
+:: Compile TypeScript to JavaScript
+echo Compiling TypeScript to JavaScript...
 call npx tsc
 
-:: Inicia o servidor em uma nova janela usando ts-node-esm
-echo Iniciando servidor Node.js...
+:: Start Node.js server in a new window using ts-node-esm
+echo Starting Node.js server...
 start cmd /k "npx ts-node-esm --experimental-specifier-resolution=node server.ts"
 
-:: Aguarda 2 segundos para garantir que o servidor iniciou
+:: Wait 2 seconds to ensure server has started
 timeout /t 2 /nobreak
 
-:: Inicia a aplicação React com Vite
-echo Iniciando aplicacao React...
+:: Start React application with Vite
+echo Starting React application...
 start cmd /k "npm run dev"
 
-echo Ambiente de desenvolvimento iniciado com sucesso!
-echo Servidor rodando em http://localhost:3001
-echo Aplicacao React rodando em http://localhost:5173
+echo Development environment started successfully!
+echo Server running at http://localhost:3001
+echo React application running at http://localhost:5173
 
 pause
