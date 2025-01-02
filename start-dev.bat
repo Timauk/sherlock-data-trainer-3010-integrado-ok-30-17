@@ -32,6 +32,7 @@ echo Instalando dependencias especificas...
 call npm install @swc/plugin-transform-typescript@latest
 call npm install @swc/core@latest
 call npm install ts-node@latest
+call npm install typescript@latest
 
 :: Instala todas as outras dependências
 echo Instalando demais dependencias...
