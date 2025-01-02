@@ -10,9 +10,19 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      plugins: [
-        ['@swc/plugin-transform-typescript', {}]
-      ]
+      swcOptions: {
+        jsc: {
+          parser: {
+            syntax: "typescript",
+            tsx: true
+          },
+          transform: {
+            react: {
+              runtime: 'automatic'
+            }
+          }
+        }
+      }
     }),
     mode === 'development' && componentTagger(),
   ].filter(Boolean),

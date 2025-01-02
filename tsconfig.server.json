@@ -21,6 +21,10 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifier": true
+  },
   "include": ["src/**/*.ts", "src/**/*.tsx", "server.ts"],
   "exclude": ["node_modules"]
 }
