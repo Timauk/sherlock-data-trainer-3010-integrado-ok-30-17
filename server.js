@@ -21,6 +21,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'dist'))); // Add dist folder for frontend files
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -41,8 +42,8 @@ app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);
 
-// Rota principal
-app.get('/', (req, res) => {
+// API root route
+app.get('/api', (req, res) => {
   res.json({
     status: 'online',
     endpoints: {
@@ -53,7 +54,12 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rota para verificar se o servidor está online
+// Serve index.html for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Health check route
 app.get('/health', (req, res) => {
   const healthInfo = {
     status: 'ok',
@@ -65,7 +71,7 @@ app.get('/health', (req, res) => {
   res.json(healthInfo);
 });
 
-// Middleware de erro
+// Error middleware
 app.use((err, req, res, next) => {
   logger.error({
     err,
