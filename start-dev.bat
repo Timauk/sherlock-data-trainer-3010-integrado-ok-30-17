@@ -96,9 +96,9 @@ if %ERRORLEVEL% NEQ 0 (
     exit
 )
 
-:: Start Node.js server in a new window using node --loader
+:: Start Node.js server in a new window using the compiled JS file
 echo Starting Node.js server...
-start cmd /k "node --loader ts-node/esm --experimental-specifier-resolution=node server.ts || (echo Error: Failed to start server && pause && exit)"
+start cmd /k "node server.js || (echo Error: Failed to start server && pause && exit)"
 
 :: Wait 2 seconds to ensure server has started
 timeout /t 2 /nobreak
