@@ -1,12 +1,24 @@
-export function processarCSV(text: string) {
-  const linhas = text.trim().split("\n").slice(1); // Ignorar cabeçalho
-  const dados = [];
+interface GameData {
+  numeroConcurso: number;
+  dataSorteio: number;
+  bolas: number[];
+}
+
+interface NormalizedData {
+  bolas: number[];
+  numeroConcurso: number;
+  dataSorteio: number;
+}
+
+export function processarCSV(text: string): NormalizedData[] {
+  const linhas = text.trim().split("\n").slice(1);
+  const dados: GameData[] = [];
 
   for (const linha of linhas) {
     const valores = linha.split(",");
-    const numeroConcurso = Number(valores[0]);  
-    const dataSorteio = new Date(valores[1].split("/").reverse().join("-")).getTime();  
-    const bolas = valores.slice(2, 17).map(Number);  
+    const numeroConcurso = Number(valores[0]);
+    const dataSorteio = new Date(valores[1].split("/").reverse().join("-")).getTime();
+    const bolas = valores.slice(2, 17).map(Number);
 
     if (bolas.length === 15 && bolas.every(num => !isNaN(num))) {
       dados.push({ numeroConcurso, dataSorteio, bolas });
@@ -20,14 +32,14 @@ export function processarCSV(text: string) {
   return normalizarDados(dados);
 }
 
-export function normalizarDados(dados: any[]) {
+export function normalizarDados(dados: GameData[]): NormalizedData[] {
   const maxConcurso = Math.max(...dados.map(d => d.numeroConcurso));
   const minData = Math.min(...dados.map(d => d.dataSorteio));
   const maxData = Math.max(...dados.map(d => d.dataSorteio));
 
   return dados.map(d => ({
-    bolas: d.bolas.map(bola => bola / 25), // Normaliza as bolas
-    numeroConcurso: d.numeroConcurso / maxConcurso, // Normaliza o número do concurso
-    dataSorteio: (d.dataSorteio - minData) / (maxData - minData) // Normaliza a data
+    bolas: d.bolas.map((bola: number) => bola / 25),
+    numeroConcurso: d.numeroConcurso / maxConcurso,
+    dataSorteio: (d.dataSorteio - minData) / (maxData - minData)
   }));
 }

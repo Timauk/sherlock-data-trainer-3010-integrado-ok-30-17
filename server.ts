@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import { fileURLToPath } from 'url';
@@ -7,11 +7,11 @@ import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Import logger after defining __dirname
 import { logger } from './src/utils/logging/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
@@ -71,8 +71,8 @@ app.get('/health', (req, res) => {
   res.json(healthInfo);
 });
 
-// Error middleware
-app.use((err, req, res, next) => {
+// Error middleware com tipos corretos
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   logger.error({
     err,
     method: req.method,
@@ -82,9 +82,11 @@ app.use((err, req, res, next) => {
   
   res.status(500).json({
     error: 'Internal server error',
-    message: err.message
+    message: err instanceof Error ? err.message : 'Unknown error'
   });
-});
+};
+
+app.use(errorHandler);
 
 // Create checkpoints and logs directories if they don't exist
 const checkpointsDir = path.join(__dirname, 'checkpoints');

@@ -42,7 +42,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
     ? gameLogic.players.reduce((prev, current) => 
         (current.fitness > (prev?.fitness || 0)) ? current : prev, 
         gameLogic.players[0])
-    : null;
+    : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,7 +89,6 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
           isServerProcessing={isServerProcessing}
         />
       </div>
-
       <AnalysisTabs
         boardNumbers={gameLogic.boardNumbers}
         concursoNumber={gameLogic.concursoNumber}
@@ -99,7 +98,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         numbers={gameLogic.numbers}
         updateFrequencyData={gameLogic.updateFrequencyData}
         modelMetrics={gameLogic.modelMetrics}
-        neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
+        neuralNetworkVisualization={gameLogic.neuralNetworkVisualization || undefined}
       />
     </div>
   );

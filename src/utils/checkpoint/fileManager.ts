@@ -33,14 +33,14 @@ export class FileManager {
     }
   }
 
-  async readFile(relativePath: string, isBinary = false): Promise<any> {
+  async readFile<T>(relativePath: string, isBinary = false): Promise<T | null> {
     const fullPath = path.join(this.basePath, relativePath);
     
     try {
       if (!fs.existsSync(fullPath)) return null;
       
-      const data = await fs.promises.readFile(fullPath, isBinary ? null : 'utf8');
-      return isBinary ? data : JSON.parse(data);
+      const data = await fs.promises.readFile(fullPath, isBinary ? undefined : 'utf8');
+      return isBinary ? (data as unknown as T) : JSON.parse(data as string) as T;
     } catch (error) {
       logger.error({ error, path: relativePath }, 'Error reading file');
       throw error;

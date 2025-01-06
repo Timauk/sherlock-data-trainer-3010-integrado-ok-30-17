@@ -2,9 +2,9 @@ import express from 'express';
 import * as tf from '@tensorflow/tfjs';
 
 const router = express.Router();
-let globalModel = null;
+let globalModel: tf.LayersModel | null = null;
 
-async function getOrCreateModel() {
+async function getOrCreateModel(): Promise<tf.LayersModel> {
   if (!globalModel) {
     globalModel = tf.sequential();
     globalModel.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }));
@@ -19,8 +19,8 @@ async function getOrCreateModel() {
   return globalModel;
 }
 
-function calculateConfidence(predictions) {
-  const certainty = predictions.reduce((acc, pred) => {
+function calculateConfidence(predictions: number[]): number {
+  const certainty = predictions.reduce((acc: number, pred: number) => {
     const distance = Math.abs(pred - 0.5);
     return acc + (distance / 0.5);
   }, 0);
@@ -30,7 +30,7 @@ function calculateConfidence(predictions) {
 
 router.post('/train', async (req, res) => {
   try {
-    const { trainingData } = req.body;
+    const { trainingData } = req.body as { trainingData: number[][] };
     const model = await getOrCreateModel();
     
     const xs = tf.tensor2d(trainingData.map(d => d.slice(0, -15)));
@@ -50,7 +50,7 @@ router.post('/train', async (req, res) => {
     xs.dispose();
     ys.dispose();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -70,7 +70,7 @@ router.post('/predict', async (req, res) => {
     
     res.json({ prediction: result, confidence });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
