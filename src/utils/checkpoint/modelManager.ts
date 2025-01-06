@@ -46,12 +46,24 @@ export class ModelManager {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
       const weightSpecs = weights.map(weight => ({
         name: weight.name || 'unnamed',
-        shape: weight.shape,
-        dtype: weight.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
+        shape: (weight as tf.Tensor).shape,
+        dtype: (weight as tf.Tensor).dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
       }));
 
-      const weightData = tf.io.encodeWeights(weights);
-      await tf.io.saveWeights(weightSpecs, weightData, path);
+      const weightData = await tf.io.encodeWeights(weights);
+      await tf.io.withSaveHandler(async (tensors) => {
+        return {
+          modelTopology: null,
+          weightSpecs: weightSpecs,
+          weightData: weightData.data,
+          format: 'weights',
+          generatedBy: 'TensorFlow.js',
+          convertedBy: null,
+          modelInitializer: null,
+          trainingConfig: null
+        };
+      })(path);
+      
       logger.info(`Optimizer weights saved to ${path}`);
     } catch (error) {
       logger.error('Error saving optimizer weights:', error);

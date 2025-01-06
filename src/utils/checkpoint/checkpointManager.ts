@@ -13,12 +13,12 @@ export class CheckpointManager {
   private readonly modelManager: ModelManager;
   private readonly stateManager: StateManager;
   
-  constructor() {
+  private constructor() {
     this.checkpointPath = path.join(process.cwd(), 'checkpoints');
     this.maxCheckpoints = 50;
     
     this.fileManager = new FileManager(this.checkpointPath);
-    this.modelManager = new ModelManager(this.fileManager);
+    this.modelManager = new ModelManager();
     this.stateManager = new StateManager(this.fileManager);
   }
 
