@@ -26,14 +26,16 @@ export class ModelManager {
     const modelPath = path.join(checkpointDir, 'model');
     await model.save(`file://${modelPath}`);
     
-    const optimizerState = await model.optimizer?.getWeights();
-    if (optimizerState) {
-      const optimizerBuffer = await tf.io.encodeWeights(optimizerState);
-      await this.fileManager.writeFile(
-        path.join(checkpointDir, 'optimizer_state.bin'),
-        optimizerBuffer.data,
-        true
-      );
+    if (model.optimizer) {
+      const optimizerState = await (model.optimizer as tf.Optimizer).getWeights();
+      if (optimizerState) {
+        const optimizerBuffer = await tf.io.encodeWeights(optimizerState);
+        await this.fileManager.writeFile(
+          path.join(checkpointDir, 'optimizer_state.bin'),
+          optimizerBuffer.data,
+          true
+        );
+      }
     }
     
     logger.debug('Model and optimizer saved');
@@ -45,22 +47,22 @@ export class ModelManager {
 
     const model = await tf.loadLayersModel(`file://${modelPath}`);
     
-    const optimizerBuffer = await this.fileManager.readFile(
+    const optimizerBuffer = await this.fileManager.readFile<Buffer>(
       path.join(checkpointDir, 'optimizer_state.bin'),
       true
     );
     
     if (optimizerBuffer && model.optimizer) {
-      const config = model.optimizer.getConfig();
-      const weightSpecs = config?.weightSpecs as unknown as OptimizerWeightSpecs[];
+      const config = (model.optimizer as tf.Optimizer).getConfig();
+      const weightSpecs = config?.weightSpecs as OptimizerWeightSpecs[];
       
       if (weightSpecs && weightSpecs.length > 0) {
-        const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs as tf.io.WeightsManifestEntry[]);
+        const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
         const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
           name,
           tensor: tensor as tf.Tensor
         }));
-        await model.optimizer.setWeights(weightList);
+        await (model.optimizer as tf.Optimizer).setWeights(weightList);
       }
     }
     

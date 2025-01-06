@@ -2,9 +2,9 @@ import express from 'express';
 import * as tf from '@tensorflow/tfjs';
 
 const router = express.Router();
-let globalModel: tf.LayersModel | null = null;
+let globalModel: tf.Sequential | null = null;
 
-async function getOrCreateModel(): Promise<tf.LayersModel> {
+async function getOrCreateModel(): Promise<tf.Sequential> {
   if (!globalModel) {
     globalModel = tf.sequential();
     globalModel.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [17] }));
@@ -56,12 +56,12 @@ router.post('/train', async (req, res) => {
 
 router.post('/predict', async (req, res) => {
   try {
-    const { inputData } = req.body;
+    const { inputData } = req.body as { inputData: number[] };
     const model = await getOrCreateModel();
     
     const inputTensor = tf.tensor2d([inputData]);
-    const prediction = model.predict(inputTensor);
-    const result = Array.from(await prediction.data());
+    const prediction = model.predict(inputTensor) as tf.Tensor;
+    const result = Array.from(await prediction.data()) as number[];
     
     const confidence = calculateConfidence(result);
     
