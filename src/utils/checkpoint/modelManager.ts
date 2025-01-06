@@ -1,8 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import path from 'path';
-import fs from 'fs';
-import { logger } from '../logging/logger.js';
-import { FileManager } from './fileManager';
+import { logger } from '../logging/logger';
 
 interface WeightData {
   name: string;
@@ -16,49 +13,63 @@ interface OptimizerWeightSpecs {
 }
 
 export class ModelManager {
-  private readonly fileManager: FileManager;
+  private model: tf.LayersModel | null = null;
 
-  constructor(fileManager: FileManager) {
-    this.fileManager = fileManager;
-  }
-
-  async saveModel(model: tf.LayersModel, checkpointDir: string): Promise<void> {
-    const modelPath = path.join(checkpointDir, 'model');
-    await model.save(`file://${modelPath}`);
-    
-    if (model.optimizer) {
-      const optimizerState = await (model.optimizer as tf.Optimizer).getWeights();
-      if (optimizerState) {
-        const optimizerBuffer = await tf.io.encodeWeights(optimizerState);
-        await this.fileManager.writeFile(
-          path.join(checkpointDir, 'optimizer_state.bin'),
-          optimizerBuffer.data,
-          true
-        );
-      }
+  async saveModel(model: tf.LayersModel, path: string): Promise<void> {
+    try {
+      await model.save(`file://${path}`);
+      logger.info(`Model saved to ${path}`);
+    } catch (error) {
+      logger.error('Error saving model:', error);
+      throw error;
     }
-    
-    logger.debug('Model and optimizer saved');
   }
 
-  async loadModel(checkpointDir: string): Promise<tf.LayersModel | null> {
-    const modelPath = path.join(checkpointDir, 'model');
-    if (!fs.existsSync(`${modelPath}.json`)) return null;
+  async loadModel(path: string): Promise<tf.LayersModel> {
+    try {
+      this.model = await tf.loadLayersModel(`file://${path}`);
+      logger.info(`Model loaded from ${path}`);
+      return this.model;
+    } catch (error) {
+      logger.error('Error loading model:', error);
+      throw error;
+    }
+  }
 
-    const model = await tf.loadLayersModel(`file://${modelPath}`);
-    
-    const optimizerBuffer = await this.fileManager.readFile<Buffer>(
-      path.join(checkpointDir, 'optimizer_state.bin'),
-      true
-    );
-    
-    if (optimizerBuffer && model.optimizer) {
+  async saveOptimizer(model: tf.LayersModel, path: string): Promise<void> {
+    if (!model.optimizer) {
+      logger.warn('No optimizer found in model');
+      return;
+    }
+
+    try {
+      const weights = await (model.optimizer as tf.Optimizer).getWeights();
+      const weightSpecs = weights.map(weight => ({
+        name: weight.name || 'unnamed',
+        shape: weight.shape,
+        dtype: weight.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
+      }));
+
+      const weightData = tf.io.encodeWeights(weights);
+      await tf.io.saveWeights(weightSpecs, weightData, path);
+      logger.info(`Optimizer weights saved to ${path}`);
+    } catch (error) {
+      logger.error('Error saving optimizer weights:', error);
+      throw error;
+    }
+  }
+
+  async loadOptimizer(model: tf.LayersModel, path: string, optimizerBuffer: ArrayBuffer): Promise<void> {
+    if (!model.optimizer) {
+      logger.warn('No optimizer found in model');
+      return;
+    }
+
+    try {
       const config = (model.optimizer as tf.Optimizer).getConfig();
-      // Safely cast the config weightSpecs to our expected type
       const weightSpecs = (config?.weightSpecs as unknown as OptimizerWeightSpecs[]) || [];
       
       if (weightSpecs.length > 0) {
-        // Ensure the weightSpecs match our expected format
         const validWeightSpecs = weightSpecs.every(spec => 
           spec.name && Array.isArray(spec.shape) && spec.dtype
         );
@@ -70,12 +81,22 @@ export class ModelManager {
             tensor: tensor as tf.Tensor
           }));
           await (model.optimizer as tf.Optimizer).setWeights(weightList);
+          logger.info('Optimizer weights loaded successfully');
         } else {
           logger.warn('Invalid weight specifications found in optimizer config');
         }
       }
+    } catch (error) {
+      logger.error('Error loading optimizer weights:', error);
+      throw error;
     }
-    
-    return model;
+  }
+
+  disposeModel(): void {
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+      logger.info('Model disposed');
+    }
   }
 }
