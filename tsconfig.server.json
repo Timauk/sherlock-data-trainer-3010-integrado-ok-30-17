@@ -25,6 +25,14 @@
     "esm": true,
     "experimentalSpecifier": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "server.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "server.ts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
