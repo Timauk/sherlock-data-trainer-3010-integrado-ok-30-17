@@ -12,7 +12,7 @@ interface WeightData {
 interface OptimizerWeightSpecs {
   name: string;
   shape: number[];
-  dtype: "string" | "float32" | "int32" | "bool" | "complex64";
+  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
 }
 
 export class ModelManager {
@@ -54,15 +54,25 @@ export class ModelManager {
     
     if (optimizerBuffer && model.optimizer) {
       const config = (model.optimizer as tf.Optimizer).getConfig();
-      const weightSpecs = config?.weightSpecs as OptimizerWeightSpecs[];
+      // Safely cast the config weightSpecs to our expected type
+      const weightSpecs = (config?.weightSpecs as unknown as OptimizerWeightSpecs[]) || [];
       
-      if (weightSpecs && weightSpecs.length > 0) {
-        const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
-        const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
-          name,
-          tensor: tensor as tf.Tensor
-        }));
-        await (model.optimizer as tf.Optimizer).setWeights(weightList);
+      if (weightSpecs.length > 0) {
+        // Ensure the weightSpecs match our expected format
+        const validWeightSpecs = weightSpecs.every(spec => 
+          spec.name && Array.isArray(spec.shape) && spec.dtype
+        );
+
+        if (validWeightSpecs) {
+          const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
+          const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
+            name,
+            tensor: tensor as tf.Tensor
+          }));
+          await (model.optimizer as tf.Optimizer).setWeights(weightList);
+        } else {
+          logger.warn('Invalid weight specifications found in optimizer config');
+        }
       }
     }
     
