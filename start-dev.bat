@@ -86,9 +86,18 @@ if %ERRORLEVEL% NEQ 0 (
     )
 )
 
+:: Remove old dist directory if it exists
+if exist dist (
+    echo Removing old dist directory...
+    rmdir /s /q dist
+)
+
+:: Create dist directory
+mkdir dist
+
 :: Compile TypeScript to JavaScript
 echo Compiling TypeScript to JavaScript...
-call npx tsc
+call npx tsc -p tsconfig.server.json
 if %ERRORLEVEL% NEQ 0 (
     echo Error: TypeScript compilation failed. Please check your TypeScript files for errors.
     echo Try running 'npx tsc --listFiles' to see which files are being compiled.
@@ -96,9 +105,14 @@ if %ERRORLEVEL% NEQ 0 (
     exit
 )
 
+:: Copy non-TypeScript files to dist
+echo Copying non-TypeScript files to dist...
+xcopy /s /y src\*.js dist\src\ >nul 2>nul
+xcopy /s /y routes\*.js dist\routes\ >nul 2>nul
+
 :: Start Node.js server in a new window using the compiled JS file
 echo Starting Node.js server...
-start cmd /k "node server.js || (echo Error: Failed to start server && pause && exit)"
+start cmd /k "cd dist && node server.js || (echo Error: Failed to start server && pause && exit)"
 
 :: Wait 2 seconds to ensure server has started
 timeout /t 2 /nobreak

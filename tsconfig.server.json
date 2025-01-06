@@ -29,7 +29,9 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "server.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "routes/**/*.ts",
+    "routes/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
