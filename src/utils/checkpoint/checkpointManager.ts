@@ -2,12 +2,17 @@ import { FileManager } from './fileManager.js';
 import { ModelManager } from './modelManager.js';
 import { StateManager } from './stateManager.js';
 import { logger } from '../logging/logger.js';
-import { ModelArtifactsInfo, GameState } from '../../types/gameTypes';
-import { CheckpointData, CheckpointManifest } from '../../types/checkpointTypes';
+import { ModelArtifactsInfo, GameState, CheckpointData } from '../../types/gameTypes';
 import path from 'path';
 import fs from 'fs';
 
-class CheckpointManager {
+interface CheckpointManifest {
+  version: string;
+  timestamp: string;
+  files: string[];
+}
+
+export class CheckpointManager {
   private static instance: CheckpointManager | null = null;
   private readonly checkpointPath: string;
   private readonly maxCheckpoints: number;
@@ -32,6 +37,10 @@ class CheckpointManager {
   }
 
   async saveCheckpoint(data: CheckpointData): Promise<string> {
+    if (!data || !data.gameState) {
+      throw new Error('Dados inválidos para checkpoint');
+    }
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
@@ -111,6 +120,10 @@ class CheckpointManager {
         path.join(checkpointDir, 'manifest.json')
       );
 
+      if (!manifest) {
+        throw new Error('Manifesto do checkpoint não encontrado');
+      }
+
       const csvData = await this.fileManager.readFile<string>(
         path.join(checkpointDir, 'dataset.csv')
       );
@@ -128,12 +141,7 @@ class CheckpointManager {
       return {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
         gameState: gameState as GameState,
-        csvData,
-        systemInfo: {
-          totalMemory: process.memoryUsage().heapTotal,
-          freeMemory: process.memoryUsage().heapUsed,
-          uptime: process.uptime()
-        }
+        csvData
       };
 
     } catch (error) {

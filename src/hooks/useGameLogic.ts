@@ -6,20 +6,8 @@ import { useGameLoop } from './useGameLoop';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
-import { ModelVisualization, Player } from '@/types/gameTypes';
+import { ModelVisualization, Player, ChampionData, EvolutionDataEntry } from '@/types/gameTypes';
 import { systemLogger } from '@/utils/logging/systemLogger';
-
-interface ChampionData {
-  player: Player;
-  trainingData: number[][];
-}
-
-interface EvolutionDataEntry {
-  generation: number;
-  playerId: number;
-  score: number;
-  fitness: number;
-}
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | undefined) => {
   const { toast } = useToast();
@@ -160,6 +148,10 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   }, []);
 
   const clonePlayer = useCallback((player: Player) => {
+    if (!player) {
+      systemLogger.log('system', 'Tentativa de clonar jogador inválido');
+      return;
+    }
     const clones = cloneChampion(player, 1);
     setPlayers(prevPlayers => [...prevPlayers, ...clones]);
     systemLogger.log('player', `Novo clone do Jogador #${player.id} criado`);
@@ -170,7 +162,9 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   }, [initializePlayers]);
 
   useEffect(() => {
-    setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
+    if (csvData.length > 0) {
+      setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
+    }
   }, [csvData]);
 
   return {

@@ -13,13 +13,22 @@ const PlayPage: React.FC = () => {
   const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
-  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
+  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | undefined>(undefined);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   const gameLogic = useGameLogic(csvData, trainedModel);
 
   const loadCSV = useCallback(async (file: File) => {
+    if (!file) {
+      toast({
+        title: "Erro",
+        description: "Arquivo CSV não fornecido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const text = await file.text();
       const lines = text.trim().split('\n').slice(1);
@@ -35,12 +44,33 @@ const PlayPage: React.FC = () => {
       setCsvDates(data.map(d => d.data));
       gameLogic.addLog("CSV carregado e processado com sucesso!");
       gameLogic.addLog(`Número de registros carregados: ${data.length}`);
+      
+      toast({
+        title: "Sucesso",
+        description: `CSV carregado com ${data.length} registros`,
+      });
     } catch (error) {
-      gameLogic.addLog(`Erro ao carregar CSV: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      gameLogic.addLog(`Erro ao carregar CSV: ${errorMessage}`);
+      
+      toast({
+        title: "Erro",
+        description: `Falha ao carregar CSV: ${errorMessage}`,
+        variant: "destructive"
+      });
     }
-  }, [gameLogic]);
+  }, [gameLogic, toast]);
 
   const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
+    if (!jsonFile || !weightsFile) {
+      toast({
+        title: "Erro",
+        description: "Arquivos do modelo não fornecidos",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
       setTrainedModel(model);
@@ -50,39 +80,41 @@ const PlayPage: React.FC = () => {
         description: "O modelo foi carregado com sucesso.",
       });
     } catch (error) {
-      gameLogic.addLog(`Erro ao carregar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      gameLogic.addLog(`Erro ao carregar o modelo: ${errorMessage}`);
       console.error("Detalhes do erro:", error);
       toast({
         title: "Erro ao Carregar Modelo",
-        description: "Ocorreu um erro ao carregar o modelo. Verifique o console para mais detalhes.",
+        description: `Ocorreu um erro ao carregar o modelo: ${errorMessage}`,
         variant: "destructive",
       });
     }
   }, [gameLogic, toast]);
 
   const saveModel = useCallback(async () => {
-    if (trainedModel) {
-      try {
-        await trainedModel.save('downloads://modelo-atual');
-        gameLogic.addLog("Modelo salvo com sucesso!");
-        toast({
-          title: "Modelo Salvo",
-          description: "O modelo atual foi salvo com sucesso.",
-        });
-      } catch (error) {
-        gameLogic.addLog(`Erro ao salvar o modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        console.error("Detalhes do erro:", error);
-        toast({
-          title: "Erro ao Salvar Modelo",
-          description: "Ocorreu um erro ao salvar o modelo. Verifique o console para mais detalhes.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      gameLogic.addLog("Nenhum modelo para salvar.");
+    if (!trainedModel) {
       toast({
-        title: "Nenhum Modelo",
-        description: "Não há nenhum modelo carregado para salvar.",
+        title: "Erro",
+        description: "Nenhum modelo para salvar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await trainedModel.save('downloads://modelo-atual');
+      gameLogic.addLog("Modelo salvo com sucesso!");
+      toast({
+        title: "Modelo Salvo",
+        description: "O modelo atual foi salvo com sucesso.",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      gameLogic.addLog(`Erro ao salvar o modelo: ${errorMessage}`);
+      console.error("Detalhes do erro:", error);
+      toast({
+        title: "Erro ao Salvar Modelo",
+        description: `Ocorreu um erro ao salvar o modelo: ${errorMessage}`,
         variant: "destructive",
       });
     }
@@ -90,13 +122,17 @@ const PlayPage: React.FC = () => {
 
   const playGame = useCallback(() => {
     if (!trainedModel || csvData.length === 0) {
-      gameLogic.addLog("Não é possível iniciar o jogo. Verifique se o modelo e os dados CSV foram carregados.");
+      toast({
+        title: "Erro",
+        description: "Verifique se o modelo e os dados CSV foram carregados",
+        variant: "destructive"
+      });
       return;
     }
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
     gameLogic.gameLoop();
-  }, [trainedModel, csvData, gameLogic]);
+  }, [trainedModel, csvData, gameLogic, toast]);
 
   const pauseGame = useCallback(() => {
     setIsPlaying(false);
@@ -130,14 +166,14 @@ const PlayPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [isPlaying, csvData, gameLogic, gameSpeed]);
 
-  const handleSpeedChange = (value: number[]) => {
+  const handleSpeedChange = useCallback((value: number[]) => {
     const newSpeed = 2000 - value[0];
     setGameSpeed(newSpeed);
     toast({
       title: "Velocidade Ajustada",
       description: `${newSpeed}ms por jogada`,
     });
-  };
+  }, [toast]);
 
   return (
     <div className="p-6">

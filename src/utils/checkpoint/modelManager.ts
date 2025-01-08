@@ -6,20 +6,22 @@ import { logger } from '../logging/logger.js';
 
 export class ModelManager {
   async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
+    if (!model) {
+      throw new Error('Modelo não fornecido para salvamento');
+    }
+
     const modelPath = path.join(process.cwd(), 'models');
     const modelFile = path.join(modelPath, `${artifactsInfo.dateSaved.toISOString()}`);
 
     try {
       await fs.promises.mkdir(modelPath, { recursive: true });
 
-      // Salva o modelo como JSON
       const modelJson = model.toJSON();
       await fs.promises.writeFile(
         `${modelFile}.json`,
         JSON.stringify(modelJson)
       );
 
-      // Salva os pesos do modelo
       await model.save(`file://${modelFile}`);
       logger.info('Modelo salvo com sucesso');
     } catch (error) {

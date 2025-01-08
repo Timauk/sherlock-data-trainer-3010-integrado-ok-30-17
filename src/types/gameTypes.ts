@@ -90,3 +90,13 @@ export interface CheckpointData {
   csvData?: string;
   timestamp?: string;
 }
+
+export interface ChampionData {
+  player: Player;
+  trainingData: number[][];
+}
+
+export interface ModelManagerResponse {
+  model: tf.LayersModel | undefined;
+  metadata: any | null;
+}
