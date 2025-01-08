@@ -44,25 +44,35 @@ export class ModelManager {
 
     try {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
-      const weightSpecs = weights.map(weight => ({
-        name: weight.name || 'unnamed',
-        shape: (weight as tf.Tensor).shape,
-        dtype: (weight as tf.Tensor).dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
-      }));
+      const weightSpecs = weights.map(weight => {
+        const tensor = weight as unknown as tf.Tensor;
+        return {
+          name: tensor.name || 'unnamed',
+          shape: Array.from(tensor.shape),
+          dtype: tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
+        };
+      });
 
       const weightData = await tf.io.encodeWeights(weights);
-      await tf.io.withSaveHandler(async (tensors) => {
-        return {
-          modelTopology: null,
-          weightSpecs: weightSpecs,
-          weightData: weightData.data,
-          format: 'weights',
-          generatedBy: 'TensorFlow.js',
-          convertedBy: null,
-          modelInitializer: null,
-          trainingConfig: null
-        };
-      })(path);
+      
+      const handler = tf.io.getSaveHandlers('file://')[0];
+      await handler.save({
+        modelTopology: null,
+        weightSpecs,
+        weightData: weightData.data,
+        format: 'weights',
+        generatedBy: 'TensorFlow.js',
+        convertedBy: null,
+        modelInitializer: null,
+        trainingConfig: null,
+        modelArtifactsInfo: {
+          dateSaved: new Date(),
+          modelTopologyType: 'JSON',
+          modelTopologyBytes: 0,
+          weightSpecsBytes: 0,
+          weightDataBytes: 0,
+        }
+      });
       
       logger.info(`Optimizer weights saved to ${path}`);
     } catch (error) {
