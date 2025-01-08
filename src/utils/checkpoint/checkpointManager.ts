@@ -6,7 +6,12 @@ import path from 'path';
 import fs from 'fs';
 
 class CheckpointManager {
-  static instance = null;
+  private static instance: CheckpointManager | null = null;
+  private readonly checkpointPath: string;
+  private readonly maxCheckpoints: number;
+  private readonly fileManager: FileManager;
+  private readonly modelManager: ModelManager;
+  private readonly stateManager: StateManager;
   
   constructor() {
     this.checkpointPath = path.join(process.cwd(), 'checkpoints');
@@ -17,14 +22,14 @@ class CheckpointManager {
     this.stateManager = new StateManager(this.fileManager);
   }
 
-  static getInstance() {
+  static getInstance(): CheckpointManager {
     if (!CheckpointManager.instance) {
       CheckpointManager.instance = new CheckpointManager();
     }
     return CheckpointManager.instance;
   }
 
-  async saveCheckpoint(data) {
+  async saveCheckpoint(data: any): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
@@ -38,7 +43,7 @@ class CheckpointManager {
 
       await this.stateManager.saveGameState(checkpointDir, data);
 
-      if (data.gameState.model) {
+      if (data.gameState?.model) {
         const artifactsInfo: ModelArtifactsInfo = {
           dateSaved: new Date(),
           modelTopologyType: 'JSON',
@@ -70,12 +75,13 @@ class CheckpointManager {
 
       await this.cleanOldCheckpoints();
       return path.basename(checkpointDir);
+
     } catch (error) {
       throw error;
     }
   }
 
-  async loadLatestCheckpoint() {
+  async loadLatestCheckpoint(): Promise<any> {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort()
@@ -114,7 +120,7 @@ class CheckpointManager {
     }
   }
 
-  private async cleanOldCheckpoints() {
+  private async cleanOldCheckpoints(): Promise<void> {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort();
