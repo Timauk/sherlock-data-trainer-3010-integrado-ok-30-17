@@ -20,6 +20,14 @@ export interface ModelMetrics {
   predictionConfidence?: number;
 }
 
+export interface ModelArtifactsInfo {
+  dateSaved: Date;
+  modelTopologyType: string;
+  modelTopologyBytes: number;
+  weightSpecsBytes: number;
+  weightDataBytes: number;
+}
+
 export interface ModelArtifacts {
   modelTopology: any;
   weightSpecs: any[];
@@ -30,5 +38,5 @@ export interface ModelArtifacts {
   modelInitializer?: string;
   trainingConfig?: any;
   weightsManifest?: any[];
-  modelArtifactsInfo?: any;
+  modelArtifactsInfo?: ModelArtifactsInfo;
 }

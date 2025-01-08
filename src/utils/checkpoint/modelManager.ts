@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { logger } from '../logging/logger';
+import { ModelArtifacts, ModelArtifactsInfo } from '@/types/gameTypes';
 
 interface WeightData {
   name: string;
@@ -45,10 +46,9 @@ export class ModelManager {
     try {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
       const weightSpecs = weights.map(weight => {
-        // First cast to unknown, then to Tensor to avoid type mismatch
         const tensor = weight as unknown as tf.Tensor;
         return {
-          name: tensor.id.toString(), // Convert id to string
+          name: tensor.id.toString(),
           shape: Array.from(tensor.shape),
           dtype: tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
         };
@@ -56,6 +56,14 @@ export class ModelManager {
 
       const weightData = await tf.io.encodeWeights(weights);
       
+      const artifactsInfo: ModelArtifactsInfo = {
+        dateSaved: new Date(),
+        modelTopologyType: 'JSON',
+        modelTopologyBytes: 0,
+        weightSpecsBytes: weightSpecs.length,
+        weightDataBytes: weightData.data.byteLength
+      };
+
       const handler = tf.io.getSaveHandlers('file://')[0];
       await handler.save({
         modelTopology: null,
@@ -66,14 +74,8 @@ export class ModelManager {
         convertedBy: null,
         modelInitializer: null,
         trainingConfig: null,
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'JSON',
-          modelTopologyBytes: 0,
-          weightSpecsBytes: weightSpecs.length,
-          weightDataBytes: weightData.data.byteLength
-        }
-      });
+        modelArtifactsInfo: artifactsInfo
+      } as ModelArtifacts);
       
       logger.info(`Optimizer weights saved to ${path}`);
     } catch (error) {
