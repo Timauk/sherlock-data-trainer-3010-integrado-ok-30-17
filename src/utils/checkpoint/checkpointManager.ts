@@ -92,7 +92,7 @@ class CheckpointManager {
     }
   }
 
-  async loadLatestCheckpoint(): Promise<CheckpointData | null> {
+  async loadLatestCheckpoint(): Promise<CheckpointData | undefined> {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort()
@@ -100,7 +100,7 @@ class CheckpointManager {
 
     if (checkpoints.length === 0) {
       logger.warn('Nenhum checkpoint encontrado');
-      return null;
+      return undefined;
     }
 
     const latestCheckpoint = checkpoints[0];
@@ -118,7 +118,10 @@ class CheckpointManager {
       const gameState = await this.stateManager.loadGameState(checkpointDir);
 
       if (gameState) {
-        gameState.model = await this.modelManager.loadModel();
+        const model = await this.modelManager.loadModel();
+        if (model) {
+          gameState.model = model;
+        }
       }
 
       logger.info('Checkpoint carregado com sucesso');

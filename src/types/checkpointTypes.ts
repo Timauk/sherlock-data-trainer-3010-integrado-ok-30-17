@@ -17,3 +17,8 @@ export interface CheckpointManifest {
   timestamp: string;
   files: string[];
 }
+
+export interface ModelManagerResponse {
+  model?: LayersModel;
+  error?: Error;
+}

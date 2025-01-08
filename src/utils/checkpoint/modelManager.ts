@@ -28,7 +28,7 @@ export class ModelManager {
     }
   }
 
-  async loadModel(): Promise<tf.LayersModel | null> {
+  async loadModel(): Promise<tf.LayersModel | undefined> {
     try {
       const modelPath = path.join(process.cwd(), 'models');
       const files = await fs.promises.readdir(modelPath);
@@ -36,7 +36,7 @@ export class ModelManager {
 
       if (!modelFile) {
         logger.warn('Nenhum modelo encontrado');
-        return null;
+        return undefined;
       }
 
       const model = await tf.loadLayersModel(`file://${path.join(modelPath, modelFile)}`);
@@ -44,7 +44,7 @@ export class ModelManager {
       return model;
     } catch (error) {
       logger.error({ error }, 'Erro ao carregar modelo');
-      return null;
+      return undefined;
     }
   }
 }
