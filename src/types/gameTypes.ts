@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { SystemInfo } from './checkpointTypes';
 
 export interface Player {
   id: number;
@@ -83,12 +84,6 @@ export interface LunarData {
 export interface TimeSeriesData {
   numbers: number[][];
   dates: Date[];
-}
-
-export interface CheckpointData {
-  gameState: GameState;
-  csvData?: string;
-  timestamp?: string;
 }
 
 export interface ChampionData {

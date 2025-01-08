@@ -1,13 +1,15 @@
 import { LayersModel } from '@tensorflow/tfjs';
 import { GameState } from './gameTypes';
 
+export interface SystemInfo {
+  totalMemory: number;
+  freeMemory: number;
+  uptime: number;
+}
+
 export interface CheckpointData {
   timestamp: string;
-  systemInfo: {
-    totalMemory: number;
-    freeMemory: number;
-    uptime: number;
-  };
+  systemInfo: SystemInfo;
   gameState: GameState;
   csvData?: string;
 }

@@ -2,17 +2,11 @@ import { FileManager } from './fileManager.js';
 import { ModelManager } from './modelManager.js';
 import { StateManager } from './stateManager.js';
 import { logger } from '../logging/logger.js';
-import { ModelArtifactsInfo, GameState, CheckpointData } from '../../types/gameTypes';
+import { CheckpointData, CheckpointManifest } from '../../types/checkpointTypes';
 import path from 'path';
 import fs from 'fs';
 
-interface CheckpointManifest {
-  version: string;
-  timestamp: string;
-  files: string[];
-}
-
-export class CheckpointManager {
+class CheckpointManager {
   private static instance: CheckpointManager | null = null;
   private readonly checkpointPath: string;
   private readonly maxCheckpoints: number;
@@ -60,14 +54,7 @@ export class CheckpointManager {
       await this.stateManager.saveGameState(checkpointDir, data);
 
       if (data.gameState?.model) {
-        const artifactsInfo: ModelArtifactsInfo = {
-          dateSaved: new Date(),
-          modelTopologyType: 'JSON',
-          modelTopologyBytes: 0,
-          weightSpecsBytes: 0,
-          weightDataBytes: 0
-        };
-        await this.modelManager.saveModel(data.gameState.model, artifactsInfo);
+        await this.modelManager.saveModel(data.gameState.model, checkpointDir);
       }
 
       const manifest: CheckpointManifest = {
@@ -137,12 +124,19 @@ export class CheckpointManager {
         }
       }
 
-      logger.info('Checkpoint carregado com sucesso');
-      return {
+      const checkpointData: CheckpointData = {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
-        gameState: gameState as GameState,
+        systemInfo: {
+          totalMemory: process.memoryUsage().heapTotal,
+          freeMemory: process.memoryUsage().heapUsed,
+          uptime: process.uptime()
+        },
+        gameState: gameState!,
         csvData
       };
+
+      logger.info('Checkpoint carregado com sucesso');
+      return checkpointData;
 
     } catch (error) {
       logger.error({ error, checkpoint: checkpointDir }, 'Erro ao carregar checkpoint');
