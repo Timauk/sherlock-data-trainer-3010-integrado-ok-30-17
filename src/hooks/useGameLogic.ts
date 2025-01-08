@@ -14,14 +14,7 @@ interface ChampionData {
   trainingData: number[][];
 }
 
-interface EvolutionDataEntry {
-  generation: number;
-  playerId: number;
-  score: number;
-  fitness: number;
-}
-
-export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
+export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | undefined) => {
   const { toast } = useToast();
   const { players, setPlayers, initializePlayers } = useGameInitialization();
   const [generation, setGeneration] = useState<number>(1);
@@ -76,6 +69,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   );
 
   const evolveGeneration = useCallback(async () => {
+    if (!trainedModel) {
+      systemLogger.log('system', 'Não é possível evoluir sem um modelo treinado');
+      return;
+    }
+
     const bestPlayers = selectBestPlayers(players);
     setGameCount(prev => prev + 1);
 

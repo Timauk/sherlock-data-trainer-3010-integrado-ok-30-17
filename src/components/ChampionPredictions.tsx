@@ -7,8 +7,8 @@ import * as tf from '@tensorflow/tfjs';
 import NumberSelector from './NumberSelector';
 
 interface ChampionPredictionsProps {
-  champion: Player | undefined;
-  trainedModel: tf.LayersModel | null;
+  champion?: Player;
+  trainedModel: tf.LayersModel | undefined;
   lastConcursoNumbers: number[];
   isServerProcessing?: boolean;
 }
@@ -195,7 +195,11 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             <span>Previsões do Campeão {isServerProcessing ? '(Servidor)' : '(Local)'}</span>
-            <Button onClick={generatePredictions} className="bg-green-600 hover:bg-green-700">
+            <Button 
+              onClick={generatePredictions} 
+              className="bg-green-600 hover:bg-green-700"
+              disabled={!champion || !trainedModel}
+            >
               Gerar 20 Jogos
             </Button>
           </CardTitle>
@@ -240,7 +244,10 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
             </div>
           ) : (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              Clique no botão para gerar 20 previsões para o próximo concurso
+              {!champion || !trainedModel ? 
+                "Aguardando campeão e modelo treinado..." :
+                "Clique no botão para gerar 20 previsões para o próximo concurso"
+              }
             </div>
           )}
         </CardContent>
