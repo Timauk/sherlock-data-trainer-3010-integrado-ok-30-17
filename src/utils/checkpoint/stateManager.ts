@@ -1,6 +1,8 @@
 import path from 'path';
-import { FileManager } from './fileManager';
+import { FileManager } from './fileManager.js';
 import { logger } from '../logging/logger.js';
+import { GameState } from '@/types/gameTypes';
+import { CheckpointData } from '@/types/checkpointTypes';
 
 export class StateManager {
   private readonly fileManager: FileManager;
@@ -9,26 +11,26 @@ export class StateManager {
     this.fileManager = fileManager;
   }
 
-  async saveGameState(checkpointDir: string, data: any): Promise<void> {
+  async saveGameState(checkpointDir: string, data: CheckpointData): Promise<void> {
     try {
-      await this.fileManager.writeFile(
+      await this.fileManager.writeFile<GameState>(
         path.join(checkpointDir, 'gameState.json'),
-        data.gameState || {}
+        data.gameState
       );
-      logger.debug('Game state saved successfully');
+      logger.debug('Estado do jogo salvo com sucesso');
     } catch (error) {
-      logger.error({ error }, 'Error saving game state');
+      logger.error({ error }, 'Erro ao salvar estado do jogo');
       throw error;
     }
   }
 
-  async loadGameState(checkpointDir: string): Promise<any> {
+  async loadGameState(checkpointDir: string): Promise<GameState | null> {
     try {
-      return await this.fileManager.readFile(
+      return await this.fileManager.readFile<GameState>(
         path.join(checkpointDir, 'gameState.json')
       );
     } catch (error) {
-      logger.error({ error }, 'Error loading game state');
+      logger.error({ error }, 'Erro ao carregar estado do jogo');
       throw error;
     }
   }

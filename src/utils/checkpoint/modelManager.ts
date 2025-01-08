@@ -2,20 +2,30 @@ import { ModelArtifactsInfo } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../logging/logger.js';
 
 export class ModelManager {
   async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
-    const modelPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.json`);
-    const weightsPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.bin`);
+    const modelPath = path.join(process.cwd(), 'models');
+    const modelFile = path.join(modelPath, `${artifactsInfo.dateSaved.toISOString()}`);
 
-    // Salva o modelo como JSON
-    const modelJson = await model.toJSON();
-    await fs.promises.writeFile(modelPath, JSON.stringify(modelJson));
+    try {
+      await fs.promises.mkdir(modelPath, { recursive: true });
 
-    // Salva os pesos do modelo
-    const modelArtifacts = await model.save(`file://${weightsPath}`);
-    const weightsData = Buffer.from(JSON.stringify(modelArtifacts));
-    await fs.promises.writeFile(weightsPath, weightsData);
+      // Salva o modelo como JSON
+      const modelJson = model.toJSON();
+      await fs.promises.writeFile(
+        `${modelFile}.json`,
+        JSON.stringify(modelJson)
+      );
+
+      // Salva os pesos do modelo
+      await model.save(`file://${modelFile}`);
+      logger.info('Modelo salvo com sucesso');
+    } catch (error) {
+      logger.error({ error }, 'Erro ao salvar modelo');
+      throw error;
+    }
   }
 
   async loadModel(): Promise<tf.LayersModel | null> {
@@ -25,13 +35,15 @@ export class ModelManager {
       const modelFile = files.find(file => file.endsWith('.json'));
 
       if (!modelFile) {
+        logger.warn('Nenhum modelo encontrado');
         return null;
       }
 
       const model = await tf.loadLayersModel(`file://${path.join(modelPath, modelFile)}`);
+      logger.info('Modelo carregado com sucesso');
       return model;
     } catch (error) {
-      console.error('Erro ao carregar modelo:', error);
+      logger.error({ error }, 'Erro ao carregar modelo');
       return null;
     }
   }
