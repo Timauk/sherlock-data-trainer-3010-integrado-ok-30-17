@@ -18,6 +18,8 @@ export interface ModelMetrics {
   randomAccuracy: number;
   totalPredictions: number;
   predictionConfidence?: number;
+  perGameAccuracy?: number;
+  perGameRandomAccuracy?: number;
 }
 
 export interface ModelArtifactsInfo {
@@ -28,9 +30,15 @@ export interface ModelArtifactsInfo {
   weightDataBytes: number;
 }
 
+export interface WeightSpecs {
+  name: string;
+  shape: number[];
+  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
+}
+
 export interface ModelArtifacts {
   modelTopology: any;
-  weightSpecs: any[];
+  weightSpecs: WeightSpecs[];
   weightData: ArrayBuffer;
   format?: string;
   generatedBy?: string;
@@ -62,4 +70,14 @@ export interface EvolutionDataEntry {
   playerId: number;
   score: number;
   fitness: number;
+}
+
+export interface LunarData {
+  lunarPhase: string;
+  lunarPatterns: Record<string, number[]>;
+}
+
+export interface TimeSeriesData {
+  numbers: number[][];
+  dates: Date[];
 }

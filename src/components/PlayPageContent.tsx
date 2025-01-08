@@ -36,11 +36,11 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   generation,
   gameLogic
 }) => {
-  const [isServerProcessing, setIsServerProcessing] = useState(false);
+  const [isServerProcessing, setIsServerProcessing] = useState<boolean>(false);
   const { status: serverStatus } = useServerStatus();
   
   const champion: Player | null = gameLogic.players && gameLogic.players.length > 0 
-    ? gameLogic.players.reduce((prev, current) => 
+    ? gameLogic.players.reduce((prev: Player | null, current: Player) => 
         (current.fitness > (prev?.fitness || 0)) ? current : prev, 
         gameLogic.players[0])
     : null;

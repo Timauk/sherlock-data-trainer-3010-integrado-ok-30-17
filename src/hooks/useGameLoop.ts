@@ -11,13 +11,20 @@ import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
 import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
 import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
 
+interface EvolutionDataEntry {
+  generation: number;
+  playerId: number;
+  score: number;
+  fitness: number;
+}
+
 export const useGameLoop = (
   players: Player[],
   setPlayers: (players: Player[]) => void,
   csvData: number[][],
   trainedModel: tf.LayersModel | null,
   concursoNumber: number,
-  setEvolutionData: (data: any) => void,
+  setEvolutionData: (data: EvolutionDataEntry[]) => void,
   generation: number,
   addLog: (message: string, matches?: number) => void,
   updateInterval: number,
@@ -31,8 +38,8 @@ export const useGameLoop = (
     accuracy: number; 
     randomAccuracy: number; 
     totalPredictions: number;
-    perGameAccuracy: number;
-    perGameRandomAccuracy: number;
+    perGameAccuracy?: number;
+    perGameRandomAccuracy?: number;
   }) => void,
   setConcursoNumber: (num: number) => void,
   setGameCount: React.Dispatch<React.SetStateAction<number>>,
@@ -185,4 +192,3 @@ const gameLoop = useCallback(async () => {
 
   return gameLoop;
 };
-
