@@ -14,6 +14,13 @@ interface ChampionData {
   trainingData: number[][];
 }
 
+interface EvolutionDataEntry {
+  generation: number;
+  playerId: number;
+  score: number;
+  fitness: number;
+}
+
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | undefined) => {
   const { toast } = useToast();
   const { players, setPlayers, initializePlayers } = useGameInitialization();
