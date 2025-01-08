@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkpointManager } from '../utils/checkpoint/checkpointManager.ts';
+import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
 
 const router = express.Router();

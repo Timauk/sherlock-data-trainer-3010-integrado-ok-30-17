@@ -1,19 +1,14 @@
-import { FileManager } from './fileManager';
-import { ModelManager } from './modelManager';
-import { StateManager } from './stateManager';
+import { FileManager } from './fileManager.js';
+import { ModelManager } from './modelManager.js';
+import { StateManager } from './stateManager.js';
 import { ModelArtifactsInfo, ModelArtifacts } from '@/types/gameTypes';
 import path from 'path';
 import fs from 'fs';
 
-export class CheckpointManager {
-  private static instance: CheckpointManager | null = null;
-  private readonly checkpointPath: string;
-  private readonly maxCheckpoints: number;
-  private readonly fileManager: FileManager;
-  private readonly modelManager: ModelManager;
-  private readonly stateManager: StateManager;
+class CheckpointManager {
+  static instance = null;
   
-  private constructor() {
+  constructor() {
     this.checkpointPath = path.join(process.cwd(), 'checkpoints');
     this.maxCheckpoints = 50;
     
@@ -22,14 +17,14 @@ export class CheckpointManager {
     this.stateManager = new StateManager(this.fileManager);
   }
 
-  static getInstance(): CheckpointManager {
+  static getInstance() {
     if (!CheckpointManager.instance) {
       CheckpointManager.instance = new CheckpointManager();
     }
     return CheckpointManager.instance;
   }
 
-  async saveCheckpoint(data: any): Promise<string> {
+  async saveCheckpoint(data) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
@@ -80,7 +75,7 @@ export class CheckpointManager {
     }
   }
 
-  async loadLatestCheckpoint(): Promise<any> {
+  async loadLatestCheckpoint() {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort()
@@ -119,7 +114,7 @@ export class CheckpointManager {
     }
   }
 
-  private async cleanOldCheckpoints(): Promise<void> {
+  private async cleanOldCheckpoints() {
     const checkpoints = fs.readdirSync(this.checkpointPath)
       .filter(f => f.startsWith('checkpoint-'))
       .sort();
