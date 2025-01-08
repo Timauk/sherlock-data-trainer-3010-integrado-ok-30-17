@@ -4,8 +4,8 @@ import { Player } from '@/types/gameTypes';
 export const useGameInitialization = () => {
   const [players, setPlayers] = useState<Player[]>([]);
 
-  const initializePlayers = useCallback(() => {
-    const newPlayers = Array.from({ length: 1000 }, (_, i) => ({
+  const initializePlayers = useCallback((): void => {
+    const newPlayers: Player[] = Array.from({ length: 1000 }, (_, i) => ({
       id: i + 1,
       score: 0,
       predictions: [],

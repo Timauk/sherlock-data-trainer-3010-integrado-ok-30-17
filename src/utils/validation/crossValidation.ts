@@ -34,6 +34,8 @@ const calculateMetrics = (predictions: number[][], actual: number[][]): Validati
   let falseNegatives = 0;
   
   predictions.forEach((pred, idx) => {
+    if (!actual[idx]) return;
+    
     const actualSet = new Set(actual[idx]);
     pred.forEach(num => {
       if (actualSet.has(num)) {
@@ -49,10 +51,10 @@ const calculateMetrics = (predictions: number[][], actual: number[][]): Validati
     });
   });
 
-  const precision = truePositives / (truePositives + falsePositives);
-  const recall = truePositives / (truePositives + falseNegatives);
-  const accuracy = truePositives / (truePositives + falsePositives + falseNegatives);
-  const f1Score = 2 * (precision * recall) / (precision + recall);
+  const precision = truePositives / (truePositives + falsePositives) || 0;
+  const recall = truePositives / (truePositives + falseNegatives) || 0;
+  const accuracy = truePositives / (truePositives + falsePositives + falseNegatives) || 0;
+  const f1Score = 2 * (precision * recall) / (precision + recall) || 0;
 
   return {
     accuracy,
