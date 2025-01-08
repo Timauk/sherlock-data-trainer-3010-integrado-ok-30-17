@@ -1,121 +1,51 @@
 import * as tf from '@tensorflow/tfjs';
-import { logger } from '../logging/logger';
-
-interface WeightData {
-  name: string;
-  tensor: tf.Tensor;
-}
-
-interface OptimizerWeightSpecs {
-  name: string;
-  shape: number[];
-  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
-}
+import { Player } from '../types/gameTypes';
 
 export class ModelManager {
   private model: tf.LayersModel | null = null;
 
-  async saveModel(model: tf.LayersModel, path: string): Promise<void> {
-    try {
-      await model.save(`file://${path}`);
-      logger.info(`Model saved to ${path}`);
-    } catch (error) {
-      logger.error('Error saving model:', error);
-      throw error;
-    }
+  async loadModel(handler: tf.io.IOHandler): Promise<void> {
+    this.model = await tf.loadLayersModel(handler);
   }
 
-  async loadModel(path: string): Promise<tf.LayersModel> {
-    try {
-      this.model = await tf.loadLayersModel(`file://${path}`);
-      logger.info(`Model loaded from ${path}`);
-      return this.model;
-    } catch (error) {
-      logger.error('Error loading model:', error);
-      throw error;
-    }
-  }
-
-  async saveOptimizer(model: tf.LayersModel, path: string): Promise<void> {
-    if (!model.optimizer) {
-      logger.warn('No optimizer found in model');
-      return;
-    }
-
-    try {
-      const weights = await (model.optimizer as tf.Optimizer).getWeights();
-      const weightSpecs = weights.map(weight => {
-        const namedTensor = weight as unknown as { name: string; tensor: tf.Tensor };
-        return {
-          name: namedTensor.name,
-          shape: Array.from(namedTensor.tensor.shape),
-          dtype: namedTensor.tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
-        };
-      });
-
-      const weightData = await tf.io.encodeWeights(weights);
-      
-      const handler = tf.io.getSaveHandlers('file://')[0];
-      if (!handler) {
-        throw new Error('No save handler found for file://');
-      }
-
+  async save(handler: tf.io.IOHandler) {
+    if (handler) {
       await handler.save({
-        modelTopology: {},
-        weightSpecs,
-        weightData: weightData.data,
-        format: 'weights',
-        generatedBy: 'TensorFlow.js',
-        convertedBy: null,
+        modelTopology: this.model?.toJSON(),
+        weightSpecs: this.model?.weights.map(weight => weight.shape),
+        weightData: await this.model?.saveWeights(handler),
         modelInitializer: {},
-        trainingConfig: {} as tf.io.TrainingConfig
-      });
-      
-      logger.info(`Optimizer weights saved to ${path}`);
-    } catch (error) {
-      logger.error('Error saving optimizer weights:', error);
-      throw error;
-    }
-  }
-
-  async loadOptimizer(model: tf.LayersModel, path: string, optimizerBuffer: ArrayBuffer): Promise<void> {
-    if (!model.optimizer) {
-      logger.warn('No optimizer found in model');
-      return;
-    }
-
-    try {
-      const config = (model.optimizer as tf.Optimizer).getConfig();
-      const weightSpecs = (config?.weightSpecs as unknown as OptimizerWeightSpecs[]) || [];
-      
-      if (weightSpecs.length > 0) {
-        const validWeightSpecs = weightSpecs.every(spec => 
-          spec.name && Array.isArray(spec.shape) && spec.dtype
-        );
-
-        if (validWeightSpecs) {
-          const weights = tf.io.decodeWeights(optimizerBuffer, weightSpecs);
-          const weightList: WeightData[] = Object.entries(weights).map(([name, tensor]) => ({
-            name,
-            tensor: tensor as tf.Tensor
-          }));
-          await (model.optimizer as tf.Optimizer).setWeights(weightList);
-          logger.info('Optimizer weights loaded successfully');
-        } else {
-          logger.warn('Invalid weight specifications found in optimizer config');
+        trainingConfig: {
+          loss: {},
+          metrics: [],
+          optimizer_config: {
+            class_name: "Adam",
+            config: {}
+          }
         }
-      }
-    } catch (error) {
-      logger.error('Error loading optimizer weights:', error);
-      throw error;
+      });
     }
   }
 
-  disposeModel(): void {
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
-      logger.info('Model disposed');
+  getModel(): tf.LayersModel | null {
+    return this.model;
+  }
+
+  async trainModel(trainingData: Player[]): Promise<void> {
+    if (!this.model) {
+      throw new Error("Model not loaded");
     }
+
+    const xs = tf.tensor2d(trainingData.map(data => data.weights));
+    const ys = tf.tensor2d(trainingData.map(data => data.fitness));
+
+    await this.model.fit(xs, ys, {
+      epochs: 10,
+      batchSize: 32,
+      validationSplit: 0.2
+    });
+
+    xs.dispose();
+    ys.dispose();
   }
 }
