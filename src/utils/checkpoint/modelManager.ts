@@ -45,7 +45,6 @@ export class ModelManager {
     try {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
       const weightSpecs = weights.map(weight => {
-        // First cast to unknown, then to NamedTensor to access name property
         const namedTensor = weight as unknown as { name: string; tensor: tf.Tensor };
         return {
           name: namedTensor.name,
@@ -57,15 +56,19 @@ export class ModelManager {
       const weightData = await tf.io.encodeWeights(weights);
       
       const handler = tf.io.getSaveHandlers('file://')[0];
+      if (!handler) {
+        throw new Error('No save handler found for file://');
+      }
+
       await handler.save({
-        modelTopology: null,
+        modelTopology: {},
         weightSpecs,
         weightData: weightData.data,
         format: 'weights',
         generatedBy: 'TensorFlow.js',
         convertedBy: null,
-        modelInitializer: null,
-        trainingConfig: null
+        modelInitializer: {},
+        trainingConfig: {} as tf.io.TrainingConfig
       });
       
       logger.info(`Optimizer weights saved to ${path}`);

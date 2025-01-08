@@ -42,7 +42,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
     ? gameLogic.players.reduce((prev, current) => 
         (current.fitness > (prev?.fitness || 0)) ? current : prev, 
         gameLogic.players[0])
-    : undefined;
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
