@@ -7,6 +7,7 @@ import ChampionPredictions from './ChampionPredictions';
 import ProcessingSelector from './ProcessingSelector';
 import GeneticTreeVisualization from './GeneticTreeVisualization';
 import { useGameLogic } from '@/hooks/useGameLogic';
+import { Player } from '@/types/gameTypes';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -38,11 +39,11 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   const [isServerProcessing, setIsServerProcessing] = useState(false);
   const { status: serverStatus } = useServerStatus();
   
-  const champion = gameLogic.players && gameLogic.players.length > 0 
+  const champion: Player | null = gameLogic.players && gameLogic.players.length > 0 
     ? gameLogic.players.reduce((prev, current) => 
         (current.fitness > (prev?.fitness || 0)) ? current : prev, 
         gameLogic.players[0])
-    : undefined;
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -83,7 +84,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         </div>
         
         <ChampionPredictions
-          champion={champion}
+          champion={champion || undefined}
           trainedModel={gameLogic.trainedModel}
           lastConcursoNumbers={gameLogic.boardNumbers}
           isServerProcessing={isServerProcessing}

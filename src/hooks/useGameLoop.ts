@@ -38,7 +38,8 @@ export const useGameLoop = (
   setGameCount: React.Dispatch<React.SetStateAction<number>>,
   showToast?: (title: string, description: string) => void
 ) => {
-  const gameLoop = useCallback(async () => {
+
+const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
     setConcursoNumber(concursoNumber + 1);
@@ -133,15 +134,16 @@ export const useGameLoop = (
     });
 
     setPlayers(updatedPlayers);
-    setEvolutionData(prev => [
-      ...prev,
-      ...updatedPlayers.map(player => ({
-        generation,
-        playerId: player.id,
-        score: player.score,
-        fitness: player.fitness
-      }))
-    ]);
+
+  setEvolutionData((prev: any[]) => [
+    ...prev,
+    ...updatedPlayers.map(player => ({
+      generation,
+      playerId: player.id,
+      score: player.score,
+      fitness: player.fitness
+    }))
+  ]);
 
     const enhancedTrainingData = [...currentBoardNumbers, 
       ...updatedPlayers[0].predictions,
@@ -183,3 +185,4 @@ export const useGameLoop = (
 
   return gameLoop;
 };
+
