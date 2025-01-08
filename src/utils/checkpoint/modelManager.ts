@@ -65,26 +65,26 @@ export class ModelManager {
       };
 
       const handlers = tf.io.getSaveHandlers('file://');
-      if (handlers && handlers.length > 0) {
-        const handler = handlers[0];
-        const artifacts: ModelArtifacts = {
-          modelTopology: {},
-          weightSpecs,
-          weightData: weightData.data,
-          format: 'weights',
-          generatedBy: 'TensorFlow.js',
-          convertedBy: '',
-          modelInitializer: '',
-          trainingConfig: {},
-          weightsManifest: [],
-          modelArtifactsInfo: artifactsInfo
-        };
-        
-        await handler.save(artifacts);
-        logger.info(`Optimizer weights saved to ${path}`);
-      } else {
+      if (!handlers || handlers.length === 0) {
         throw new Error('No save handlers available for file://');
       }
+
+      const handler = handlers[0];
+      const artifacts = {
+        modelTopology: {},
+        weightSpecs,
+        weightData: weightData.data,
+        format: 'weights',
+        generatedBy: 'TensorFlow.js',
+        convertedBy: '',
+        modelInitializer: '',
+        trainingConfig: {},
+        weightsManifest: [],
+        modelArtifactsInfo: artifactsInfo
+      } as unknown as ModelArtifacts;
+      
+      await handler.save(artifacts);
+      logger.info(`Optimizer weights saved to ${path}`);
     } catch (error) {
       logger.error('Error saving optimizer weights:', error);
       throw error;

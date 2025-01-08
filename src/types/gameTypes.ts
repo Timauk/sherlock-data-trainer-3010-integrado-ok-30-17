@@ -34,9 +34,32 @@ export interface ModelArtifacts {
   weightData: ArrayBuffer;
   format?: string;
   generatedBy?: string;
-  convertedBy?: string;
+  convertedBy: string;
   modelInitializer?: string;
   trainingConfig?: any;
   weightsManifest?: any[];
   modelArtifactsInfo?: ModelArtifactsInfo;
+}
+
+export interface PredictionResult {
+  numbers: number[];
+  confidence: number;
+  matchCount?: number;
+}
+
+export interface GameState {
+  players: Player[];
+  generation: number;
+  evolutionData: EvolutionDataEntry[];
+  boardNumbers: number[];
+  concursoNumber: number;
+  isInfiniteMode: boolean;
+  trainingData: number[][];
+}
+
+export interface EvolutionDataEntry {
+  generation: number;
+  playerId: number;
+  score: number;
+  fitness: number;
 }

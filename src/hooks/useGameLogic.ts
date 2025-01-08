@@ -9,36 +9,44 @@ import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player } from '@/types/gameTypes';
 import { systemLogger } from '@/utils/logging/systemLogger';
 
+interface ChampionData {
+  player: Player;
+  trainingData: number[][];
+}
+
+interface EvolutionDataEntry {
+  generation: number;
+  playerId: number;
+  score: number;
+  fitness: number;
+}
+
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
   const { players, setPlayers, initializePlayers } = useGameInitialization();
-  const [generation, setGeneration] = useState(1);
-  const [gameCount, setGameCount] = useState(0);
-  const [championData, setChampionData] = useState<{
-    player: Player;
-    trainingData: number[][];
-  }>();
-  const [evolutionData, setEvolutionData] = useState<Array<{
-    generation: number;
-    playerId: number;
-    score: number;
-    fitness: number;
-  }>>([]);
+  const [generation, setGeneration] = useState<number>(1);
+  const [gameCount, setGameCount] = useState<number>(0);
+  const [championData, setChampionData] = useState<ChampionData | undefined>();
+  const [evolutionData, setEvolutionData] = useState<EvolutionDataEntry[]>([]);
   const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
-  const [modelMetrics, setModelMetrics] = useState({
+  const [modelMetrics, setModelMetrics] = useState<{
+    accuracy: number;
+    randomAccuracy: number;
+    totalPredictions: number;
+  }>({
     accuracy: 0,
     randomAccuracy: 0,
     totalPredictions: 0,
   });
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
-  const [frequencyData, setFrequencyData] = useState<{ [key: string]: number[] }>({});
-  const [updateInterval, setUpdateInterval] = useState(10);
-  const [isInfiniteMode, setIsInfiniteMode] = useState(false);
-  const [concursoNumber, setConcursoNumber] = useState(0);
+  const [frequencyData, setFrequencyData] = useState<Record<string, number[]>>({});
+  const [updateInterval, setUpdateInterval] = useState<number>(10);
+  const [isInfiniteMode, setIsInfiniteMode] = useState<boolean>(false);
+  const [concursoNumber, setConcursoNumber] = useState<number>(0);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
-  const [isManualMode, setIsManualMode] = useState(false);
+  const [isManualMode, setIsManualMode] = useState<boolean>(false);
 
   const addLog = useCallback((message: string, matches?: number) => {
     const logType = matches ? 'prediction' : 'action';
