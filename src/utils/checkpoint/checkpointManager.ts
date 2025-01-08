@@ -1,11 +1,11 @@
 import { FileManager } from './fileManager.js';
 import { ModelManager } from './modelManager.js';
 import { StateManager } from './stateManager.js';
-import { ModelArtifactsInfo, GameState } from '@/types/gameTypes';
-import { CheckpointData, CheckpointManifest } from '@/types/checkpointTypes';
+import { logger } from '../logging/logger.js';
+import { ModelArtifactsInfo, GameState } from '../../types/gameTypes';
+import { CheckpointData, CheckpointManifest } from '../../types/checkpointTypes';
 import path from 'path';
 import fs from 'fs';
-import { logger } from '../logging/logger.js';
 
 class CheckpointManager {
   private static instance: CheckpointManager | null = null;
@@ -124,7 +124,7 @@ class CheckpointManager {
       logger.info('Checkpoint carregado com sucesso');
       return {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
-        gameState,
+        gameState: gameState as GameState,
         csvData,
         systemInfo: {
           totalMemory: process.memoryUsage().heapTotal,
