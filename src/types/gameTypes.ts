@@ -1,3 +1,5 @@
+import * as tf from '@tensorflow/tfjs';
+
 export interface Player {
   id: number;
   score: number;
@@ -63,6 +65,7 @@ export interface GameState {
   concursoNumber: number;
   isInfiniteMode: boolean;
   trainingData: number[][];
+  model?: tf.LayersModel;
 }
 
 export interface EvolutionDataEntry {
@@ -80,4 +83,10 @@ export interface LunarData {
 export interface TimeSeriesData {
   numbers: number[][];
   dates: Date[];
+}
+
+export interface CheckpointData {
+  gameState: GameState;
+  csvData?: string;
+  timestamp?: string;
 }

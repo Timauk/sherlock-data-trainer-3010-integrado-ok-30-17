@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { Player, ModelVisualization } from '@/types/gameTypes';
+import { Player, ModelVisualization, EvolutionDataEntry } from '@/types/gameTypes';
 import { makePrediction } from '@/utils/predictionUtils';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { calculateReward, logReward } from '@/utils/rewardSystem';
@@ -11,20 +11,13 @@ import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
 import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
 import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
 
-interface EvolutionDataEntry {
-  generation: number;
-  playerId: number;
-  score: number;
-  fitness: number;
-}
-
 export const useGameLoop = (
   players: Player[],
   setPlayers: (players: Player[]) => void,
   csvData: number[][],
   trainedModel: tf.LayersModel | null,
   concursoNumber: number,
-  setEvolutionData: (data: EvolutionDataEntry[]) => void,
+  setEvolutionData: React.Dispatch<React.SetStateAction<EvolutionDataEntry[]>>,
   generation: number,
   addLog: (message: string, matches?: number) => void,
   updateInterval: number,
@@ -45,8 +38,7 @@ export const useGameLoop = (
   setGameCount: React.Dispatch<React.SetStateAction<number>>,
   showToast?: (title: string, description: string) => void
 ) => {
-
-const gameLoop = useCallback(async () => {
+  const gameLoop = useCallback(async () => {
     if (csvData.length === 0 || !trainedModel) return;
 
     setConcursoNumber(concursoNumber + 1);
@@ -142,15 +134,15 @@ const gameLoop = useCallback(async () => {
 
     setPlayers(updatedPlayers);
 
-  setEvolutionData((prev: any[]) => [
-    ...prev,
-    ...updatedPlayers.map(player => ({
-      generation,
-      playerId: player.id,
-      score: player.score,
-      fitness: player.fitness
-    }))
-  ]);
+    setEvolutionData((prev: EvolutionDataEntry[]) => [
+      ...prev,
+      ...updatedPlayers.map(player => ({
+        generation,
+        playerId: player.id,
+        score: player.score,
+        fitness: player.fitness
+      }))
+    ]);
 
     const enhancedTrainingData = [...currentBoardNumbers, 
       ...updatedPlayers[0].predictions,

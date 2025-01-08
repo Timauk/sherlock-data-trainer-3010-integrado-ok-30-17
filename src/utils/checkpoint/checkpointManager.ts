@@ -1,7 +1,5 @@
-import { FileManager } from './fileManager';
-import { ModelManager } from './modelManager';
-import { StateManager } from './stateManager';
-import { logger } from '../logging/logger.js';
+import { ModelArtifacts, ModelArtifactsInfo } from '@/types/gameTypes';
+import * as tf from '@tensorflow/tfjs';
 import path from 'path';
 import fs from 'fs';
 
@@ -33,11 +31,6 @@ export class CheckpointManager {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
-    logger.info({
-      checkpoint: checkpointDir,
-      timestamp
-    }, 'Starting complete checkpoint save');
-
     try {
       if (data.csvData) {
         await this.fileManager.writeFile(
@@ -49,7 +42,14 @@ export class CheckpointManager {
       await this.stateManager.saveGameState(checkpointDir, data);
 
       if (data.gameState.model) {
-        await this.modelManager.saveModel(data.gameState.model, checkpointDir);
+        const artifactsInfo: ModelArtifactsInfo = {
+          dateSaved: new Date(),
+          modelTopologyType: 'JSON',
+          modelTopologyBytes: 0,
+          weightSpecsBytes: 0,
+          weightDataBytes: 0
+        };
+        await this.modelManager.saveModel(data.gameState.model, artifactsInfo);
       }
 
       await this.fileManager.writeFile(
@@ -72,11 +72,9 @@ export class CheckpointManager {
       );
 
       await this.cleanOldCheckpoints();
-      logger.info(`Complete checkpoint saved: ${path.basename(checkpointDir)}`);
       return path.basename(checkpointDir);
 
     } catch (error) {
-      logger.error({ error, checkpoint: checkpointDir }, 'Error saving checkpoint');
       throw error;
     }
   }
@@ -88,7 +86,6 @@ export class CheckpointManager {
       .reverse();
 
     if (checkpoints.length === 0) {
-      logger.warn('No checkpoints found');
       return null;
     }
 
@@ -107,10 +104,9 @@ export class CheckpointManager {
       const gameState = await this.stateManager.loadGameState(checkpointDir);
 
       if (gameState) {
-        gameState.model = await this.modelManager.loadModel(checkpointDir);
+        gameState.model = await this.modelManager.loadModel();
       }
 
-      logger.info('Checkpoint loaded successfully');
       return {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
         gameState,
@@ -118,7 +114,6 @@ export class CheckpointManager {
       };
 
     } catch (error) {
-      logger.error({ error, checkpoint: checkpointDir }, 'Error loading checkpoint');
       throw error;
     }
   }
@@ -133,7 +128,6 @@ export class CheckpointManager {
       for (const checkpoint of checkpointsToDelete) {
         const checkpointPath = path.join(this.checkpointPath, checkpoint);
         await fs.promises.rm(checkpointPath, { recursive: true });
-        logger.info(`Old checkpoint removed: ${checkpoint}`);
       }
     }
   }
