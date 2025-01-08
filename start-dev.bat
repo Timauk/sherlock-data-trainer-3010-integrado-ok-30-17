@@ -24,51 +24,8 @@ if %NODE_MAJOR_VERSION% LSS 14 (
 echo Node.js version is compatible.
 echo.
 
-:: Check and install specific dependencies without removing existing ones
-echo Checking specific dependencies...
-
-:: Check @swc/core
-call npm list @swc/core || (
-    echo Installing @swc/core...
-    npm install @swc/core@latest || (
-        echo Error: Failed to install @swc/core
-        pause
-        exit
-    )
-)
-
-:: Check ts-node
-call npm list ts-node || (
-    echo Installing ts-node...
-    npm install ts-node@latest || (
-        echo Error: Failed to install ts-node
-        pause
-        exit
-    )
-)
-
-:: Check typescript
-call npm list typescript || (
-    echo Installing typescript...
-    npm install typescript@latest || (
-        echo Error: Failed to install typescript
-        pause
-        exit
-    )
-)
-
-:: Check @types/node
-call npm list @types/node || (
-    echo Installing @types/node...
-    npm install @types/node@latest || (
-        echo Error: Failed to install @types/node
-        pause
-        exit
-    )
-)
-
-:: Check remaining dependencies without removing existing ones
-echo Checking remaining dependencies...
+:: Install all dependencies without removing existing ones
+echo Installing dependencies...
 call npm install || (
     echo Error: Failed to install dependencies
     pause
@@ -110,7 +67,7 @@ echo Copying non-TypeScript files to dist...
 xcopy /s /y src\*.js dist\src\ >nul 2>nul
 xcopy /s /y routes\*.js dist\routes\ >nul 2>nul
 
-:: Start Node.js server in a new window using the compiled JS file
+:: Start Node.js server in a new window
 echo Starting Node.js server...
 start cmd /k "cd dist && node server.js || (echo Error: Failed to start server && pause && exit)"
 
