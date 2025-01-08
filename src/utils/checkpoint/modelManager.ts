@@ -8,23 +8,31 @@ export class ModelManager {
     const modelPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.json`);
     const weightsPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.bin`);
 
+    // Salva o modelo como JSON
     const modelJson = await model.toJSON();
     await fs.promises.writeFile(modelPath, JSON.stringify(modelJson));
 
-    const weights = await model.save(`file://${weightsPath}`);
-    await fs.promises.writeFile(weightsPath, weights);
+    // Salva os pesos do modelo
+    const modelArtifacts = await model.save(`file://${weightsPath}`);
+    const weightsData = Buffer.from(JSON.stringify(modelArtifacts));
+    await fs.promises.writeFile(weightsPath, weightsData);
   }
 
   async loadModel(): Promise<tf.LayersModel | null> {
-    const modelPath = path.join(process.cwd(), 'models');
-    const files = await fs.promises.readdir(modelPath);
-    const modelFile = files.find(file => file.endsWith('.json'));
+    try {
+      const modelPath = path.join(process.cwd(), 'models');
+      const files = await fs.promises.readdir(modelPath);
+      const modelFile = files.find(file => file.endsWith('.json'));
 
-    if (!modelFile) {
+      if (!modelFile) {
+        return null;
+      }
+
+      const model = await tf.loadLayersModel(`file://${path.join(modelPath, modelFile)}`);
+      return model;
+    } catch (error) {
+      console.error('Erro ao carregar modelo:', error);
       return null;
     }
-
-    const model = await tf.loadLayersModel(`file://${path.join(modelPath, modelFile)}`);
-    return model;
   }
 }
