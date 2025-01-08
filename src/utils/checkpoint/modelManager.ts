@@ -45,9 +45,9 @@ export class ModelManager {
     try {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
       const weightSpecs = weights.map(weight => {
-        const tensor = weight as unknown as tf.Tensor;
+        const tensor = weight as tf.Tensor;
         return {
-          name: tensor.name || 'unnamed',
+          name: tensor.id,
           shape: Array.from(tensor.shape),
           dtype: tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
         };
@@ -64,14 +64,7 @@ export class ModelManager {
         generatedBy: 'TensorFlow.js',
         convertedBy: null,
         modelInitializer: null,
-        trainingConfig: null,
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'JSON',
-          modelTopologyBytes: 0,
-          weightSpecsBytes: 0,
-          weightDataBytes: 0,
-        }
+        trainingConfig: null
       });
       
       logger.info(`Optimizer weights saved to ${path}`);
