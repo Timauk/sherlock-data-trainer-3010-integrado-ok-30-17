@@ -22,7 +22,7 @@ const PlayPage: React.FC = () => {
   const loadCSV = useCallback(async (file: File) => {
     try {
       const text = await file.text();
-      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
+      const lines = text.trim().split('\n').slice(1);
       const data = lines.map(line => {
         const values = line.split(',');
         return {
@@ -131,7 +131,7 @@ const PlayPage: React.FC = () => {
   }, [isPlaying, csvData, gameLogic, gameSpeed]);
 
   const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
+    const newSpeed = 2000 - value[0];
     setGameSpeed(newSpeed);
     toast({
       title: "Velocidade Ajustada",
@@ -167,9 +167,13 @@ const PlayPage: React.FC = () => {
         onSaveModel={saveModel}
         progress={progress}
         generation={gameLogic.generation}
-        gameLogic={gameLogic}
-        champion={gameLogic.champion || { id: 0, score: 0, predictions: [], weights: [], fitness: 0, generation: 0 }}
-        modelMetrics={gameLogic.modelMetrics}
+        gameLogic={{
+          champion: gameLogic.champion || null,
+          modelMetrics: {
+            accuracy: gameLogic.modelMetrics?.accuracy || 0,
+            predictionConfidence: gameLogic.modelMetrics?.predictionConfidence
+          }
+        }}
       />
     </div>
   );
