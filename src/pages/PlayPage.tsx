@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
+  const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
@@ -168,6 +168,8 @@ const PlayPage: React.FC = () => {
         progress={progress}
         generation={gameLogic.generation}
         gameLogic={gameLogic}
+        champion={gameLogic.champion || { id: 0, score: 0, predictions: [], weights: [], fitness: 0, generation: 0 }}
+        modelMetrics={gameLogic.modelMetrics}
       />
     </div>
   );
