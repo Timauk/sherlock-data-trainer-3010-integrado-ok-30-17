@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export const useServerStatus = () => {
   const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const { toast } = useToast();
 
   const checkServerStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/status', {
+      const response = await fetch(`${API_URL}/api/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -22,16 +24,16 @@ export const useServerStatus = () => {
       } else {
         setStatus('offline');
         toast({
-          title: "Server Unavailable",
-          description: "Could not connect to the server.",
+          title: "Servidor Indisponível",
+          description: "Não foi possível conectar ao servidor.",
           variant: "destructive",
         });
       }
     } catch (error) {
       setStatus('offline');
       toast({
-        title: "Connection Error",
-        description: "Please verify if the server is running on localhost:3001",
+        title: "Erro de Conexão",
+        description: "Por favor, verifique se o servidor está rodando em localhost:3001",
         variant: "destructive",
       });
     }
