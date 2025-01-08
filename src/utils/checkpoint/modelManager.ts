@@ -45,12 +45,12 @@ export class ModelManager {
     try {
       const weights = await (model.optimizer as tf.Optimizer).getWeights();
       const weightSpecs = weights.map(weight => {
-        // First cast to unknown, then to Tensor to avoid type mismatch
-        const tensor = weight as unknown as tf.Tensor;
+        // First cast to unknown, then to NamedTensor to access name property
+        const namedTensor = weight as unknown as { name: string; tensor: tf.Tensor };
         return {
-          name: tensor.id.toString(), // Convert id to string
-          shape: Array.from(tensor.shape),
-          dtype: tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
+          name: namedTensor.name,
+          shape: Array.from(namedTensor.tensor.shape),
+          dtype: namedTensor.tensor.dtype as 'float32' | 'int32' | 'bool' | 'string' | 'complex64'
         };
       });
 
@@ -65,14 +65,7 @@ export class ModelManager {
         generatedBy: 'TensorFlow.js',
         convertedBy: null,
         modelInitializer: null,
-        trainingConfig: null,
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'JSON',
-          modelTopologyBytes: 0,
-          weightSpecsBytes: weightSpecs.length,
-          weightDataBytes: weightData.data.byteLength
-        }
+        trainingConfig: null
       });
       
       logger.info(`Optimizer weights saved to ${path}`);
