@@ -3,6 +3,7 @@ import { ModelManager } from './modelManager.js';
 import { StateManager } from './stateManager.js';
 import { logger } from '../logging/logger.js';
 import { CheckpointData, CheckpointManifest } from '../../types/checkpointTypes';
+import { ModelArtifactsInfo } from '../../types/gameTypes';
 import path from 'path';
 import fs from 'fs';
 
@@ -54,7 +55,14 @@ class CheckpointManager {
       await this.stateManager.saveGameState(checkpointDir, data);
 
       if (data.gameState?.model) {
-        await this.modelManager.saveModel(data.gameState.model, checkpointDir);
+        const artifactsInfo: ModelArtifactsInfo = {
+          dateSaved: new Date(),
+          modelTopologyType: 'JSON',
+          modelTopologyBytes: 0,
+          weightSpecsBytes: 0,
+          weightDataBytes: 0
+        };
+        await this.modelManager.saveModel(data.gameState.model, artifactsInfo);
       }
 
       const manifest: CheckpointManifest = {
