@@ -1,5 +1,7 @@
-import { ModelArtifacts, ModelArtifactsInfo } from '@/types/gameTypes';
-import * as tf from '@tensorflow/tfjs';
+import { FileManager } from './fileManager';
+import { ModelManager } from './modelManager';
+import { StateManager } from './stateManager';
+import { ModelArtifactsInfo } from '@/types/gameTypes';
 import path from 'path';
 import fs from 'fs';
 

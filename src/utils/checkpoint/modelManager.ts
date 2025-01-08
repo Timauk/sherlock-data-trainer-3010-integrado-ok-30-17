@@ -1,56 +1,30 @@
-import { ModelArtifacts, ModelArtifactsInfo } from '@/types/gameTypes';
+import { ModelArtifactsInfo } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
+import fs from 'fs';
+import path from 'path';
 
 export class ModelManager {
-  private handler?: tf.io.IOHandler;
-  private artifactsInfo?: ModelArtifactsInfo;
-
-  constructor() {
-    this.initialize();
-  }
-
-  private async initialize(): Promise<void> {
-    try {
-      this.handler = await tf.io.browserFiles([]);
-    } catch (error) {
-      console.error('Erro ao inicializar ModelManager:', error);
-    }
-  }
-
   async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
-    if (!this.handler) {
-      throw new Error('Handler não inicializado');
-    }
+    const modelPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.json`);
+    const weightsPath = path.join(process.cwd(), 'models', `${artifactsInfo.dateSaved.toISOString()}.bin`);
 
-    const weightSpecs = model.weights.map(weight => ({
-      name: weight.name,
-      shape: weight.shape,
-      dtype: weight.dtype
-    }));
+    const modelJson = await model.toJSON();
+    await fs.promises.writeFile(modelPath, JSON.stringify(modelJson));
 
-    const modelArtifacts: ModelArtifacts = {
-      modelTopology: model.toJSON(),
-      weightSpecs,
-      weightData: new ArrayBuffer(0),
-      format: 'layers-model',
-      generatedBy: 'TensorFlow.js v' + tf.version.tfjs,
-      convertedBy: 'TensorFlow.js Converter v' + tf.version.tfjs,
-      modelArtifactsInfo: artifactsInfo
-    };
-
-    await this.handler.save(modelArtifacts);
+    const weights = await model.save(`file://${weightsPath}`);
+    await fs.promises.writeFile(weightsPath, weights);
   }
 
   async loadModel(): Promise<tf.LayersModel | null> {
-    if (!this.handler) {
-      throw new Error('Handler não inicializado');
-    }
+    const modelPath = path.join(process.cwd(), 'models');
+    const files = await fs.promises.readdir(modelPath);
+    const modelFile = files.find(file => file.endsWith('.json'));
 
-    try {
-      return await tf.loadLayersModel(this.handler);
-    } catch (error) {
-      console.error('Erro ao carregar modelo:', error);
+    if (!modelFile) {
       return null;
     }
+
+    const model = await tf.loadLayersModel(`file://${path.join(modelPath, modelFile)}`);
+    return model;
   }
 }
