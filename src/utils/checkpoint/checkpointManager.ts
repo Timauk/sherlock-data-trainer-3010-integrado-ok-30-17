@@ -1,7 +1,7 @@
 import { FileManager } from './fileManager';
 import { ModelManager } from './modelManager';
 import { StateManager } from './stateManager';
-import { ModelArtifactsInfo } from '@/types/gameTypes';
+import { ModelArtifactsInfo, ModelArtifacts } from '@/types/gameTypes';
 import path from 'path';
 import fs from 'fs';
 
@@ -75,7 +75,6 @@ export class CheckpointManager {
 
       await this.cleanOldCheckpoints();
       return path.basename(checkpointDir);
-
     } catch (error) {
       throw error;
     }

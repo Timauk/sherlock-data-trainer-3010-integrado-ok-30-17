@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import { Player } from '@/types/gameTypes';
-
-interface EvolutionDataEntry {
-  generation: number;
-  playerId: number;
-  score: number;
-  fitness: number;
-}
+import { Player, EvolutionDataEntry } from '@/types/gameTypes';
 
 export const useGameState = () => {
   const [players, setPlayers] = useState<Player[]>([]);

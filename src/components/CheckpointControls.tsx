@@ -17,9 +17,9 @@ const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   onAutoSave,
 }) => {
   const { toast } = useToast();
-  const [inputPath, setInputPath] = useState(savePath);
+  const [inputPath, setInputPath] = useState<string>(savePath);
 
-  const handleSaveCheckpoint = async () => {
+  const handleSaveCheckpoint = async (): Promise<void> => {
     try {
       const gameState = {
         timestamp: new Date().toISOString(),

@@ -28,7 +28,7 @@ const PlayerWeightsDialog: React.FC<PlayerWeightsDialogProps> = ({
 
   if (!player) return null;
 
-  const handleWeightChange = (index: number, value: number) => {
+  const handleWeightChange = (index: number, value: number): void => {
     onWeightChange(index, value);
     toast({
       title: "Peso Ajustado",
@@ -36,7 +36,7 @@ const PlayerWeightsDialog: React.FC<PlayerWeightsDialogProps> = ({
     });
   };
 
-  const handleClonePlayer = () => {
+  const handleClonePlayer = (): void => {
     onClonePlayer(player);
     toast({
       title: "Jogador Clonado",

@@ -11,7 +11,10 @@ export interface ModelMetadata {
   trainingIterations: number;
 }
 
-export const serializeModel = async (model: tf.LayersModel, metadata: ModelMetadata) => {
+export const serializeModel = async (
+  model: tf.LayersModel, 
+  metadata: ModelMetadata
+): Promise<boolean> => {
   try {
     await model.save('indexeddb://current-model');
     localStorage.setItem('model-metadata', JSON.stringify(metadata));

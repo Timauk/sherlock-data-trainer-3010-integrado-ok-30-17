@@ -12,7 +12,11 @@ interface GameMetricsProps {
   };
 }
 
-const GameMetrics: React.FC<GameMetricsProps> = ({ progress, champion, modelMetrics }) => {
+const GameMetrics: React.FC<GameMetricsProps> = ({ 
+  progress, 
+  champion, 
+  modelMetrics 
+}) => {
   return (
     <div className="space-y-4">
       <Progress value={progress} className="w-full" />
