@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(1000);
+  const [gameSpeed, setGameSpeed] = useState(1000); // Default 1 second
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
   const [trainedModel, setTrainedModel] = useState<tf.LayersModel | null>(null);
@@ -22,7 +22,7 @@ const PlayPage: React.FC = () => {
   const loadCSV = useCallback(async (file: File) => {
     try {
       const text = await file.text();
-      const lines = text.trim().split('\n').slice(1);
+      const lines = text.trim().split('\n').slice(1); // Ignorar o cabeçalho
       const data = lines.map(line => {
         const values = line.split(',');
         return {
@@ -131,7 +131,7 @@ const PlayPage: React.FC = () => {
   }, [isPlaying, csvData, gameLogic, gameSpeed]);
 
   const handleSpeedChange = (value: number[]) => {
-    const newSpeed = 2000 - value[0];
+    const newSpeed = 2000 - value[0]; // Inverte a escala para que maior valor = mais rápido
     setGameSpeed(newSpeed);
     toast({
       title: "Velocidade Ajustada",
@@ -167,13 +167,7 @@ const PlayPage: React.FC = () => {
         onSaveModel={saveModel}
         progress={progress}
         generation={gameLogic.generation}
-        gameLogic={{
-          champion: gameLogic.champion || null,
-          modelMetrics: {
-            accuracy: gameLogic.modelMetrics?.accuracy || 0,
-            predictionConfidence: gameLogic.modelMetrics?.predictionConfidence
-          }
-        }}
+        gameLogic={gameLogic}
       />
     </div>
   );

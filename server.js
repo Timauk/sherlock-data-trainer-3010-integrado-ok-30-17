@@ -10,7 +10,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Import logger after defining __dirname
+// Import logger
 import { logger } from './src/utils/logging/logger.js';
 
 const app = express();
@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'dist'))); // Add dist folder for frontend files
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -86,7 +86,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Create checkpoints and logs directories if they don't exist
+// Create directories if they don't exist
 const checkpointsDir = path.join(__dirname, 'checkpoints');
 const logsDir = path.join(__dirname, 'logs');
 

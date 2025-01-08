@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { useGameInitialization } from './useGameInitialization';
+import { useGameLoop } from './useGameLoop';
 import { updateModelWithNewData } from '@/utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
 import { selectBestPlayers } from '@/utils/evolutionSystem';
@@ -38,16 +39,33 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [isManualMode, setIsManualMode] = useState(false);
-  const [champion, setChampion] = useState<Player | null>(null);
 
   const addLog = useCallback((message: string, matches?: number) => {
     const logType = matches ? 'prediction' : 'action';
     systemLogger.log(logType, message, { matches });
   }, []);
 
-  const gameLoop = useCallback(async () => {
-    // Implement your game loop logic here
-  }, [players, generation, trainedModel, gameCount, championData, trainingData]);
+  const gameLoop = useGameLoop(
+    players,
+    setPlayers,
+    csvData,
+    trainedModel,
+    concursoNumber,
+    setEvolutionData,
+    generation,
+    addLog,
+    updateInterval,
+    trainingData,
+    setTrainingData,
+    setNumbers,
+    setDates,
+    setNeuralNetworkVisualization,
+    setBoardNumbers,
+    setModelMetrics,
+    setConcursoNumber,
+    setGameCount,
+    (title, description) => toast({ title, description })
+  );
 
   const evolveGeneration = useCallback(async () => {
     const bestPlayers = selectBestPlayers(players);
@@ -148,7 +166,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     evolutionData,
     neuralNetworkVisualization,
     modelMetrics,
-    champion,
     initializePlayers,
     gameLoop,
     evolveGeneration,
