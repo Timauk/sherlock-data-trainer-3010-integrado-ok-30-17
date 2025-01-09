@@ -2,15 +2,15 @@ import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../logging/logger.js';
-import { ModelArtifactsInfo } from '@/types/gameTypes';
 
-type WeightData = {
+// Usando type ao invés de interface e exportando como módulo ES
+export type WeightData = {
   weights: number[];
   shape: number[];
 };
 
 export class ModelManager {
-  async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
+  async saveModel(model: tf.LayersModel, artifactsInfo: any): Promise<void> {
     if (!model) {
       throw new Error('Modelo não fornecido para salvamento');
     }
