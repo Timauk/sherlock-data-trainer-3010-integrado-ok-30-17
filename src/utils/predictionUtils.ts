@@ -29,35 +29,41 @@ export async function makePrediction(
     return [];
   }
   
-  systemLogger.log('prediction', 'Iniciando predição', {
-    inputDataLength: inputData.length,
-    playerWeightsLength: playerWeights.length,
-    concursoNumber
-  });
-  
-  const startTime = performance.now();
+  console.log('Dados de entrada brutos:', inputData);
+  console.log('Pesos do jogador:', playerWeights);
   
   try {
-    // Normalização dos dados de entrada
-    const normalizedInput = inputData.map(n => n / 25);
-    systemLogger.log('prediction', 'Dados normalizados', { normalizedInput });
+    // Validação de dimensões
+    const inputShape = trainedModel.inputs[0].shape;
+    console.log('Shape esperado do modelo:', inputShape);
+    
+    if (inputData.length !== 15) {
+      throw new Error(`Formato de entrada inválido. Esperado: 15, Recebido: ${inputData.length}`);
+    }
+
+    // Normalização dos dados de entrada (garantindo valores entre 0 e 1)
+    const normalizedInput = inputData.map(n => {
+      const normalized = n / 25;
+      if (normalized < 0 || normalized > 1) {
+        console.warn('Valor normalizado fora do intervalo [0,1]:', normalized);
+      }
+      return normalized;
+    });
+
+    console.log('Dados normalizados:', normalizedInput);
 
     // Preparação do tensor de entrada
     const inputTensor = tf.tensor2d([normalizedInput]);
-    systemLogger.log('prediction', 'Tensor criado', {
-      shape: inputTensor.shape,
-      dataType: inputTensor.dtype
-    });
+    console.log('Dimensões do tensor de entrada:', inputTensor.shape);
     
     // Execução da predição
     const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
     const result = Array.from(await predictions.data());
     
-    systemLogger.log('prediction', 'Predições obtidas', { result });
+    console.log('Predições brutas:', result);
     
     // Limpeza de memória
-    inputTensor.dispose();
-    predictions.dispose();
+    tf.dispose([inputTensor, predictions]);
     
     // Atualização da visualização
     setNeuralNetworkVisualization({
@@ -74,14 +80,22 @@ export async function makePrediction(
       .map(item => item.number)
       .sort((a, b) => a - b);
 
+    console.log('Predição final:', finalPrediction);
+
+    // Monitoramento de performance
     const endTime = performance.now();
-    performanceMonitor.recordMetrics(result[0], endTime - startTime);
+    performanceMonitor.recordMetrics(result[0], endTime - performance.now());
     
-    systemLogger.log('prediction', 'Predição final', { finalPrediction });
+    // Validação final
+    if (finalPrediction.length !== 15) {
+      throw new Error('Número incorreto de predições geradas');
+    }
+
     return finalPrediction;
 
   } catch (error) {
     systemLogger.log('system', 'Erro durante a predição', { error });
+    console.error('Erro detalhado:', error);
     return [];
   }
 }

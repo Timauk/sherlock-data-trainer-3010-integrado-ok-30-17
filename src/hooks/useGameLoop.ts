@@ -52,13 +52,16 @@ export const useGameLoop = (
     console.log('Iniciando loop do jogo:', {
       playersCount: players.length,
       concursoNumber,
-      modelLoaded: !!trainedModel
+      modelLoaded: !!trainedModel,
+      modelInputShape: trainedModel.inputs[0].shape,
+      modelOutputShape: trainedModel.outputs[0].shape
     });
 
     setConcursoNumber(concursoNumber + 1);
     setGameCount(prev => prev + 1);
 
     const currentBoardNumbers = csvData[concursoNumber % csvData.length];
+    console.log('Números do tabuleiro atual:', currentBoardNumbers);
     setBoardNumbers(currentBoardNumbers);
     
     const validationMetrics = performCrossValidation(
@@ -77,8 +80,14 @@ export const useGameLoop = (
     
     setDates(currentDates => [...currentDates, currentDate].slice(-100));
 
+    console.log('Iniciando previsões para jogadores');
     const playerPredictions = await Promise.all(
-      players.map(async player => {
+      players.map(async (player, index) => {
+        console.log(`Processando jogador ${player.id}:`, {
+          weights: player.weights,
+          previousPredictions: player.predictions
+        });
+
         const prediction = await makePrediction(
           trainedModel, 
           currentBoardNumbers, 
@@ -89,10 +98,10 @@ export const useGameLoop = (
           { numbers: [[...currentBoardNumbers]], dates: [currentDate] }
         );
 
-        // Monitorar previsões
-        const timeSeriesAnalyzer = new TimeSeriesAnalysis([[...currentBoardNumbers]]);
-        const arimaPredictor = timeSeriesAnalyzer.analyzeNumbers();
-        predictionMonitor.recordPrediction(prediction, currentBoardNumbers, arimaPredictor);
+        if (prediction.length !== 15) {
+          console.error(`Previsão inválida para jogador ${player.id}:`, prediction);
+          return player.predictions; // Mantém previsões anteriores em caso de erro
+        }
 
         return prediction;
       })
@@ -104,9 +113,17 @@ export const useGameLoop = (
     let currentGameRandomMatches = 0;
     const totalPredictions = players.length * (concursoNumber + 1);
 
+    console.log('Atualizando jogadores com novas previsões');
     const updatedPlayers = players.map((player, index) => {
       const predictions = playerPredictions[index];
       const matches = predictions.filter(num => currentBoardNumbers.includes(num)).length;
+      
+      console.log(`Resultados do jogador ${player.id}:`, {
+        predictions,
+        matches,
+        currentBoardNumbers
+      });
+
       totalMatches += matches;
       currentGameMatches += matches;
       
@@ -115,7 +132,6 @@ export const useGameLoop = (
       randomMatches += randomMatch;
       currentGameRandomMatches += randomMatch;
 
-      // Record temporal accuracy
       temporalAccuracyTracker.recordAccuracy(matches, 15);
 
       const reward = calculateReward(matches);
@@ -158,18 +174,14 @@ export const useGameLoop = (
       }))
     ]);
 
-    const enhancedTrainingData = [...currentBoardNumbers, 
-      ...updatedPlayers[0].predictions,
-      lunarPhase === 'Cheia' ? 1 : 0,
-      lunarPhase === 'Nova' ? 1 : 0,
-      lunarPhase === 'Crescente' ? 1 : 0,
-      lunarPhase === 'Minguante' ? 1 : 0
-    ];
+    // Mantendo apenas os dados essenciais para treinamento
+    const enhancedTrainingData = [...currentBoardNumbers];
 
     setTrainingData(currentTrainingData => 
       [...currentTrainingData, enhancedTrainingData]);
 
     if (concursoNumber % Math.min(updateInterval, 50) === 0 && trainingData.length > 0) {
+      console.log('Atualizando modelo com novos dados');
       await updateModelWithNewData(trainedModel, trainingData, addLog, showToast);
       setTrainingData([]);
     }
