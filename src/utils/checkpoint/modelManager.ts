@@ -1,8 +1,13 @@
-import { ModelArtifactsInfo } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../logging/logger.js';
+import { ModelArtifactsInfo } from '@/types/gameTypes';
+
+interface WeightData {
+  weights: number[];
+  shape: number[];
+}
 
 export class ModelManager {
   async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
