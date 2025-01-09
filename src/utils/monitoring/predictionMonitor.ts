@@ -1,6 +1,7 @@
+import { systemLogger } from '../logging/systemLogger';
+
 interface PredictionMetrics {
   accuracy: number;
-  arimaAccuracy: number;
   timestamp: number;
   cycleNumber: number;
 }
@@ -21,22 +22,24 @@ class PredictionMonitor {
   
   recordPrediction(prediction: number[], actual: number[], arimaPredictor: number[]) {
     const matches = prediction.filter(num => actual.includes(num)).length;
-    const arimaMatches = arimaPredictor.filter(num => actual.includes(num)).length;
     
     this.metrics.push({
       accuracy: matches / 15,
-      arimaAccuracy: arimaMatches / 15,
       timestamp: Date.now(),
       cycleNumber: ++this.cycleCount
     });
     
-    // Manter apenas os últimos 100 registros
     if (this.metrics.length > 100) {
       this.metrics = this.metrics.slice(-100);
     }
     
-    // Monitorar estabilidade
     this.checkStability();
+    
+    systemLogger.log('prediction', 'Métricas de predição', {
+      matches,
+      accuracy: matches / 15,
+      cycleNumber: this.cycleCount
+    });
   }
   
   private checkStability() {
@@ -44,10 +47,12 @@ class PredictionMonitor {
     
     const recentMetrics = this.metrics.slice(-50);
     const avgAccuracy = recentMetrics.reduce((sum, m) => sum + m.accuracy, 0) / 50;
-    const avgArimaAccuracy = recentMetrics.reduce((sum, m) => sum + m.arimaAccuracy, 0) / 50;
     
-    if (avgAccuracy < 0.2 || avgArimaAccuracy < 0.2) {
-      console.warn('Alerta: Baixa precisão detectada nas últimas 50 previsões');
+    if (avgAccuracy < 0.2) {
+      systemLogger.log('system', 'Alerta: Baixa precisão detectada', {
+        avgAccuracy,
+        lastCycles: 50
+      });
     }
   }
   
@@ -62,6 +67,7 @@ class PredictionMonitor {
   reset() {
     this.metrics = [];
     this.cycleCount = 0;
+    systemLogger.log('system', 'Monitor de predições resetado');
   }
 }
 

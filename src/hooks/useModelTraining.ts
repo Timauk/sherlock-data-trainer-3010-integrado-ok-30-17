@@ -1,29 +1,25 @@
 import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { WorkerPool } from '@/utils/performance/workerPool';
-import { summarizeHistoricalData } from '@/utils/dataManagement/dataSummarization';
-import { createEnsembleModels, trainEnsemble } from '@/utils/aiModel/ensembleLearning';
 import * as tf from '@tensorflow/tfjs';
+import { systemLogger } from '@/utils/logging/systemLogger';
 
 export const useModelTraining = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [model, setModel] = useState<tf.LayersModel | null>(null);
   const { toast } = useToast();
-  const workerPool = new WorkerPool();
 
   const initializeModel = useCallback(async () => {
     try {
-      console.log('Tentando carregar modelo existente...');
+      systemLogger.log('system', 'Tentando carregar modelo existente...');
       const initialModel = await tf.loadLayersModel('indexeddb://initial-model');
-      console.log('Modelo carregado com sucesso:', initialModel);
+      systemLogger.log('system', 'Modelo carregado com sucesso');
       setModel(initialModel);
       return initialModel;
     } catch (error) {
-      console.log('Modelo inicial não encontrado, criando novo modelo...');
+      systemLogger.log('system', 'Criando novo modelo...');
       const newModel = tf.sequential();
       
-      // Configuração atualizada do modelo
       newModel.add(tf.layers.dense({ 
         units: 128, 
         activation: 'relu', 
@@ -49,12 +45,11 @@ export const useModelTraining = () => {
         metrics: ['accuracy']
       });
       
-      console.log('Novo modelo criado:', newModel);
+      systemLogger.log('system', 'Novo modelo criado');
       setModel(newModel);
       
-      // Salva o modelo inicial
       await newModel.save('indexeddb://initial-model');
-      console.log('Novo modelo salvo no IndexedDB');
+      systemLogger.log('system', 'Novo modelo salvo no IndexedDB');
       
       return newModel;
     }
@@ -68,35 +63,41 @@ export const useModelTraining = () => {
     try {
       setIsTraining(true);
       setProgress(0);
-      console.log('Iniciando treinamento com dados:', {
-        historicalDataLength: historicalData.length,
-        datesLength: dates.length,
-        lunarDataLength: lunarData.length
+      
+      const currentModel = await initializeModel();
+      
+      // Preparar dados de treinamento
+      const xs = tf.tensor2d(historicalData.map(row => row.map(n => n / 25)));
+      const ys = tf.tensor2d(historicalData.map(row => row.map(n => n / 25)));
+      
+      // Treinar modelo
+      await currentModel.fit(xs, ys, {
+        epochs: 50,
+        batchSize: 32,
+        validationSplit: 0.2,
+        callbacks: {
+          onEpochEnd: (epoch, logs) => {
+            const progress = ((epoch + 1) / 50) * 100;
+            setProgress(progress);
+            systemLogger.log('system', `Época ${epoch + 1}/50`, logs);
+          }
+        }
       });
-
-      const summaries = summarizeHistoricalData(historicalData, dates);
-      setProgress(20);
-
-      const models = await createEnsembleModels();
-      setProgress(40);
-
-      await trainEnsemble(models, historicalData, summaries, lunarData);
-      setProgress(90);
-
-      await Promise.all([
-        models.seasonal.save('indexeddb://seasonal-model'),
-        models.frequency.save('indexeddb://frequency-model'),
-        models.lunar.save('indexeddb://lunar-model'),
-        models.sequential.save('indexeddb://sequential-model')
-      ]);
-
-      setProgress(100);
+      
+      // Limpar tensores
+      xs.dispose();
+      ys.dispose();
+      
+      // Salvar modelo treinado
+      await currentModel.save('indexeddb://trained-model');
+      
       toast({
         title: "Treinamento Concluído",
-        description: "Os modelos foram treinados e salvos com sucesso!"
+        description: "O modelo foi treinado e salvo com sucesso!"
       });
+      
     } catch (error) {
-      console.error('Erro durante o treinamento:', error);
+      systemLogger.log('system', 'Erro durante o treinamento', { error });
       toast({
         title: "Erro no Treinamento",
         description: error instanceof Error ? error.message : "Erro desconhecido",
@@ -104,9 +105,8 @@ export const useModelTraining = () => {
       });
     } finally {
       setIsTraining(false);
-      workerPool.terminate();
     }
-  }, [toast]);
+  }, [toast, initializeModel]);
 
   return {
     isTraining,
