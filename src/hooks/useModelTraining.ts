@@ -8,8 +8,32 @@ import * as tf from '@tensorflow/tfjs';
 export const useModelTraining = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [model, setModel] = useState<tf.LayersModel | null>(null);
   const { toast } = useToast();
   const workerPool = new WorkerPool();
+
+  const initializeModel = useCallback(async () => {
+    try {
+      const initialModel = await tf.loadLayersModel('indexeddb://initial-model');
+      setModel(initialModel);
+      return initialModel;
+    } catch (error) {
+      console.log('Modelo inicial não encontrado, criando novo modelo...');
+      const newModel = tf.sequential();
+      newModel.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [15] }));
+      newModel.add(tf.layers.dense({ units: 64, activation: 'relu' }));
+      newModel.add(tf.layers.dense({ units: 15, activation: 'sigmoid' }));
+      
+      newModel.compile({
+        optimizer: 'adam',
+        loss: 'meanSquaredError',
+        metrics: ['accuracy']
+      });
+      
+      setModel(newModel);
+      return newModel;
+    }
+  }, []);
 
   const startTraining = useCallback(async (
     historicalData: number[][],
@@ -20,19 +44,15 @@ export const useModelTraining = () => {
       setIsTraining(true);
       setProgress(0);
 
-      // Sumarização de dados históricos
       const summaries = summarizeHistoricalData(historicalData, dates);
       setProgress(20);
 
-      // Criação dos modelos ensemble
       const models = await createEnsembleModels();
       setProgress(40);
 
-      // Treinamento dos modelos
       await trainEnsemble(models, historicalData, summaries, lunarData);
       setProgress(90);
 
-      // Salva os modelos
       await Promise.all([
         models.seasonal.save('indexeddb://seasonal-model'),
         models.frequency.save('indexeddb://frequency-model'),
@@ -60,6 +80,8 @@ export const useModelTraining = () => {
   return {
     isTraining,
     progress,
-    startTraining
+    startTraining,
+    model,
+    initializeModel
   };
 };
