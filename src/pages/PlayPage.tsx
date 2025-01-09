@@ -6,6 +6,7 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
+import { useModelTraining } from '@/hooks/useModelTraining';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,10 +14,13 @@ const PlayPage: React.FC = () => {
   const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
   const [csvDates, setCsvDates] = useState<Date[]>([]);
-  const [trainedModel, setTrainedModel] = useState<tf.LayersModel | undefined>(undefined);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
-
+  
+  // Usando o mesmo hook de treinamento para garantir consistência
+  const { model: trainedModel, initializeModel } = useModelTraining();
+  
+  // Passando o modelo já inicializado para o gameLogic
   const gameLogic = useGameLogic(csvData, trainedModel);
 
   const loadCSV = useCallback(async (file: File) => {
@@ -72,8 +76,8 @@ const PlayPage: React.FC = () => {
     }
 
     try {
+      await initializeModel();
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
-      setTrainedModel(model);
       gameLogic.addLog("Modelo carregado com sucesso!");
       toast({
         title: "Modelo Carregado",
@@ -89,7 +93,7 @@ const PlayPage: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [gameLogic, toast]);
+  }, [gameLogic, toast, initializeModel]);
 
   const saveModel = useCallback(async () => {
     if (!trainedModel) {
@@ -147,8 +151,13 @@ const PlayPage: React.FC = () => {
   }, [gameLogic]);
 
   useEffect(() => {
+    // Inicializa o modelo ao montar o componente
+    initializeModel();
+  }, [initializeModel]);
+
+  useEffect(() => {
     let intervalId: NodeJS.Timeout;
-    if (isPlaying) {
+    if (isPlaying && trainedModel) {
       intervalId = setInterval(() => {
         gameLogic.gameLoop();
         setProgress((prevProgress) => {
@@ -164,7 +173,7 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed, trainedModel]);
 
   const handleSpeedChange = useCallback((value: number[]) => {
     const newSpeed = 2000 - value[0];

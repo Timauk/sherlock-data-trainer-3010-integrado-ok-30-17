@@ -3,10 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameInitialization } from './useGameInitialization';
 import { useGameLoop } from './useGameLoop';
-import { updateModelWithNewData } from '@/utils/modelUtils';
-import { cloneChampion, updateModelWithChampionKnowledge } from '@/utils/playerEvolution';
-import { selectBestPlayers } from '@/utils/evolutionSystem';
-import { ModelVisualization, Player, ChampionData, EvolutionDataEntry } from '@/types/gameTypes';
+import { Player, ModelVisualization, ChampionData, EvolutionDataEntry } from '@/types/gameTypes';
 import { systemLogger } from '@/utils/logging/systemLogger';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
