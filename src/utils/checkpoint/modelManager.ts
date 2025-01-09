@@ -4,10 +4,10 @@ import path from 'path';
 import { logger } from '../logging/logger.js';
 import { ModelArtifactsInfo } from '@/types/gameTypes';
 
-interface WeightData {
+type WeightData = {
   weights: number[];
   shape: number[];
-}
+};
 
 export class ModelManager {
   async saveModel(model: tf.LayersModel, artifactsInfo: ModelArtifactsInfo): Promise<void> {
