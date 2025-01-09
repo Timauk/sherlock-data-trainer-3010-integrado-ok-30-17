@@ -45,7 +45,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     players,
     setPlayers,
     csvData,
-    trainedModel,
+    trainedModel || null, // Aqui fazemos a conversão explícita para null quando undefined
     concursoNumber,
     setEvolutionData,
     generation,
