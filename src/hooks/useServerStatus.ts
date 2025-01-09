@@ -13,7 +13,8 @@ export const useServerStatus = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        mode: 'cors'
+        mode: 'cors',
+        credentials: 'include'
       });
       
       if (response.ok) {
@@ -21,17 +22,16 @@ export const useServerStatus = () => {
       } else {
         setStatus('offline');
         toast({
-          title: "Servidor Indisponível",
-          description: "Não foi possível conectar ao servidor.",
+          title: "Server Unavailable",
+          description: "Could not connect to the server.",
           variant: "destructive",
         });
       }
     } catch (error) {
       setStatus('offline');
-      console.error('Erro ao verificar status do servidor:', error);
       toast({
-        title: "Erro de Conexão",
-        description: "Verifique se o servidor está rodando na porta 3001",
+        title: "Connection Error",
+        description: "Please verify if the server is running on localhost:3001",
         variant: "destructive",
       });
     }
