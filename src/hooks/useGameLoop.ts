@@ -52,9 +52,7 @@ export const useGameLoop = (
     console.log('Iniciando loop do jogo:', {
       playersCount: players.length,
       concursoNumber,
-      modelLoaded: !!trainedModel,
-      modelInputShape: trainedModel.inputs[0].shape,
-      modelOutputShape: trainedModel.outputs[0].shape
+      modelLoaded: !!trainedModel
     });
 
     setConcursoNumber(concursoNumber + 1);
@@ -64,11 +62,6 @@ export const useGameLoop = (
     console.log('Números do tabuleiro atual:', currentBoardNumbers);
     setBoardNumbers(currentBoardNumbers);
     
-    const validationMetrics = performCrossValidation(
-      [players[0].predictions],
-      csvData.slice(Math.max(0, concursoNumber - 10), concursoNumber)
-    );
-
     const currentDate = new Date();
     const lunarPhase = getLunarPhase(currentDate);
     const lunarPatterns = analyzeLunarPatterns([currentDate], [currentBoardNumbers]);
@@ -82,7 +75,7 @@ export const useGameLoop = (
 
     console.log('Iniciando previsões para jogadores');
     const playerPredictions = await Promise.all(
-      players.map(async (player, index) => {
+      players.map(async (player) => {
         console.log(`Processando jogador ${player.id}:`, {
           weights: player.weights,
           previousPredictions: player.predictions
@@ -100,7 +93,7 @@ export const useGameLoop = (
 
         if (prediction.length !== 15) {
           console.error(`Previsão inválida para jogador ${player.id}:`, prediction);
-          return player.predictions; // Mantém previsões anteriores em caso de erro
+          return player.predictions;
         }
 
         return prediction;
@@ -174,11 +167,8 @@ export const useGameLoop = (
       }))
     ]);
 
-    // Mantendo apenas os dados essenciais para treinamento
     const enhancedTrainingData = [...currentBoardNumbers];
-
-    setTrainingData(currentTrainingData => 
-      [...currentTrainingData, enhancedTrainingData]);
+    setTrainingData(currentTrainingData => [...currentTrainingData, enhancedTrainingData]);
 
     if (concursoNumber % Math.min(updateInterval, 50) === 0 && trainingData.length > 0) {
       console.log('Atualizando modelo com novos dados');
