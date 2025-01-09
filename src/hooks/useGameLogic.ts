@@ -9,7 +9,7 @@ import { selectBestPlayers } from '@/utils/evolutionSystem';
 import { ModelVisualization, Player, ChampionData, EvolutionDataEntry } from '@/types/gameTypes';
 import { systemLogger } from '@/utils/logging/systemLogger';
 
-export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | undefined) => {
+export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { toast } = useToast();
   const { players, setPlayers, initializePlayers } = useGameInitialization();
   const [generation, setGeneration] = useState<number>(1);
@@ -45,7 +45,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     players,
     setPlayers,
     csvData,
-    trainedModel,
+    trainedModel || null, // Garantindo que seja null quando undefined
     concursoNumber,
     setEvolutionData,
     generation,
