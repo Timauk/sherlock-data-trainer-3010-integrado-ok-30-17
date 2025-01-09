@@ -39,7 +39,21 @@ export const useGameLoop = (
   showToast?: (title: string, description: string) => void
 ) => {
   const gameLoop = useCallback(async () => {
-    if (csvData.length === 0 || !trainedModel) return;
+    if (csvData.length === 0) {
+      console.error('Dados CSV não disponíveis');
+      return;
+    }
+    
+    if (!trainedModel) {
+      console.error('Modelo não inicializado');
+      return;
+    }
+
+    console.log('Iniciando loop do jogo:', {
+      playersCount: players.length,
+      concursoNumber,
+      modelLoaded: !!trainedModel
+    });
 
     setConcursoNumber(concursoNumber + 1);
     setGameCount(prev => prev + 1);

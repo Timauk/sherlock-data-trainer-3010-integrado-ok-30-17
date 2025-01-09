@@ -14,15 +14,34 @@ export const useModelTraining = () => {
 
   const initializeModel = useCallback(async () => {
     try {
+      console.log('Tentando carregar modelo existente...');
       const initialModel = await tf.loadLayersModel('indexeddb://initial-model');
+      console.log('Modelo carregado com sucesso:', initialModel);
       setModel(initialModel);
       return initialModel;
     } catch (error) {
       console.log('Modelo inicial não encontrado, criando novo modelo...');
       const newModel = tf.sequential();
-      newModel.add(tf.layers.dense({ units: 128, activation: 'relu', inputShape: [15] }));
-      newModel.add(tf.layers.dense({ units: 64, activation: 'relu' }));
-      newModel.add(tf.layers.dense({ units: 15, activation: 'sigmoid' }));
+      
+      // Configuração atualizada do modelo
+      newModel.add(tf.layers.dense({ 
+        units: 128, 
+        activation: 'relu', 
+        inputShape: [15],
+        name: 'input_layer'
+      }));
+      
+      newModel.add(tf.layers.dense({ 
+        units: 64, 
+        activation: 'relu',
+        name: 'hidden_layer'
+      }));
+      
+      newModel.add(tf.layers.dense({ 
+        units: 15, 
+        activation: 'sigmoid',
+        name: 'output_layer'
+      }));
       
       newModel.compile({
         optimizer: 'adam',
@@ -30,7 +49,13 @@ export const useModelTraining = () => {
         metrics: ['accuracy']
       });
       
+      console.log('Novo modelo criado:', newModel);
       setModel(newModel);
+      
+      // Salva o modelo inicial
+      await newModel.save('indexeddb://initial-model');
+      console.log('Novo modelo salvo no IndexedDB');
+      
       return newModel;
     }
   }, []);
@@ -43,6 +68,11 @@ export const useModelTraining = () => {
     try {
       setIsTraining(true);
       setProgress(0);
+      console.log('Iniciando treinamento com dados:', {
+        historicalDataLength: historicalData.length,
+        datesLength: dates.length,
+        lunarDataLength: lunarData.length
+      });
 
       const summaries = summarizeHistoricalData(historicalData, dates);
       setProgress(20);
@@ -66,6 +96,7 @@ export const useModelTraining = () => {
         description: "Os modelos foram treinados e salvos com sucesso!"
       });
     } catch (error) {
+      console.error('Erro durante o treinamento:', error);
       toast({
         title: "Erro no Treinamento",
         description: error instanceof Error ? error.message : "Erro desconhecido",
