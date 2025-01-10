@@ -5,11 +5,6 @@ interface PredictionMetrics {
   timestamp: number;
   cycleNumber: number;
   predictionQuality: 'high' | 'medium' | 'low';
-  uniqueNumbersCount: number;
-  numberRange: {
-    min: number;
-    max: number;
-  };
 }
 
 class PredictionMonitor {
@@ -30,66 +25,67 @@ class PredictionMonitor {
     return PredictionMonitor.instance;
   }
   
-  recordPrediction(prediction: number[], actual: number[]) {
+  recordPrediction(prediction: number[], actual: number[], arimaPredictor: number[]) {
     const matches = prediction.filter(num => actual.includes(num)).length;
     const accuracy = matches / 15;
-    
-    const uniqueNumbersCount = new Set(prediction).size;
-    const numberRange = {
-      min: Math.min(...prediction),
-      max: Math.max(...prediction)
-    };
     
     const predictionQuality = 
       accuracy >= this.QUALITY_THRESHOLDS.high ? 'high' :
       accuracy >= this.QUALITY_THRESHOLDS.medium ? 'medium' : 'low';
     
-    const metrics: PredictionMetrics = {
+    this.metrics.push({
       accuracy,
       timestamp: Date.now(),
       cycleNumber: ++this.cycleCount,
-      predictionQuality,
-      uniqueNumbersCount,
-      numberRange
-    };
-    
-    this.metrics.push(metrics);
+      predictionQuality
+    });
     
     if (this.metrics.length > 100) {
       this.metrics = this.metrics.slice(-100);
     }
     
+    this.checkStability();
+    
+    console.log('Métricas de predição:', {
+      matches,
+      accuracy,
+      predictionQuality,
+      cycleNumber: this.cycleCount
+    });
+    
     systemLogger.log('prediction', 'Métricas de predição', {
       matches,
       accuracy,
       predictionQuality,
-      uniqueNumbersCount,
-      numberRange,
       cycleNumber: this.cycleCount
     });
 
-    this.checkQuality(metrics);
+    // Alerta se a precisão estiver muito baixa
+    if (accuracy < 0.2) {
+      console.warn('Alerta: Precisão muito baixa detectada', {
+        accuracy,
+        prediction,
+        actual
+      });
+    }
   }
   
-  private checkQuality(metrics: PredictionMetrics) {
-    // Verifica se os números estão muito concentrados
-    if (metrics.numberRange.max - metrics.numberRange.min < 10) {
-      systemLogger.log('system', 'Alerta: Números muito concentrados', {
-        range: metrics.numberRange
+  private checkStability() {
+    if (this.metrics.length < 50) return;
+    
+    const recentMetrics = this.metrics.slice(-50);
+    const avgAccuracy = recentMetrics.reduce((sum, m) => sum + m.accuracy, 0) / 50;
+    
+    if (avgAccuracy < 0.2) {
+      console.warn('Alerta: Baixa precisão persistente detectada', {
+        avgAccuracy,
+        lastCycles: 50,
+        metricsDetail: recentMetrics
       });
-    }
-
-    // Verifica se há números únicos suficientes
-    if (metrics.uniqueNumbersCount < 15) {
-      systemLogger.log('system', 'Alerta: Números duplicados detectados', {
-        uniqueCount: metrics.uniqueNumbersCount
-      });
-    }
-
-    // Verifica a precisão geral
-    if (metrics.accuracy < 0.2) {
-      systemLogger.log('system', 'Alerta: Precisão muito baixa', {
-        accuracy: metrics.accuracy
+      
+      systemLogger.log('system', 'Alerta: Baixa precisão detectada', {
+        avgAccuracy,
+        lastCycles: 50
       });
     }
   }
@@ -112,6 +108,7 @@ class PredictionMonitor {
     this.metrics = [];
     this.cycleCount = 0;
     systemLogger.log('system', 'Monitor de predições resetado');
+    console.log('Monitor de predições resetado');
   }
 }
 

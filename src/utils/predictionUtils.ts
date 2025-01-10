@@ -24,86 +24,79 @@ export async function makePrediction(
     return [];
   }
 
-  systemLogger.log('prediction', 'Iniciando previsão', {
-    inputDataLength: inputData.length,
-    weightsLength: playerWeights.length,
-    concurso: concursoNumber
-  });
-
+  console.log('Dados de entrada brutos:', inputData);
+  console.log('Pesos do jogador:', playerWeights);
+  
   try {
     // Validação de dimensões
     const inputShape = trainedModel.inputs[0].shape;
-    systemLogger.log('prediction', 'Shape do modelo', { inputShape });
+    console.log('Shape esperado do modelo:', inputShape);
     
     if (inputData.length !== 15) {
       throw new Error(`Formato de entrada inválido. Esperado: 15, Recebido: ${inputData.length}`);
     }
 
-    // Normalização dos dados com variação por jogador
+    // Normalização dos dados de entrada com variação por jogador
     const normalizedInput = inputData.map((n, idx) => {
+      // Adiciona variação baseada nos pesos do jogador
       const playerInfluence = (playerWeights[idx % playerWeights.length] / 1000);
-      const baseNormalized = n / 25; // Normaliza para [0,1]
-      const variation = (Math.random() - 0.5) * 0.2 * playerInfluence; // Aumentei a variação
-      return Math.max(0, Math.min(1, baseNormalized + variation));
+      const baseNormalized = n / 25;
+      const variation = (Math.random() - 0.5) * 0.1 * playerInfluence;
+      const normalized = Math.max(0, Math.min(1, baseNormalized + variation));
+      
+      if (normalized < 0 || normalized > 1) {
+        console.warn('Valor normalizado fora do intervalo [0,1]:', normalized);
+        return baseNormalized;
+      }
+      return normalized;
     });
 
-    systemLogger.log('prediction', 'Dados normalizados', { normalizedInput });
+    console.log('Dados normalizados com influência do jogador:', normalizedInput);
 
-    // Preparação do tensor
+    // Preparação do tensor de entrada
     const inputTensor = tf.tensor2d([normalizedInput]);
+    console.log('Dimensões do tensor de entrada:', inputTensor.shape);
     
-    // Execução da predição
+    // Execução da predição com influência dos pesos do jogador
     const predictions = trainedModel.predict(inputTensor) as tf.Tensor;
     const rawPredictions = Array.from(await predictions.data());
     
-    systemLogger.log('prediction', 'Predições brutas', { rawPredictions });
-
+    console.log('Predições brutas:', rawPredictions);
+    
     // Limpeza de memória
     tf.dispose([inputTensor, predictions]);
-
+    
     // Atualização da visualização
     setNeuralNetworkVisualization({
       input: normalizedInput,
       output: rawPredictions,
       weights: trainedModel.getWeights().map(w => Array.from(w.dataSync()))
     });
+    
+    // Denormalização e seleção dos números com influência do jogador
+    const weightedPredictions = rawPredictions.map((prob, index) => ({
+      number: index + 1,
+      probability: prob * (1 + (playerWeights[index % playerWeights.length] / 1000))
+    }));
 
-    // Geração de números únicos com influência dos pesos
-    const availableNumbers = Array.from({ length: 25 }, (_, i) => i + 1);
-    const weightedPredictions = availableNumbers.map(num => {
-      const index = num - 1;
-      const weight = playerWeights[index % playerWeights.length] / 1000;
-      const baseProb = rawPredictions[index % rawPredictions.length];
-      const randomFactor = Math.random() * 0.3; // Fator aleatório para mais variação
-      return {
-        number: num,
-        probability: baseProb * (1 + weight) + randomFactor
-      };
-    });
-
-    // Ordenação e seleção dos números
+    // Ordenação e seleção dos 15 números mais prováveis
     const finalPrediction = weightedPredictions
       .sort((a, b) => b.probability - a.probability)
       .slice(0, 15)
       .map(item => item.number)
       .sort((a, b) => a - b);
 
-    systemLogger.log('prediction', 'Predição final', { 
-      finalPrediction,
-      playerWeightsUsed: playerWeights.slice(0, 5), // Mostra apenas os primeiros 5 pesos
-      probabilityRange: {
-        min: Math.min(...weightedPredictions.map(p => p.probability)),
-        max: Math.max(...weightedPredictions.map(p => p.probability))
-      }
-    });
+    console.log('Predição final com influência do jogador:', finalPrediction);
 
     // Validação final
+    if (finalPrediction.length !== 15) {
+      throw new Error('Número incorreto de predições geradas');
+    }
+
+    // Verificação de números únicos
     const uniqueNumbers = new Set(finalPrediction);
-    if (uniqueNumbers.size !== 15 || finalPrediction.length !== 15) {
-      systemLogger.log('prediction', 'Erro: números duplicados ou quantidade incorreta', {
-        uniqueCount: uniqueNumbers.size,
-        predictionLength: finalPrediction.length
-      });
+    if (uniqueNumbers.size !== 15) {
+      console.warn('Predição contém números duplicados, gerando nova predição...');
       return makePrediction(
         trainedModel,
         inputData,
@@ -115,14 +108,15 @@ export async function makePrediction(
       );
     }
 
+    // Monitoramento de performance
+    const endTime = performance.now();
+    performanceMonitor.recordMetrics(rawPredictions[0], endTime - performance.now());
+
     return finalPrediction;
 
   } catch (error) {
-    systemLogger.log('system', 'Erro durante a predição', { 
-      error: error instanceof Error ? error.message : 'Erro desconhecido',
-      inputData,
-      playerWeightsLength: playerWeights.length
-    });
+    systemLogger.log('system', 'Erro durante a predição', { error });
+    console.error('Erro detalhado:', error);
     return [];
   }
 }
