@@ -7,6 +7,7 @@ import { PlayPageHeader } from '@/components/PlayPageHeader';
 import PlayPageContent from '@/components/PlayPageContent';
 import { Slider } from "@/components/ui/slider";
 import { useModelTraining } from '@/hooks/useModelTraining';
+import { gameAnalysisSystem } from '@/utils/integrated/gameAnalysisSystem';
 
 const PlayPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -17,10 +18,8 @@ const PlayPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
-  // Usando o mesmo hook de treinamento para garantir consistência
   const { model: trainedModel, initializeModel } = useModelTraining();
   
-  // Passando o modelo já inicializado para o gameLogic
   const gameLogic = useGameLogic(csvData, trainedModel);
 
   const loadCSV = useCallback(async (file: File) => {
@@ -151,25 +150,35 @@ const PlayPage: React.FC = () => {
   }, [gameLogic]);
 
   useEffect(() => {
-    // Inicializa o modelo ao montar o componente
     initializeModel();
   }, [initializeModel]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     if (isPlaying && trainedModel) {
-      intervalId = setInterval(() => {
-        gameLogic.gameLoop();
-        setProgress((prevProgress) => {
-          const newProgress = prevProgress + (100 / csvData.length);
-          if (newProgress >= 100) {
-            if (!gameLogic.isManualMode) {
-              gameLogic.evolveGeneration();
+      intervalId = setInterval(async () => {
+        try {
+          await gameLogic.gameLoop();
+          const metrics = gameAnalysisSystem.getMetrics();
+          setProgress((prevProgress) => {
+            const newProgress = prevProgress + (100 / csvData.length);
+            if (newProgress >= 100) {
+              if (!gameLogic.isManualMode) {
+                gameLogic.evolveGeneration();
+              }
+              return gameLogic.isInfiniteMode ? 0 : 100;
             }
-            return gameLogic.isInfiniteMode ? 0 : 100;
-          }
-          return newProgress;
-        });
+            return newProgress;
+          });
+        } catch (error) {
+          console.error('Erro no loop do jogo:', error);
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro durante a execução do jogo",
+            variant: "destructive"
+          });
+          setIsPlaying(false);
+        }
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
