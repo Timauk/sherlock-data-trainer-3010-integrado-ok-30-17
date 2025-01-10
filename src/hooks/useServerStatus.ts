@@ -9,15 +9,19 @@ export const useServerStatus = () => {
 
   const checkServerStatus = async () => {
     try {
-      // Primeiro tenta o localhost
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(`${API_URL}/api/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        // Removido mode: 'cors' e credentials: 'include' que podem causar problemas
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         if (status !== 'online') {
@@ -32,7 +36,6 @@ export const useServerStatus = () => {
       
       if (status !== 'offline') {
         setStatus('offline');
-        // Só mostra o toast se realmente mudou para offline
         toast({
           title: "Servidor Indisponível",
           description: "Verifique se o servidor está rodando em localhost:3001",
@@ -43,21 +46,16 @@ export const useServerStatus = () => {
   };
 
   useEffect(() => {
-    // Checa imediatamente ao montar
     checkServerStatus();
-    
-    // Configura o intervalo para checagem periódica
-    const interval = setInterval(checkServerStatus, 30000); // a cada 30 segundos
-    
-    // Cleanup ao desmontar
+    const interval = setInterval(checkServerStatus, 30000);
     return () => {
       clearInterval(interval);
       console.log('Limpando intervalo de verificação do servidor');
     };
-  }, []); // Dependências vazias - só executa ao montar/desmontar
+  }, []);
 
   return { 
     status, 
-    checkServerStatus // Expõe a função para permitir checagens manuais
+    checkServerStatus
   };
 };

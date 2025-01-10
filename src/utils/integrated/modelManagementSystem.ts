@@ -126,7 +126,9 @@ class ModelManagementSystem {
       const { data, error } = await supabase
         .from('models')
         .select('*')
-        .single();
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
 
       if (error || !data) {
         systemLogger.log('model', 'Erro ao carregar modelo do Supabase', { error });
