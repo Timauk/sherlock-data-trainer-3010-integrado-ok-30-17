@@ -44,6 +44,12 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     }
 
     try {
+      console.log('Iniciando geração de previsões:', {
+        lastConcursoNumbers,
+        championWeights: champion.weights,
+        modelLoaded: !!trainedModel
+      });
+
       const newPredictions = [];
       // Primeiros 8 jogos (originais)
       const targets = [
@@ -59,18 +65,21 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         for (let i = 0; i < target.count; i++) {
           const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
           
-          const normalizedInput = [
-            ...lastConcursoNumbers.slice(0, 15).map(n => {
-              const variation = (Math.random() - 0.5) * variationFactor;
-              return (n / 25) * (1 + variation);
-            }),
-            (champion.generation + i) / 1000,
-            (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365)
-          ];
+          // Importante: Usar apenas os primeiros 15 números normalizados
+          const normalizedInput = lastConcursoNumbers.slice(0, 15).map(n => {
+            const variation = (Math.random() - 0.5) * variationFactor;
+            return (n / 25) * (1 + variation);
+          });
+          
+          console.log('Input normalizado:', normalizedInput);
           
           const inputTensor = tf.tensor2d([normalizedInput]);
+          console.log('Shape do tensor de entrada:', inputTensor.shape);
+          
           const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
           const predictionArray = Array.from(await prediction.data());
+          
+          console.log('Previsão bruta:', predictionArray);
           
           const weightAdjustment = target.matches / 15;
           const weightedNumbers = Array.from({ length: 25 }, (_, idx) => ({
@@ -88,6 +97,8 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
             .slice(0, 15)
             .map(n => n.number)
             .sort((a, b) => a - b);
+          
+          console.log('Números selecionados:', selectedNumbers);
           
           const estimatedAccuracy = (target.matches / 15) * 100;
           
@@ -117,14 +128,11 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         for (let i = 0; i < target.count; i++) {
           const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
           
-          const normalizedInput = [
-            ...lastConcursoNumbers.slice(0, 15).map(n => {
-              const variation = (Math.random() - 0.5) * variationFactor;
-              return (n / 25) * (1 + variation);
-            }),
-            (champion.generation + i) / 1000,
-            (Date.now() + i * 1000) / (1000 * 60 * 60 * 24 * 365)
-          ];
+          // Importante: Usar apenas os primeiros 15 números normalizados
+          const normalizedInput = lastConcursoNumbers.slice(0, 15).map(n => {
+            const variation = (Math.random() - 0.5) * variationFactor;
+            return (n / 25) * (1 + variation);
+          });
           
           const inputTensor = tf.tensor2d([normalizedInput]);
           const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
@@ -172,6 +180,8 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       }));
 
       setPredictions(predictionsWithMatches);
+      
+      console.log('Previsões geradas com sucesso:', predictionsWithMatches);
       
       toast({
         title: "Previsões Geradas",
