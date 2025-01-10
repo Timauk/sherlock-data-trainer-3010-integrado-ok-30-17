@@ -128,7 +128,7 @@ class EnhancedGameSystem {
   // Atualização de Métricas
   updateMetrics(metrics: Partial<FeedbackMetrics>): void {
     this.metrics = { ...this.metrics, ...metrics };
-    systemLogger.log('metrics', 'Métricas atualizadas', this.metrics);
+    systemLogger.log('performance', 'Métricas atualizadas', this.metrics);
   }
 
   getMetrics(): FeedbackMetrics {
