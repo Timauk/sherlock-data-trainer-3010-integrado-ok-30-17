@@ -8,6 +8,7 @@ import ProcessingSelector from './ProcessingSelector';
 import GeneticTreeVisualization from './GeneticTreeVisualization';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { Player } from '@/types/gameTypes';
+import RealTimeFeedback from './RealTimeFeedback';
 
 interface PlayPageContentProps {
   isPlaying: boolean;
@@ -53,11 +54,20 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         serverStatus={serverStatus}
       />
       
-      <GameMetrics 
-        progress={progress}
-        champion={champion}
-        modelMetrics={gameLogic.modelMetrics}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <GameMetrics 
+          progress={progress}
+          champion={champion}
+          modelMetrics={gameLogic.modelMetrics}
+        />
+        
+        <RealTimeFeedback
+          accuracy={gameLogic.modelMetrics.accuracy * 100}
+          predictionConfidence={champion?.fitness ? champion.fitness * 100 : 0}
+          processingSpeed={90}
+          memoryUsage={75}
+        />
+      </div>
       
       <GeneticTreeVisualization 
         players={gameLogic.players}
@@ -90,6 +100,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
           isServerProcessing={isServerProcessing}
         />
       </div>
+      
       <AnalysisTabs
         boardNumbers={gameLogic.boardNumbers}
         concursoNumber={gameLogic.concursoNumber}

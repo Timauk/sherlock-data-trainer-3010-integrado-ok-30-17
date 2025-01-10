@@ -1,7 +1,7 @@
-import React from 'react'
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import React from 'react';
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { enhancedGameSystem } from '@/utils/enhancedGameSystem';
 
 interface RealTimeFeedbackProps {
   accuracy: number;
@@ -10,23 +10,20 @@ interface RealTimeFeedbackProps {
   memoryUsage: number;
 }
 
-const RealTimeFeedback = ({
+const RealTimeFeedback: React.FC<RealTimeFeedbackProps> = ({
   accuracy,
   predictionConfidence,
   processingSpeed,
   memoryUsage
-}: RealTimeFeedbackProps) => {
-  const { toast } = useToast()
-
+}) => {
   React.useEffect(() => {
-    if (accuracy < 50) {
-      toast({
-        title: "Baixa Precisão",
-        description: "O modelo está apresentando baixa precisão nas previsões.",
-        variant: "destructive"
-      })
-    }
-  }, [accuracy, toast])
+    enhancedGameSystem.updateMetrics({
+      accuracy,
+      confidence: predictionConfidence,
+      processingSpeed,
+      memoryUsage
+    });
+  }, [accuracy, predictionConfidence, processingSpeed, memoryUsage]);
 
   return (
     <Card className="w-full">
@@ -34,29 +31,40 @@ const RealTimeFeedback = ({
         <CardTitle>Feedback em Tempo Real</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Progress
-          value={accuracy}
-          showPercentage
-          label="Precisão do Modelo"
-        />
-        <Progress
-          value={predictionConfidence}
-          showPercentage
-          label="Confiança da Previsão"
-        />
-        <Progress
-          value={processingSpeed}
-          showPercentage
-          label="Velocidade de Processamento"
-        />
-        <Progress
-          value={memoryUsage}
-          showPercentage
-          label="Uso de Memória"
-        />
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Precisão do Modelo</span>
+            <span>{accuracy.toFixed(2)}%</span>
+          </div>
+          <Progress value={accuracy} className="h-2" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Confiança da Previsão</span>
+            <span>{predictionConfidence.toFixed(2)}%</span>
+          </div>
+          <Progress value={predictionConfidence} className="h-2" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Velocidade de Processamento</span>
+            <span>{processingSpeed.toFixed(2)}%</span>
+          </div>
+          <Progress value={processingSpeed} className="h-2" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Uso de Memória</span>
+            <span>{memoryUsage.toFixed(2)}%</span>
+          </div>
+          <Progress value={memoryUsage} className="h-2" />
+        </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default RealTimeFeedback
+export default RealTimeFeedback;
