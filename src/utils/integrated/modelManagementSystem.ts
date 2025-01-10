@@ -122,19 +122,26 @@ class ModelManagementSystem {
     model: tf.LayersModel | null;
     metadata: ModelMetadata | null;
   }> {
-    const { data, error } = await supabase
-      .from('models')
-      .select()
-      .order('created_at', { ascending: false })
-      .limit(1);
+    try {
+      const { data, error } = await supabase
+        .from('models')
+        .select('*')
+        .single();
 
-    if (error || !data?.length) return { model: null, metadata: null };
+      if (error || !data) {
+        systemLogger.log('model', 'Erro ao carregar modelo do Supabase', { error });
+        return { model: null, metadata: null };
+      }
 
-    const model = await tf.loadLayersModel(
-      tf.io.fromMemory(data[0].data)
-    );
-    
-    return { model, metadata: data[0].metadata };
+      const model = await tf.loadLayersModel(
+        tf.io.fromMemory(data.data)
+      );
+      
+      return { model, metadata: data.metadata };
+    } catch (error) {
+      systemLogger.log('model', 'Erro ao carregar modelo do Supabase', { error });
+      return { model: null, metadata: null };
+    }
   }
 
   async saveGameState(state: GameState): Promise<void> {
