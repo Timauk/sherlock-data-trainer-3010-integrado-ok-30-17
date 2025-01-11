@@ -15,8 +15,8 @@ interface ModelMetadata {
   trainingIterations: number;
 }
 
-class ModelManagementSystem {
-  private static instance: ModelManagementSystem;
+export class ModelManager {
+  private static instance: ModelManager;
   private readonly basePath: string;
   private currentModel: tf.LayersModel | null = null;
   private metadata: ModelMetadata | null = null;
@@ -25,21 +25,17 @@ class ModelManagementSystem {
     this.basePath = path.join(process.cwd(), 'models');
   }
 
-  static getInstance(): ModelManagementSystem {
-    if (!ModelManagementSystem.instance) {
-      ModelManagementSystem.instance = new ModelManagementSystem();
+  static getInstance(): ModelManager {
+    if (!ModelManager.instance) {
+      ModelManager.instance = new ModelManager();
     }
-    return ModelManagementSystem.instance;
+    return ModelManager.instance;
   }
 
   async saveModel(model: tf.LayersModel, metadata: ModelMetadata): Promise<void> {
     try {
-      // Salvar localmente
       await this.saveModelLocally(model, metadata);
-      
-      // Backup no Supabase
       await this.backupModelToSupabase(model, metadata);
-      
       systemLogger.log('model', 'Modelo salvo com sucesso', { metadata });
     } catch (error) {
       systemLogger.log('model', 'Erro ao salvar modelo', { error });
@@ -73,7 +69,6 @@ class ModelManagementSystem {
     metadata: ModelMetadata | null;
   }> {
     try {
-      // Tentar carregar do armazenamento local
       const result = await this.loadModelLocally();
       if (result.model) {
         this.currentModel = result.model;
@@ -81,7 +76,6 @@ class ModelManagementSystem {
         return result;
       }
 
-      // Se não encontrar localmente, tentar do Supabase
       return await this.loadModelFromSupabase();
     } catch (error) {
       systemLogger.log('model', 'Erro ao carregar modelo', { error });
@@ -127,8 +121,7 @@ class ModelManagementSystem {
         .from('models')
         .select('*')
         .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
+        .single();
 
       if (error || !data) {
         systemLogger.log('model', 'Erro ao carregar modelo do Supabase', { error });
@@ -187,4 +180,4 @@ class ModelManagementSystem {
   }
 }
 
-export const modelManagementSystem = ModelManagementSystem.getInstance();
+export const modelManager = ModelManager.getInstance();

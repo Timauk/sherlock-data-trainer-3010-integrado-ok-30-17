@@ -20,7 +20,7 @@ class CheckpointManager {
     this.maxCheckpoints = 50;
     
     this.fileManager = new FileManager(this.checkpointPath);
-    this.modelManager = new ModelManager();
+    this.modelManager = ModelManager.getInstance();
     this.stateManager = new StateManager(this.fileManager);
   }
 
