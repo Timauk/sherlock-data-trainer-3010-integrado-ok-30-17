@@ -2,7 +2,6 @@ import { FileManager } from './fileManager';
 import { ModelManager } from '../integrated/modelManagementSystem';
 import { StateManager } from './stateManager';
 import { logger } from '../logging/logger';
-import { CheckpointData, CheckpointManifest } from '../../types/checkpointTypes';
 import { ModelArtifactsInfo } from '@/types/gameTypes';
 import path from 'path';
 import fs from 'fs';
@@ -31,11 +30,19 @@ class CheckpointManager {
     return CheckpointManager.instance;
   }
 
-  async saveCheckpoint(data: CheckpointData): Promise<string> {
-    if (!data || !data.gameState) {
-      throw new Error('Dados inválidos para checkpoint');
-    }
+  private convertToModelMetadata(artifactsInfo: ModelArtifactsInfo) {
+    return {
+      timestamp: artifactsInfo.dateSaved.toISOString(),
+      architecture: ['dense'], // Arquitetura padrão
+      performance: {
+        accuracy: 0,
+        loss: 0
+      },
+      trainingIterations: 0
+    };
+  }
 
+  async saveCheckpoint(data: any): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
@@ -62,28 +69,27 @@ class CheckpointManager {
           weightSpecsBytes: 0,
           weightDataBytes: 0
         };
-        await this.modelManager.saveModel(data.gameState.model, artifactsInfo);
+        const metadata = this.convertToModelMetadata(artifactsInfo);
+        await this.modelManager.saveModel(data.gameState.model, metadata);
       }
-
-      const manifest: CheckpointManifest = {
-        version: '1.1',
-        timestamp,
-        files: [
-          'dataset.csv',
-          'gameState.json',
-          'model.json',
-          'model.weights.bin',
-          'optimizer_state.bin',
-          'training_data.json',
-          'predictions_cache.json',
-          'evolution_history.json',
-          'environment_config.json'
-        ]
-      };
 
       await this.fileManager.writeFile(
         path.join(checkpointDir, 'manifest.json'),
-        manifest
+        {
+          version: '1.1',
+          timestamp,
+          files: [
+            'dataset.csv',
+            'gameState.json',
+            'model.json',
+            'model.weights.bin',
+            'optimizer_state.bin',
+            'training_data.json',
+            'predictions_cache.json',
+            'evolution_history.json',
+            'environment_config.json'
+          ]
+        }
       );
 
       await this.cleanOldCheckpoints();
