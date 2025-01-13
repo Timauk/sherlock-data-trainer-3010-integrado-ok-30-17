@@ -285,7 +285,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
                         key={numIdx} 
                         className={`px-3 py-1 rounded-full ${
                           selectedNumbers.includes(num) 
-                            ? 'bg-green-500 text-white' 
+                            ? 'bg-yellow-500 text-white' 
                             : 'bg-blue-500 text-white'
                         }`}
                       >
@@ -296,7 +296,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     <div>Estimativa de Acertos: {pred.estimatedAccuracy.toFixed(2)}%</div>
                     {selectedNumbers.length === 15 && (
-                      <div className="mt-1 font-semibold text-green-600 dark:text-green-400">
+                      <div className="mt-1 font-semibold text-yellow-600 dark:text-yellow-400">
                         Acertos com sua seleção: {pred.matchesWithSelected}
                       </div>
                     )}
