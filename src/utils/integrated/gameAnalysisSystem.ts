@@ -1,4 +1,4 @@
-import { systemLogger } from '../logging/systemLogger.js';
+import { systemLogger } from '../logging/systemLogger';
 import { supabase } from '../../lib/supabase';
 import * as tf from '@tensorflow/tfjs';
 
@@ -19,6 +19,11 @@ export class GameAnalysisSystem {
   private static instance: GameAnalysisSystem;
   private analysisHistory: GameAnalysis[] = [];
   private readonly maxHistorySize = 1000;
+  private currentMetrics = {
+    accuracy: 0,
+    predictions: [] as number[],
+    confidence: 0
+  };
 
   private constructor() {}
 
@@ -39,20 +44,22 @@ export class GameAnalysisSystem {
       const confidence = this.calculateConfidence(predictions);
       const patterns = this.analyzePatterns(actualNumbers);
 
+      this.currentMetrics = {
+        accuracy,
+        predictions,
+        confidence
+      };
+
       const analysis: GameAnalysis = {
         timestamp: new Date().toISOString(),
-        metrics: {
-          accuracy,
-          predictions,
-          confidence
-        },
+        metrics: this.currentMetrics,
         patterns
       };
 
       await this.saveAnalysis(analysis);
       this.updateHistory(analysis);
 
-      systemLogger.log('analysis', 'Game analysis completed', {
+      systemLogger.log('system', 'Game analysis completed', {
         accuracy,
         confidence,
         patternsFound: patterns.sequences.length
@@ -60,9 +67,13 @@ export class GameAnalysisSystem {
 
       return analysis;
     } catch (error) {
-      systemLogger.log('analysis', 'Error analyzing game', { error });
+      systemLogger.log('system', 'Error analyzing game', { error });
       throw error;
     }
+  }
+
+  getMetrics() {
+    return { ...this.currentMetrics };
   }
 
   private calculateAccuracy(predictions: number[], actual: number[]): number {
@@ -86,12 +97,10 @@ export class GameAnalysisSystem {
     const frequency: Record<number, number> = {};
     const sequences: number[][] = [];
 
-    // Calculate frequency
     numbers.forEach(num => {
       frequency[num] = (frequency[num] || 0) + 1;
     });
 
-    // Find sequences (3 or more consecutive numbers)
     for (let i = 0; i < numbers.length - 2; i++) {
       const sequence = [numbers[i]];
       let j = i + 1;
@@ -119,8 +128,7 @@ export class GameAnalysisSystem {
 
       if (error) throw error;
     } catch (error) {
-      systemLogger.log('analysis', 'Error saving analysis to database', { error });
-      // Continue execution even if save fails
+      systemLogger.log('system', 'Error saving analysis to database', { error });
     }
   }
 
@@ -140,20 +148,19 @@ export class GameAnalysisSystem {
       const { data, error } = await supabase
         .from('game_analysis')
         .select('*')
-        .order('timestamp', { ascending: false })
         .limit(this.maxHistorySize);
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      systemLogger.log('analysis', 'Error fetching historical analysis', { error });
+      systemLogger.log('system', 'Error fetching historical analysis', { error });
       return [];
     }
   }
 
   clearHistory(): void {
     this.analysisHistory = [];
-    systemLogger.log('analysis', 'Analysis history cleared');
+    systemLogger.log('system', 'Analysis history cleared');
   }
 }
 
