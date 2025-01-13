@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { systemLogger } from '@/utils/logging/systemLogger';
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye, EyeOff } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface LogEntry {
   timestamp: Date;
@@ -13,6 +16,8 @@ interface LogEntry {
 const EnhancedLogDisplay: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>('all');
+  const [showLogs, setShowLogs] = useState<boolean>(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const updateLogs = (event: CustomEvent<LogEntry>) => {
@@ -48,13 +53,39 @@ const EnhancedLogDisplay: React.FC = () => {
     }
   };
 
+  const toggleLogs = () => {
+    setShowLogs(prev => {
+      const newState = !prev;
+      toast({
+        title: newState ? "Logs Habilitados" : "Logs Desabilitados",
+        description: newState ? "Visualização de logs ativada" : "Visualização de logs desativada",
+      });
+      return newState;
+    });
+  };
+
   const filteredLogs = filter === 'all' 
     ? logs 
     : logs.filter(log => log.type === filter);
 
+  if (!showLogs) {
+    return (
+      <div className="flex justify-end mb-4">
+        <Button 
+          onClick={toggleLogs}
+          variant="outline"
+          className="gap-2"
+        >
+          <EyeOff className="h-4 w-4" />
+          Mostrar Logs
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex justify-between items-center">
         <select 
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -69,6 +100,15 @@ const EnhancedLogDisplay: React.FC = () => {
           <option value="player">Jogadores</option>
           <option value="checkpoint">Checkpoints</option>
         </select>
+
+        <Button 
+          onClick={toggleLogs}
+          variant="outline"
+          className="gap-2"
+        >
+          <Eye className="h-4 w-4" />
+          Ocultar Logs
+        </Button>
       </div>
 
       <ScrollArea className="h-[400px] rounded-md border p-4">
