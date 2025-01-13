@@ -1,32 +1,31 @@
 import express, { Request, Response, Router } from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
+import { LayersModel } from '@tensorflow/tfjs';
+import { CheckpointData, SystemInfo } from '../types/checkpointTypes';
 
 const router: Router = express.Router();
 
-interface CheckpointData {
-  timestamp: string;
-  systemInfo: {
-    totalMemory: number;
-    freeMemory: number;
-    uptime: number;
-  };
-  gameState: any; // You can make this more specific based on your game state type
-}
-
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const checkpointData: CheckpointData = {
-      timestamp: new Date().toISOString(),
-      systemInfo: {
-        totalMemory: process.memoryUsage().heapTotal,
-        freeMemory: process.memoryUsage().heapUsed,
-        uptime: process.uptime()
-      },
-      gameState: req.body
+    const systemInfo: SystemInfo = {
+      totalMemory: process.memoryUsage().heapTotal,
+      freeMemory: process.memoryUsage().heapUsed,
+      uptime: process.uptime()
     };
 
-    const filename = await checkpointManager.saveCheckpoint(checkpointData);
+    // Aqui separamos o modelo do resto dos dados
+    const { model, ...restData } = req.body;
+
+    const checkpointData: CheckpointData = {
+      timestamp: new Date().toISOString(),
+      systemInfo,
+      gameState: restData,
+      csvData: req.body.csvData
+    };
+
+    // Agora passamos o modelo separadamente
+    const filename = await checkpointManager.saveCheckpoint(model as LayersModel, checkpointData);
 
     logger.info({ filename }, 'Checkpoint saved successfully');
     res.json({ 
@@ -44,7 +43,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
 router.get('/latest', async (req: Request, res: Response): Promise<void> => {
   try {
-    const checkpoint = await checkpointManager.loadLatestCheckpoint();
+    const checkpoint = await checkpointManager.loadCheckpoint();
     
     if (!checkpoint) {
       logger.warn('No checkpoint found');
