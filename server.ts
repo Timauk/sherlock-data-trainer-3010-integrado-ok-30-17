@@ -13,6 +13,11 @@ const __dirname = path.dirname(__filename);
 // Import logger after defining __dirname
 import { logger } from './src/utils/logging/logger.js';
 
+// Import routes with .js extension
+import { modelRouter } from './src/routes/model.js';
+import { checkpointRouter } from './src/routes/checkpoint.js';
+import { statusRouter } from './src/routes/status.js';
+
 const app = express();
 const PORT = 3001;
 
@@ -34,10 +39,6 @@ app.use((req, res, next) => {
 });
 
 // Routes
-import { modelRouter } from './src/routes/model.js';
-import { checkpointRouter } from './src/routes/checkpoint.js';
-import { statusRouter } from './src/routes/status.js';
-
 app.use('/api/model', modelRouter);
 app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);

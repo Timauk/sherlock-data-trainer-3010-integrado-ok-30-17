@@ -46,6 +46,7 @@ mkdir dist\src\utils
 mkdir dist\src\utils\checkpoint
 mkdir dist\src\utils\integrated
 mkdir dist\src\utils\logging
+mkdir dist\src\routes
 
 :: Compile TypeScript to JavaScript
 echo Compiling TypeScript to JavaScript...
@@ -62,6 +63,7 @@ xcopy /s /y src\utils\*.js dist\src\utils\ >nul 2>nul
 xcopy /s /y src\utils\checkpoint\*.js dist\src\utils\checkpoint\ >nul 2>nul
 xcopy /s /y src\utils\integrated\*.js dist\src\utils\integrated\ >nul 2>nul
 xcopy /s /y src\utils\logging\*.js dist\src\utils\logging\ >nul 2>nul
+xcopy /s /y src\routes\*.js dist\src\routes\ >nul 2>nul
 
 :: Start Node.js server
 echo Starting Node.js server...

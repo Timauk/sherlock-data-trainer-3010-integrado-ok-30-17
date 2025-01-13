@@ -1,5 +1,5 @@
-import { FileManager } from './fileManager';
-import { logger } from '../logging/logger';
+import { FileManager } from './fileManager.js';
+import { logger } from '../logging/logger.js';
 import path from 'path';
 
 export class StateManager {
