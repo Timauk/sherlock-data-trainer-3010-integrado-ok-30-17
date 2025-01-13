@@ -1,3 +1,4 @@
+import { FileManager } from '../checkpoint/fileManager';
 import { ModelManager } from '../integrated/modelManagementSystem';
 import { StateManager } from './stateManager';
 import { logger } from '../logging/logger';
@@ -7,7 +8,7 @@ import path from 'path';
 import fs from 'fs';
 
 class CheckpointManager {
-  private static instance: CheckpointManager | null = null;
+  static instance: CheckpointManager | null = null;
   private readonly checkpointPath: string;
   private readonly maxCheckpoints: number;
   private readonly fileManager: FileManager;

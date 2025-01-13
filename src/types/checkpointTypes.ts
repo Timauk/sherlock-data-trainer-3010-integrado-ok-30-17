@@ -20,7 +20,12 @@ export interface CheckpointManifest {
   files: string[];
 }
 
-export interface ModelManagerResponse {
-  model?: LayersModel;
-  error?: Error;
+export interface ModelMetadata {
+  timestamp: string;
+  architecture: string[];
+  performance: {
+    accuracy: number;
+    loss: number;
+  };
+  trainingIterations: number;
 }

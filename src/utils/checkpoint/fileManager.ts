@@ -1,13 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../logging/logger.js';
+import { logger } from '../logging/logger';
 
 export class FileManager {
-  private readonly basePath: string;
-
-  constructor(basePath: string) {
-    this.basePath = basePath;
-  }
+  constructor(private readonly basePath: string) {}
 
   async writeFile<T>(filePath: string, data: T): Promise<void> {
     const fullPath = path.join(this.basePath, filePath);
