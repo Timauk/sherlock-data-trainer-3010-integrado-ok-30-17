@@ -1,8 +1,8 @@
-import { FileManager } from './fileManager';
 import { ModelManager } from '../integrated/modelManagementSystem';
 import { StateManager } from './stateManager';
 import { logger } from '../logging/logger';
 import { ModelArtifactsInfo } from '@/types/gameTypes';
+import { CheckpointData, CheckpointManifest, ModelMetadata } from '@/types/checkpointTypes';
 import path from 'path';
 import fs from 'fs';
 
@@ -30,10 +30,10 @@ class CheckpointManager {
     return CheckpointManager.instance;
   }
 
-  private convertToModelMetadata(artifactsInfo: ModelArtifactsInfo) {
+  private convertToModelMetadata(artifactsInfo: ModelArtifactsInfo): ModelMetadata {
     return {
       timestamp: artifactsInfo.dateSaved.toISOString(),
-      architecture: ['dense'], // Arquitetura padrão
+      architecture: ['dense'],
       performance: {
         accuracy: 0,
         loss: 0
@@ -42,7 +42,11 @@ class CheckpointManager {
     };
   }
 
-  async saveCheckpoint(data: any): Promise<string> {
+  async saveCheckpoint(data: CheckpointData): Promise<string> {
+    if (!data || !data.gameState) {
+      throw new Error('Dados inválidos para checkpoint');
+    }
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const checkpointDir = path.join(this.checkpointPath, `checkpoint-${timestamp}`);
 
@@ -73,23 +77,25 @@ class CheckpointManager {
         await this.modelManager.saveModel(data.gameState.model, metadata);
       }
 
+      const manifest: CheckpointManifest = {
+        version: '1.1',
+        timestamp,
+        files: [
+          'dataset.csv',
+          'gameState.json',
+          'model.json',
+          'model.weights.bin',
+          'optimizer_state.bin',
+          'training_data.json',
+          'predictions_cache.json',
+          'evolution_history.json',
+          'environment_config.json'
+        ]
+      };
+
       await this.fileManager.writeFile(
         path.join(checkpointDir, 'manifest.json'),
-        {
-          version: '1.1',
-          timestamp,
-          files: [
-            'dataset.csv',
-            'gameState.json',
-            'model.json',
-            'model.weights.bin',
-            'optimizer_state.bin',
-            'training_data.json',
-            'predictions_cache.json',
-            'evolution_history.json',
-            'environment_config.json'
-          ]
-        }
+        manifest
       );
 
       await this.cleanOldCheckpoints();
@@ -138,7 +144,7 @@ class CheckpointManager {
         }
       }
 
-      const checkpointData: CheckpointData = {
+      return {
         timestamp: latestCheckpoint.replace('checkpoint-', ''),
         systemInfo: {
           totalMemory: process.memoryUsage().heapTotal,
@@ -148,9 +154,6 @@ class CheckpointManager {
         gameState: gameState!,
         csvData
       };
-
-      logger.info('Checkpoint carregado com sucesso');
-      return checkpointData;
 
     } catch (error) {
       logger.error({ error, checkpoint: checkpointDir }, 'Erro ao carregar checkpoint');

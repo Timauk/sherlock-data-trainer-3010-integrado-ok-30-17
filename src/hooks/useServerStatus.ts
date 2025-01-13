@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = 'http://localhost:3001';
 
 export const useServerStatus = () => {
   const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
@@ -48,10 +48,7 @@ export const useServerStatus = () => {
   useEffect(() => {
     checkServerStatus();
     const interval = setInterval(checkServerStatus, 30000);
-    return () => {
-      clearInterval(interval);
-      console.log('Limpando intervalo de verificação do servidor');
-    };
+    return () => clearInterval(interval);
   }, []);
 
   return { 
