@@ -22,6 +22,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
 }) => {
   const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number, matchesWithSelected: number, isNeuralReduced?: boolean }>>([]);
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
+  const [copySuccess, setCopySuccess] = useState(false);
   const { toast } = useToast();
 
   const handleNumbersSelected = (numbers: number[]) => {
@@ -50,10 +51,16 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
     }).join('\n');
 
     navigator.clipboard.writeText(formattedResults).then(() => {
+      setCopySuccess(true);
       toast({
         title: "Resultados Copiados!",
         description: "Os resultados foram copiados para sua área de transferência",
       });
+      
+      // Reset the success state after 2 seconds
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
     }).catch(() => {
       toast({
         title: "Erro ao Copiar",
@@ -246,7 +253,11 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
               <Button
                 onClick={copyResults}
                 variant="outline"
-                className="gap-2"
+                className={`gap-2 transition-colors duration-300 ${
+                  copySuccess 
+                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
+                    : ''
+                }`}
                 disabled={predictions.length === 0}
               >
                 <Copy className="h-4 w-4" />
