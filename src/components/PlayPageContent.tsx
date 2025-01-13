@@ -95,7 +95,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         
         <ChampionPredictions
           champion={champion || undefined}
-          trainedModel={gameLogic.trainedModel}
+          trainedModel={gameLogic.trainedModel || undefined}
           lastConcursoNumbers={gameLogic.boardNumbers}
           isServerProcessing={isServerProcessing}
         />
