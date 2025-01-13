@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = 'http://localhost:3001';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? window.location.origin 
+  : 'http://localhost:3001';
 
 export const useServerStatus = () => {
   const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');

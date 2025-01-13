@@ -14,7 +14,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       uptime: process.uptime()
     };
 
-    // Aqui separamos o modelo do resto dos dados
+    // Separamos o modelo do resto dos dados
     const { model, ...restData } = req.body;
 
     const checkpointData: CheckpointData = {
@@ -24,7 +24,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       csvData: req.body.csvData
     };
 
-    // Agora passamos o modelo separadamente
+    // Passamos o modelo e os dados separadamente
     const filename = await checkpointManager.saveCheckpoint(model as LayersModel, checkpointData);
 
     logger.info({ filename }, 'Checkpoint saved successfully');
