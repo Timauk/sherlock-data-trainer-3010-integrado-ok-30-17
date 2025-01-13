@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
-import { supabase } from '@/lib/supabase';
-import { ModelArtifacts, ModelArtifactsInfo, GameState } from '@/types/gameTypes';
-import { systemLogger } from '../logging/systemLogger';
+import { supabase } from '../../lib/supabase';
+import { ModelArtifacts, ModelArtifactsInfo, GameState } from '../../types/gameTypes';
+import { systemLogger } from '../logging/systemLogger.js';
 import fs from 'fs';
 import path from 'path';
 

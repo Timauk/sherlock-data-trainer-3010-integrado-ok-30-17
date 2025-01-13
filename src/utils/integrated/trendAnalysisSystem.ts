@@ -1,4 +1,5 @@
-import { systemLogger } from '../logging/systemLogger';
+import { systemLogger } from '../logging/systemLogger.js';
+import { supabase } from '../../lib/supabase';
 
 interface TrendAnalysis {
   seasonalPatterns: {

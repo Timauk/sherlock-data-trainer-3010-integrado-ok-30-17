@@ -1,23 +1,17 @@
-import * as tf from '@tensorflow/tfjs';
-import pako from 'pako';
-import { systemLogger } from '../logging/systemLogger';
+import { systemLogger } from '../logging/systemLogger.js';
+import { supabase } from '../../lib/supabase';
 
-interface BatchProcessingConfig {
-  batchSize: number;
-  maxConcurrent: number;
-  compressionEnabled: boolean;
+interface PerformanceMetrics {
+  accuracy: number;
+  latency: number;
+  memoryUsage: number;
+  timestamp: string;
 }
 
 class PerformanceOptimizationSystem {
   private static instance: PerformanceOptimizationSystem;
-  private workers: Worker[] = [];
-  private taskQueue: Array<() => Promise<any>> = [];
-  private activeWorkers = 0;
-  private config: BatchProcessingConfig = {
-    batchSize: 32,
-    maxConcurrent: navigator.hardwareConcurrency || 4,
-    compressionEnabled: true
-  };
+  private metrics: PerformanceMetrics[] = [];
+  private readonly MAX_METRICS_HISTORY = 1000;
 
   private constructor() {}
 
@@ -28,103 +22,124 @@ class PerformanceOptimizationSystem {
     return PerformanceOptimizationSystem.instance;
   }
 
-  async processPredictionBatch(
-    model: tf.LayersModel,
-    inputs: number[][],
-    playerWeights: number[]
-  ): Promise<number[][]> {
+  recordMetrics(accuracy: number, latency: number): void {
+    const metrics: PerformanceMetrics = {
+      accuracy,
+      latency,
+      memoryUsage: process.memoryUsage().heapUsed,
+      timestamp: new Date().toISOString()
+    };
+
+    this.metrics.push(metrics);
+    if (this.metrics.length > this.MAX_METRICS_HISTORY) {
+      this.metrics.shift();
+    }
+
+    this.saveMetricsToDatabase(metrics);
+    this.analyzePerformance();
+  }
+
+  private async saveMetricsToDatabase(metrics: PerformanceMetrics): Promise<void> {
     try {
-      const batches = [];
-      
-      for (let i = 0; i < inputs.length; i += this.config.batchSize) {
-        const batchInputs = inputs.slice(i, i + this.config.batchSize);
-        const inputTensor = tf.tensor2d(batchInputs);
-        
-        const predictions = await model.predict(inputTensor) as tf.Tensor;
-        const batchResults = await predictions.array() as number[][];
-        
-        batches.push(...batchResults.map(pred => 
-          pred.map((p, idx) => p * (playerWeights[idx % playerWeights.length] / 1000))
-        ));
-        
-        inputTensor.dispose();
-        predictions.dispose();
+      const { error } = await supabase
+        .from('performance_metrics')
+        .insert(metrics);
+
+      if (error) throw error;
+      systemLogger.log('performance', 'Metrics saved to database', metrics);
+    } catch (error) {
+      systemLogger.log('performance', 'Error saving metrics to database', { error });
+    }
+  }
+
+  private analyzePerformance(): void {
+    if (this.metrics.length < 10) return;
+
+    const recentMetrics = this.metrics.slice(-10);
+    const avgAccuracy = recentMetrics.reduce((sum, m) => sum + m.accuracy, 0) / recentMetrics.length;
+    const avgLatency = recentMetrics.reduce((sum, m) => sum + m.latency, 0) / recentMetrics.length;
+
+    if (avgAccuracy < 0.7) {
+      systemLogger.log('performance', 'Warning: Low accuracy detected', { avgAccuracy });
+    }
+
+    if (avgLatency > 1000) {
+      systemLogger.log('performance', 'Warning: High latency detected', { avgLatency });
+    }
+
+    const memoryTrend = this.calculateMemoryTrend(recentMetrics);
+    if (memoryTrend > 0.1) {
+      systemLogger.log('performance', 'Warning: Increasing memory usage trend detected', { memoryTrend });
+    }
+  }
+
+  private calculateMemoryTrend(metrics: PerformanceMetrics[]): number {
+    const memoryValues = metrics.map(m => m.memoryUsage);
+    const n = memoryValues.length;
+    
+    if (n < 2) return 0;
+
+    const sumX = (n * (n - 1)) / 2;
+    const sumY = memoryValues.reduce((a, b) => a + b, 0);
+    const sumXY = memoryValues.reduce((sum, y, i) => sum + (i * y), 0);
+    const sumXX = (n * (n - 1) * (2 * n - 1)) / 6;
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    return slope / memoryValues[0]; // Normalize by initial memory usage
+  }
+
+  getPerformanceReport(): {
+    metrics: PerformanceMetrics[];
+    summary: {
+      avgAccuracy: number;
+      avgLatency: number;
+      memoryTrend: number;
+    };
+  } {
+    const recentMetrics = this.metrics.slice(-100);
+    const avgAccuracy = recentMetrics.reduce((sum, m) => sum + m.accuracy, 0) / recentMetrics.length;
+    const avgLatency = recentMetrics.reduce((sum, m) => sum + m.latency, 0) / recentMetrics.length;
+    const memoryTrend = this.calculateMemoryTrend(recentMetrics);
+
+    return {
+      metrics: recentMetrics,
+      summary: {
+        avgAccuracy,
+        avgLatency,
+        memoryTrend
       }
+    };
+  }
+
+  async optimizePerformance(): Promise<void> {
+    const report = this.getPerformanceReport();
+    
+    if (report.summary.avgLatency > 1000) {
+      systemLogger.log('performance', 'Initiating performance optimization');
       
-      return batches;
-    } catch (error) {
-      systemLogger.log('performance', 'Erro no processamento em lote', { error });
-      throw error;
-    }
-  }
+      // Clear metrics history to free memory if it's too large
+      if (this.metrics.length > this.MAX_METRICS_HISTORY / 2) {
+        this.metrics = this.metrics.slice(-100);
+      }
 
-  async addTask<T>(task: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.taskQueue.push(async () => {
-        try {
-          const result = await task();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
+      // Force garbage collection if available
+      if (global.gc) {
+        global.gc();
+        systemLogger.log('performance', 'Garbage collection triggered');
+      }
+    }
+
+    try {
+      await this.saveMetricsToDatabase({
+        accuracy: report.summary.avgAccuracy,
+        latency: report.summary.avgLatency,
+        memoryUsage: process.memoryUsage().heapUsed,
+        timestamp: new Date().toISOString()
       });
-      this.processQueue();
-    });
-  }
-
-  private async processQueue() {
-    if (this.activeWorkers >= this.config.maxConcurrent || this.taskQueue.length === 0) {
-      return;
-    }
-
-    const task = this.taskQueue.shift();
-    if (!task) return;
-
-    this.activeWorkers++;
-    try {
-      await task();
-    } finally {
-      this.activeWorkers--;
-      this.processQueue();
-    }
-  }
-
-  compressData(data: number[][]): Uint8Array {
-    if (!this.config.compressionEnabled) return new Uint8Array(0);
-    
-    try {
-      const jsonString = JSON.stringify(data);
-      return pako.deflate(jsonString);
     } catch (error) {
-      systemLogger.log('performance', 'Erro na compressão de dados', { error });
-      throw error;
+      systemLogger.log('performance', 'Error during performance optimization', { error });
     }
-  }
-
-  decompressData(compressedData: Uint8Array): number[][] {
-    if (!this.config.compressionEnabled) return [];
-    
-    try {
-      const jsonString = pako.inflate(compressedData, { to: 'string' });
-      return JSON.parse(jsonString);
-    } catch (error) {
-      systemLogger.log('performance', 'Erro na descompressão de dados', { error });
-      throw error;
-    }
-  }
-
-  updateConfig(newConfig: Partial<BatchProcessingConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    systemLogger.log('performance', 'Configuração atualizada', { config: this.config });
-  }
-
-  terminate(): void {
-    this.workers.forEach(worker => worker.terminate());
-    this.workers = [];
-    this.taskQueue = [];
-    this.activeWorkers = 0;
-    systemLogger.log('performance', 'Sistema de otimização finalizado');
   }
 }
 
-export const performanceOptimizationSystem = PerformanceOptimizationSystem.getInstance();
+export const performanceOptimizer = PerformanceOptimizationSystem.getInstance();

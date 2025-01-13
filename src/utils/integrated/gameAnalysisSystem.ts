@@ -1,21 +1,24 @@
+import { systemLogger } from '../logging/systemLogger.js';
+import { supabase } from '../../lib/supabase';
 import * as tf from '@tensorflow/tfjs';
-import { Player, ModelMetrics } from '@/types/gameTypes';
-import { systemLogger } from '../logging/systemLogger';
 
-interface AnalysisResult {
-  prediction: number[];
-  confidence: number;
-  patterns: number[][];
-  metrics: ModelMetrics;
+interface GameAnalysis {
+  timestamp: string;
+  metrics: {
+    accuracy: number;
+    predictions: number[];
+    confidence: number;
+  };
+  patterns: {
+    frequency: Record<number, number>;
+    sequences: number[][];
+  };
 }
 
-class GameAnalysisSystem {
+export class GameAnalysisSystem {
   private static instance: GameAnalysisSystem;
-  private metrics: ModelMetrics = {
-    accuracy: 0,
-    randomAccuracy: 0,
-    totalPredictions: 0
-  };
+  private analysisHistory: GameAnalysis[] = [];
+  private readonly maxHistorySize = 1000;
 
   private constructor() {}
 
@@ -26,76 +29,45 @@ class GameAnalysisSystem {
     return GameAnalysisSystem.instance;
   }
 
-  async analyzePrediction(
-    model: tf.LayersModel,
-    input: number[],
-    playerWeights: number[],
-    historicalData: number[][]
-  ): Promise<AnalysisResult> {
+  async analyzeGame(
+    predictions: number[],
+    actualNumbers: number[],
+    model: tf.LayersModel
+  ): Promise<GameAnalysis> {
     try {
-      // Validação de dados
-      this.validateInput(input, playerWeights);
+      const accuracy = this.calculateAccuracy(predictions, actualNumbers);
+      const confidence = this.calculateConfidence(predictions);
+      const patterns = this.analyzePatterns(actualNumbers);
 
-      // Análise estatística e correlação
-      const patterns = this.analyzePatterns(historicalData);
-      
-      // Processamento em lotes para otimização
-      const batchResult = await this.processBatch(model, input, playerWeights);
-      
-      // Cálculo de confiança
-      const confidence = this.calculateConfidence(batchResult);
-
-      // Atualização de métricas
-      this.updateMetrics(batchResult, patterns);
-
-      return {
-        prediction: batchResult,
-        confidence,
-        patterns,
-        metrics: this.metrics
+      const analysis: GameAnalysis = {
+        timestamp: new Date().toISOString(),
+        metrics: {
+          accuracy,
+          predictions,
+          confidence
+        },
+        patterns
       };
+
+      await this.saveAnalysis(analysis);
+      this.updateHistory(analysis);
+
+      systemLogger.log('analysis', 'Game analysis completed', {
+        accuracy,
+        confidence,
+        patternsFound: patterns.sequences.length
+      });
+
+      return analysis;
     } catch (error) {
-      systemLogger.log('system', 'Erro na análise de predição', { error });
+      systemLogger.log('analysis', 'Error analyzing game', { error });
       throw error;
     }
   }
 
-  private validateInput(input: number[], weights: number[]): void {
-    if (!input?.length || !weights?.length) {
-      throw new Error('Dados de entrada inválidos');
-    }
-  }
-
-  private analyzePatterns(historicalData: number[][]): number[][] {
-    return historicalData
-      .slice(-50)
-      .filter((data, index, array) => {
-        if (index === 0) return true;
-        const previousData = array[index - 1];
-        const matches = data.filter(n => previousData.includes(n)).length;
-        return matches >= 5;
-      });
-  }
-
-  private async processBatch(
-    model: tf.LayersModel,
-    input: number[],
-    weights: number[]
-  ): Promise<number[]> {
-    const batchSize = 32;
-    const inputTensor = tf.tensor2d([input]);
-    const prediction = await model.predict(inputTensor) as tf.Tensor;
-    const result = Array.from(await prediction.data());
-    
-    // Aplicação dos pesos do jogador
-    const weightedResult = result.map((value, index) => 
-      value * (weights[index % weights.length] / 1000)
-    );
-
-    inputTensor.dispose();
-    prediction.dispose();
-
-    return weightedResult;
+  private calculateAccuracy(predictions: number[], actual: number[]): number {
+    const matches = predictions.filter((pred, index) => pred === actual[index]);
+    return (matches.length / predictions.length) * 100;
   }
 
   private calculateConfidence(predictions: number[]): number {
@@ -107,16 +79,81 @@ class GameAnalysisSystem {
     return (certainty / predictions.length) * 100;
   }
 
-  private updateMetrics(predictions: number[], patterns: number[][]): void {
-    this.metrics = {
-      ...this.metrics,
-      accuracy: patterns.length > 0 ? patterns.length / 50 : this.metrics.accuracy,
-      totalPredictions: this.metrics.totalPredictions + 1
-    };
+  private analyzePatterns(numbers: number[]): {
+    frequency: Record<number, number>;
+    sequences: number[][];
+  } {
+    const frequency: Record<number, number> = {};
+    const sequences: number[][] = [];
+
+    // Calculate frequency
+    numbers.forEach(num => {
+      frequency[num] = (frequency[num] || 0) + 1;
+    });
+
+    // Find sequences (3 or more consecutive numbers)
+    for (let i = 0; i < numbers.length - 2; i++) {
+      const sequence = [numbers[i]];
+      let j = i + 1;
+      while (j < numbers.length && numbers[j] === numbers[j-1] + 1) {
+        sequence.push(numbers[j]);
+        j++;
+      }
+      if (sequence.length >= 3) {
+        sequences.push(sequence);
+      }
+    }
+
+    return { frequency, sequences };
   }
 
-  getMetrics(): ModelMetrics {
-    return this.metrics;
+  private async saveAnalysis(analysis: GameAnalysis): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('game_analysis')
+        .insert({
+          timestamp: analysis.timestamp,
+          metrics: analysis.metrics,
+          patterns: analysis.patterns
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      systemLogger.log('analysis', 'Error saving analysis to database', { error });
+      // Continue execution even if save fails
+    }
+  }
+
+  private updateHistory(analysis: GameAnalysis): void {
+    this.analysisHistory.push(analysis);
+    if (this.analysisHistory.length > this.maxHistorySize) {
+      this.analysisHistory.shift();
+    }
+  }
+
+  getAnalysisHistory(): GameAnalysis[] {
+    return [...this.analysisHistory];
+  }
+
+  async getHistoricalAnalysis(): Promise<GameAnalysis[]> {
+    try {
+      const { data, error } = await supabase
+        .from('game_analysis')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(this.maxHistorySize);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      systemLogger.log('analysis', 'Error fetching historical analysis', { error });
+      return [];
+    }
+  }
+
+  clearHistory(): void {
+    this.analysisHistory = [];
+    systemLogger.log('analysis', 'Analysis history cleared');
   }
 }
 
