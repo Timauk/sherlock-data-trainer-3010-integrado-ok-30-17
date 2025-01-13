@@ -1,5 +1,6 @@
 import express from 'express';
 import * as tf from '@tensorflow/tfjs';
+import { logger } from '../utils/logging/logger.js';
 
 const router = express.Router();
 let globalModel: tf.Sequential | null = null;

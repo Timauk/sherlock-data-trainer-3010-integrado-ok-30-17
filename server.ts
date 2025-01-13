@@ -7,11 +7,11 @@ import NodeCache from 'node-cache';
 import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 
-// Import logger after defining __dirname
-import { logger } from './src/utils/logging/logger.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Import logger after defining __dirname
+import { logger } from './src/utils/logging/logger.js';
 
 const app = express();
 const PORT = 3001;
@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'dist'))); // Add dist folder for frontend files
+app.use(express.static(path.join(__dirname, 'dist'))); 
 
 // Request logging middleware
 app.use((req, res, next) => {
