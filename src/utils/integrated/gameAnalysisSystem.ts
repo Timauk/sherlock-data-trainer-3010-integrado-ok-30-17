@@ -147,11 +147,10 @@ export class GameAnalysisSystem {
     try {
       const { data, error } = await supabase
         .from('game_analysis')
-        .select('*')
-        .limit(this.maxHistorySize);
+        .select('*');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).slice(0, this.maxHistorySize);
     } catch (error) {
       systemLogger.log('system', 'Error fetching historical analysis', { error });
       return [];
