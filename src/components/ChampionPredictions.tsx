@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Player } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
 import NumberSelector from './NumberSelector';
+import { Copy } from 'lucide-react';
 
 interface ChampionPredictionsProps {
   champion?: Player;
@@ -31,6 +32,35 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         matchesWithSelected: pred.numbers.filter(n => numbers.includes(n)).length
       })));
     }
+  };
+
+  const copyResults = () => {
+    if (predictions.length === 0) {
+      toast({
+        title: "Nenhum resultado para copiar",
+        description: "Gere as previsões primeiro antes de copiar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const formattedResults = predictions.map((pred, idx) => {
+      const numbersFormatted = pred.numbers.map(n => n.toString().padStart(2, '0')).join(', ');
+      return `Jogo ${idx + 1} (Objetivo: ${pred.targetMatches} acertos): ${numbersFormatted}`;
+    }).join('\n');
+
+    navigator.clipboard.writeText(formattedResults).then(() => {
+      toast({
+        title: "Resultados Copiados!",
+        description: "Os resultados foram copiados para sua área de transferência",
+      });
+    }).catch(() => {
+      toast({
+        title: "Erro ao Copiar",
+        description: "Não foi possível copiar os resultados",
+        variant: "destructive"
+      });
+    });
   };
 
   const generatePredictions = async () => {
@@ -205,13 +235,24 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             <span>Previsões do Campeão {isServerProcessing ? '(Servidor)' : '(Local)'}</span>
-            <Button 
-              onClick={generatePredictions} 
-              className="bg-green-600 hover:bg-green-700"
-              disabled={!champion || !trainedModel}
-            >
-              Gerar 20 Jogos
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={generatePredictions} 
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!champion || !trainedModel}
+              >
+                Gerar 20 Jogos
+              </Button>
+              <Button
+                onClick={copyResults}
+                variant="outline"
+                className="gap-2"
+                disabled={predictions.length === 0}
+              >
+                <Copy className="h-4 w-4" />
+                Copiar Resultados
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
