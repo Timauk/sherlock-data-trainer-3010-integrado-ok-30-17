@@ -1,22 +1,24 @@
-import { systemLogger } from '@/utils/logging/systemLogger';
+import * as tf from '@tensorflow/tfjs';
+import { systemLogger } from '../logging/systemLogger';
 
 class GameAnalysisSystem {
-  private metrics: {
-    accuracy: number;
-    predictions: number;
-    successRate: number;
+  private static instance: GameAnalysisSystem;
+  private metrics = {
+    predictions: 0,
+    accuracy: 0,
+    successRate: 0
   };
 
-  constructor() {
-    this.metrics = {
-      accuracy: 0,
-      predictions: 0,
-      successRate: 0
-    };
+  private constructor() {}
+
+  static getInstance(): GameAnalysisSystem {
+    if (!GameAnalysisSystem.instance) {
+      GameAnalysisSystem.instance = new GameAnalysisSystem();
+    }
+    return GameAnalysisSystem.instance;
   }
 
-  updateMetrics(accuracy: number, predictions: number) {
-    this.metrics.accuracy = accuracy;
+  updateMetrics(predictions: number, accuracy: number): void {
     this.metrics.predictions = predictions;
     this.metrics.successRate = predictions > 0 ? accuracy / predictions : 0;
     
@@ -24,13 +26,14 @@ class GameAnalysisSystem {
   }
 
   getMetrics() {
-    return { ...this.metrics };
+    return this.metrics;
   }
 
-  async analyzeGameState(gameState: any) {
+  async analyzeGameState(model: tf.LayersModel | null, currentState: any) {
     try {
       const analysis = {
-        currentState: gameState,
+        modelStatus: model ? 'loaded' : 'not_loaded',
+        currentState,
         metrics: this.metrics,
         timestamp: new Date().toISOString()
       };
@@ -45,4 +48,4 @@ class GameAnalysisSystem {
   }
 }
 
-export const gameAnalysisSystem = new GameAnalysisSystem();
+export const gameAnalysisSystem = GameAnalysisSystem.getInstance();

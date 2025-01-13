@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
-import { ModelArtifacts } from '@/types/gameTypes';
-import { systemLogger } from '@/utils/logging/systemLogger';
+import { ModelArtifacts } from '../../types/gameTypes';
+import { systemLogger } from '../logging/systemLogger';
 
 export class ModelManager {
   private static instance: ModelManager | null = null;
