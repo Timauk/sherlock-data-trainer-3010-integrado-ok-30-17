@@ -1,12 +1,11 @@
-import express, { Request, Response, Router } from 'express';
+import express from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
-import { LayersModel } from '@tensorflow/tfjs';
-import { CheckpointData, SystemInfo } from '../types/checkpointTypes';
+import type { CheckpointData, SystemInfo } from '../types/checkpointTypes';
 
-const router: Router = express.Router();
+const router = express.Router();
 
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', async (req, res) => {
   try {
     const systemInfo: SystemInfo = {
       totalMemory: process.memoryUsage().heapTotal,
@@ -14,7 +13,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       uptime: process.uptime()
     };
 
-    // Separamos o modelo do resto dos dados
     const { model, ...restData } = req.body;
 
     const checkpointData: CheckpointData = {
@@ -24,13 +22,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       csvData: req.body.csvData
     };
 
-    // Passamos o modelo e os dados separadamente
-    const filename = await checkpointManager.saveCheckpoint(model as LayersModel, checkpointData);
+    await checkpointManager.saveCheckpoint(model, checkpointData);
 
-    logger.info({ filename }, 'Checkpoint saved successfully');
+    logger.info('Checkpoint saved successfully');
     res.json({ 
-      message: 'Checkpoint salvo com sucesso', 
-      filename 
+      message: 'Checkpoint salvo com sucesso'
     });
   } catch (error) {
     logger.error({ error }, 'Error saving checkpoint');
@@ -41,7 +37,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.get('/latest', async (req: Request, res: Response): Promise<void> => {
+router.get('/latest', async (req, res) => {
   try {
     const checkpoint = await checkpointManager.loadCheckpoint();
     
