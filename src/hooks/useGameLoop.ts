@@ -1,15 +1,15 @@
 import { useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { Player, ModelVisualization, EvolutionDataEntry } from '@/types/gameTypes';
-import { makePrediction } from '@/utils/predictionUtils';
-import { updateModelWithNewData } from '@/utils/modelUtils';
-import { calculateReward, logReward } from '@/utils/rewardSystem';
-import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
-import { performCrossValidation } from '@/utils/validation/crossValidation';
-import { calculateConfidenceScore } from '@/utils/prediction/confidenceScoring';
-import { predictionMonitor } from '@/utils/monitoring/predictionMonitor';
-import { temporalAccuracyTracker } from '@/utils/prediction/temporalAccuracy';
-import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
+import { Player, ModelVisualization, EvolutionDataEntry } from '../types/gameTypes';
+import { makePrediction } from '../utils/predictionUtils';
+import { updateModelWithNewData } from '../utils/modelUtils';
+import { calculateReward, logReward } from '../utils/rewardSystem';
+import { getLunarPhase, analyzeLunarPatterns } from '../utils/lunarCalculations';
+import { performCrossValidation } from '../utils/validation/crossValidation';
+import { calculateConfidenceScore } from '../utils/prediction/confidenceScoring';
+import { predictionMonitor } from '../utils/monitoring/predictionMonitor';
+import { temporalAccuracyTracker } from '../utils/prediction/temporalAccuracy';
+import { TimeSeriesAnalysis } from '../utils/analysis/timeSeriesAnalysis';
 
 export const useGameLoop = (
   players: Player[],

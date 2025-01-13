@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Player } from '@/types/gameTypes';
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { useToast } from "../hooks/use-toast";
+import { Player } from '../types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
 import NumberSelector from './NumberSelector';
 import { Copy } from 'lucide-react';
