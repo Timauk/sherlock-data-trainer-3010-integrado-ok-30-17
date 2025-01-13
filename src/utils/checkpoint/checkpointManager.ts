@@ -1,7 +1,7 @@
-import { FileManager } from '../checkpoint/fileManager';
-import { ModelManager } from '../integrated/modelManagementSystem';
-import { StateManager } from './stateManager';
-import { logger } from '../logging/logger';
+import { FileManager } from './fileManager.js';
+import { ModelManager } from '../integrated/modelManagementSystem.js';
+import { StateManager } from './stateManager.js';
+import { logger } from '../logging/logger.js';
 import { ModelArtifactsInfo } from '@/types/gameTypes';
 import { CheckpointData, CheckpointManifest, ModelMetadata } from '@/types/checkpointTypes';
 import path from 'path';
