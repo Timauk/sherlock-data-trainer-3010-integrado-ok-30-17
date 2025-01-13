@@ -20,7 +20,7 @@ class GameAnalysisSystem {
     this.metrics.predictions = predictions;
     this.metrics.successRate = predictions > 0 ? accuracy / predictions : 0;
     
-    systemLogger.log('metrics', 'Métricas atualizadas', this.metrics);
+    systemLogger.log('performance', 'Métricas atualizadas', this.metrics);
   }
 
   getMetrics() {
@@ -35,11 +35,11 @@ class GameAnalysisSystem {
         timestamp: new Date().toISOString()
       };
       
-      systemLogger.log('analysis', 'Análise do estado do jogo', analysis);
+      systemLogger.log('performance', 'Análise do estado do jogo', analysis);
       return analysis;
       
     } catch (error) {
-      systemLogger.log('error', 'Erro na análise do estado do jogo', { error });
+      systemLogger.log('system', 'Erro na análise do estado do jogo', { error });
       throw error;
     }
   }

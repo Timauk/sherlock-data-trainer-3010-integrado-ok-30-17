@@ -8,7 +8,9 @@ export type LogType =
   | "checkpoint" 
   | "learning" 
   | "model"
-  | "analysis";
+  | "analysis"
+  | "metrics"
+  | "error";
 
 export interface SystemStatus {
   healthy: boolean;
