@@ -1,18 +1,14 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "sourceMap": true,
+    "outDir": "dist",
     "strict": true,
-    "outDir": "./dist",
-    "rootDir": ".",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "allowJs": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
@@ -36,21 +32,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
-    "allowUnusedLabels": false,
-    "allowUnreachableCode": false
+    "allowJs": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifier": true
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "server.ts",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "server.ts"],
+  "exclude": ["node_modules"]
 }
