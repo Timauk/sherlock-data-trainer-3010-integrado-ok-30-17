@@ -71,7 +71,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 // Error handler middleware with proper types
-const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error({
     err,
     method: req.method,
