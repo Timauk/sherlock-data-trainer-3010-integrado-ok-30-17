@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { SystemInfo } from './checkpointTypes';
+import { Optional, Nullable } from './utils';
 
 export interface Player {
   id: number;
@@ -66,7 +66,7 @@ export interface GameState {
   concursoNumber: number;
   isInfiniteMode: boolean;
   trainingData: number[][];
-  model?: tf.LayersModel;
+  model?: Nullable<tf.LayersModel>;
 }
 
 export interface EvolutionDataEntry {
@@ -92,6 +92,30 @@ export interface ChampionData {
 }
 
 export interface ModelManagerResponse {
-  model: tf.LayersModel | undefined;
-  metadata: any | null;
+  model: Optional<tf.LayersModel>;
+  metadata: Optional<any>;
+}
+
+export type ValidationResult = {
+  isValid: boolean;
+  errors: string[];
+  cleanedData?: number[][];
+};
+
+export interface Weight {
+  name: string;
+  value: number;
+  description: string;
+}
+
+export interface PlayerWeights {
+  [key: string]: number;
+}
+
+export interface GameConfig {
+  maxPlayers: number;
+  generationSize: number;
+  mutationRate: number;
+  crossoverRate: number;
+  elitismCount: number;
 }
