@@ -22,3 +22,13 @@ export function isNumber(value: unknown): value is number {
 export function isValidIndex(index: number, array: unknown[]): boolean {
   return isNumber(index) && index >= 0 && index < array.length;
 }
+
+export function isValidDate(date: unknown): date is Date {
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
+export function ensureString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+}

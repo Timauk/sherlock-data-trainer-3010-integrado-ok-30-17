@@ -25,39 +25,6 @@ export interface ModelMetrics {
   perGameRandomAccuracy?: number;
 }
 
-export interface ModelArtifactsInfo {
-  dateSaved: Date;
-  modelTopologyType: string;
-  modelTopologyBytes: number;
-  weightSpecsBytes: number;
-  weightDataBytes: number;
-}
-
-export interface WeightSpecs {
-  name: string;
-  shape: number[];
-  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
-}
-
-export interface ModelArtifacts {
-  modelTopology: any;
-  weightSpecs: WeightSpecs[];
-  weightData: ArrayBuffer;
-  format?: string;
-  generatedBy?: string;
-  convertedBy: string;
-  modelInitializer?: string;
-  trainingConfig?: any;
-  weightsManifest?: any[];
-  modelArtifactsInfo?: ModelArtifactsInfo;
-}
-
-export interface PredictionResult {
-  numbers: number[];
-  confidence: number;
-  matchCount?: number;
-}
-
 export interface GameState {
   players: Player[];
   generation: number;
@@ -91,17 +58,6 @@ export interface ChampionData {
   trainingData: number[][];
 }
 
-export interface ModelManagerResponse {
-  model: Optional<tf.LayersModel>;
-  metadata: Optional<any>;
-}
-
-export type ValidationResult = {
-  isValid: boolean;
-  errors: string[];
-  cleanedData?: number[][];
-};
-
 export interface Weight {
   name: string;
   value: number;
@@ -118,4 +74,16 @@ export interface GameConfig {
   mutationRate: number;
   crossoverRate: number;
   elitismCount: number;
+}
+
+export interface ModelResponse {
+  success: boolean;
+  model?: tf.LayersModel;
+  error?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  cleanedData?: number[][];
 }
