@@ -42,7 +42,7 @@ app.use('/api/checkpoint', checkpointRouter);
 app.use('/api/status', statusRouter);
 
 // API root route
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', (_req: Request, res: Response) => {
   res.json({
     status: 'online',
     endpoints: {
@@ -54,12 +54,12 @@ app.get('/api', (req: Request, res: Response) => {
 });
 
 // Serve index.html for all other routes
-app.get('*', (req: Request, res: Response) => {
+app.get('*', (_req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Health check route
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   const healthInfo = {
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -71,7 +71,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Error handler middleware with proper types
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   logger.error({
     err,
     method: req.method,

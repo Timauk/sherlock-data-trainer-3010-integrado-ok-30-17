@@ -105,6 +105,6 @@ start cmd /k "npm run dev || (echo Error: Failed to start React application && p
 
 echo Development environment started successfully!
 echo Server running at http://localhost:3001
-echo React application running at http://localhost:5173
+echo React application running at http://localhost:8080
 
 pause
