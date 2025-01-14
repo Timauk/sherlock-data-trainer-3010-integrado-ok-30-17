@@ -25,6 +25,33 @@ export interface ModelMetrics {
   perGameRandomAccuracy?: number;
 }
 
+export interface ModelArtifactsInfo {
+  dateSaved: Date;
+  modelTopologyType: string;
+  modelTopologyBytes: number;
+  weightSpecsBytes: number;
+  weightDataBytes: number;
+}
+
+export interface WeightSpecs {
+  name: string;
+  shape: number[];
+  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
+}
+
+export interface ModelArtifacts {
+  modelTopology: any;
+  weightSpecs: WeightSpecs[];
+  weightData: ArrayBuffer;
+  format?: string;
+  generatedBy?: string;
+  convertedBy: string;
+  modelInitializer?: string;
+  trainingConfig?: any;
+  weightsManifest?: any[];
+  modelArtifactsInfo?: ModelArtifactsInfo;
+}
+
 export interface GameState {
   players: Player[];
   generation: number;
