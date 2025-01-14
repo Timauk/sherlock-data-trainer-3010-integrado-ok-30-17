@@ -1,35 +1,24 @@
-export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
+export type Nullable<T> = T | null;
 
-export function isNonNullable<T>(value: T): value is NonNullable<T> {
-  return value !== null && value !== undefined;
+export function isNullOrUndefined<T>(value: Optional<Nullable<T>>): value is null | undefined {
+  return value === null || value === undefined;
+}
+
+export function assertNonNullable<T>(value: T, message?: string): asserts value is NonNullable<T> {
+  if (isNullOrUndefined(value)) {
+    throw new Error(message ?? 'Value cannot be null or undefined');
+  }
 }
 
 export function ensureArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-export function isValidNumber(value: any): value is number {
+export function isNumber(value: unknown): value is number {
   return typeof value === 'number' && !isNaN(value);
 }
 
-export function assertNonNull<T>(value: T, message?: string): asserts value is NonNullable<T> {
-  if (value === null || value === undefined) {
-    throw new Error(message || 'Value must not be null or undefined');
-  }
-}
-
-export type DeepRequired<T> = {
-  [P in keyof T]-?: DeepRequired<NonNullable<T[P]>>;
-};
-
-export type DeepPartial<T> = {
-  [P in keyof T]?: DeepPartial<T[P]>;
-};
-
-export function hasProperty<T extends object, K extends PropertyKey>(
-  obj: T,
-  prop: K
-): obj is T & Record<K, unknown> {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
+export function isValidIndex(index: number, array: unknown[]): boolean {
+  return isNumber(index) && index >= 0 && index < array.length;
 }
