@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import DataUploader from '../DataUploader';
+import DataUploader from './DataUploader';
 
 interface ControlPanelProps {
   isPlaying: boolean;
@@ -16,7 +16,6 @@ interface ControlPanelProps {
   isInfiniteMode: boolean;
   isManualMode: boolean;
   disabled?: boolean;
-  processingLocation?: 'local' | 'server';
 }
 
 const GameControls: React.FC<ControlPanelProps> = ({
@@ -32,15 +31,13 @@ const GameControls: React.FC<ControlPanelProps> = ({
   toggleManualMode,
   isInfiniteMode,
   isManualMode,
-  disabled = false,
-  processingLocation = 'local'
+  disabled = false
 }) => {
   return (
     <div className="space-y-4">
       <DataUploader 
         onCsvUpload={onCsvUpload} 
-        onModelUpload={onModelUpload} 
-        onSaveModel={onSaveModel} 
+        onModelUpload={onModelUpload}
       />
 
       <div className="flex flex-wrap gap-2">

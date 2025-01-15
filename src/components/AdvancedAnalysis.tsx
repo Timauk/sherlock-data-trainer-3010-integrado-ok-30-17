@@ -2,12 +2,23 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ModelVisualization } from '@/types/gameTypes';
 
 interface AdvancedAnalysisProps {
   numbers: number[][];
+  modelMetrics?: {
+    accuracy: number;
+    randomAccuracy: number;
+    totalPredictions: number;
+  };
+  neuralNetworkVisualization?: ModelVisualization;
 }
 
-const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ numbers }) => {
+const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ 
+  numbers,
+  modelMetrics,
+  neuralNetworkVisualization 
+}) => {
   const calculatePatterns = () => {
     const patterns = {
       consecutive: 0,
@@ -63,6 +74,12 @@ const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ numbers }) => {
                 <h4 className="text-sm font-medium mb-2">Proporção Par/Ímpar</h4>
                 <p className="text-2xl font-bold">{(patterns.evenOdd / numbers.length).toFixed(2)}</p>
               </div>
+              {modelMetrics && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Precisão do Modelo</h4>
+                  <p className="text-2xl font-bold">{(modelMetrics.accuracy * 100).toFixed(2)}%</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 

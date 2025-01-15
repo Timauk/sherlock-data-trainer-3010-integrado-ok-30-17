@@ -18,7 +18,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   onClonePlayer,
 }) => {
   const formatPredictions = (predictions: number[]) => {
-    return predictions.length > 0 
+    return predictions && predictions.length > 0 
       ? predictions.map(n => n.toString().padStart(2, '0')).join(', ')
       : 'Aguardando próxima rodada';
   };
@@ -44,7 +44,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
           <span className="font-medium">Previsões:</span> {formatPredictions(player.predictions)}
         </p>
         <p className="text-sm">
-          <span className="font-medium">Acertos:</span> {player.fitness}
+          <span className="font-medium">Acertos:</span> {player.matches}
         </p>
         <p className="text-sm">
           <span className="font-medium">Fitness:</span> {player.fitness.toFixed(2)}

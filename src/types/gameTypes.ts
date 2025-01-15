@@ -16,7 +16,7 @@ export interface Player {
   matches: number;
   fitness: number;
   isChampion?: boolean;
-  predictions?: number[];
+  predictions: number[];
   lastPrediction?: number[];
 }
 
@@ -28,15 +28,22 @@ export interface GameState {
   concursoNumber: number;
   isPlaying: boolean;
   model: LayersModel | null;
-  evolutionData: Array<{
-    generation: number;
-    playerId: number;
-    score: number;
-    fitness: number;
-  }>;
+  evolutionData: EvolutionDataEntry[];
   frequencyData: Record<string, number[]>;
   dates: Date[];
   numbers: number[][];
+}
+
+export interface ChampionData {
+  player: Player;
+  trainingData: number[][];
+}
+
+export interface EvolutionDataEntry {
+  generation: number;
+  playerId: number;
+  score: number;
+  fitness: number;
 }
 
 export interface DiagnosticResult {
@@ -59,4 +66,16 @@ export interface TrainingMetrics {
   epoch: number;
   validationLoss?: number;
   validationAccuracy?: number;
+}
+
+export interface ModelArtifacts {
+  modelTopology: any;
+  weightSpecs: any[];
+  weightData: ArrayBuffer;
+  format?: string;
+  generatedBy?: string;
+  convertedBy?: string;
+  modelInitializer?: any;
+  trainingConfig?: any;
+  weightsManifest?: any[];
 }
