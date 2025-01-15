@@ -44,8 +44,8 @@ router.post('/train', async (req, res) => {
     });
     
     res.json({
-      loss: result.history.loss[result.history.loss.length - 1],
-      accuracy: result.history.acc[result.history.acc.length - 1]
+      loss: result.history['loss'][result.history['loss'].length - 1],
+      accuracy: result.history['acc'][result.history['acc'].length - 1]
     });
     
     xs.dispose();

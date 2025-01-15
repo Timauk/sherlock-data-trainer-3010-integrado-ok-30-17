@@ -21,15 +21,12 @@ export const periodicModelRetraining = async (
   addLog: (message: string) => void
 ): Promise<tf.LayersModel> => {
   try {
-    // Calcula pesos para cada entrada de dados
     const weights = calculateDataWeights(dates);
     
-    // Prepara os dados de treinamento
     const xs = tf.tensor2d(historicalData.map(data => data.slice(0, -15)));
     const ys = tf.tensor2d(historicalData.map(data => data.slice(-15)));
     const sampleWeights = tf.tensor1d(weights);
 
-    // Configura o retreinamento
     await model.fit(xs, ys, {
       epochs: 10,
       batchSize: 32,
@@ -38,13 +35,12 @@ export const periodicModelRetraining = async (
       callbacks: {
         onEpochEnd: (epoch, logs) => {
           if (logs) {
-            addLog(`Retreinamento - Época ${epoch + 1}: Loss = ${logs.loss.toFixed(4)}`);
+            addLog(`Retreinamento - Época ${epoch + 1}: Loss = ${logs['loss'].toFixed(4)}`);
           }
         }
       }
     });
 
-    // Limpa os tensores
     xs.dispose();
     ys.dispose();
     sampleWeights.dispose();

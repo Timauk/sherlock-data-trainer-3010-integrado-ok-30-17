@@ -52,7 +52,11 @@ const TrainingPage: React.FC = () => {
         onEpochEnd: (epoch, log) => {
           if (log) {
             setTrainingProgress(Math.floor(((epoch + 1) / 100) * 100));
-            setLogs(prevLogs => [...prevLogs, { epoch: epoch + 1, loss: log.loss, val_loss: log.val_loss }]);
+            setLogs(prevLogs => [...prevLogs, { 
+              epoch: epoch + 1, 
+              loss: log['loss'], 
+              val_loss: log['val_loss'] 
+            }]);
           }
         }
       }
