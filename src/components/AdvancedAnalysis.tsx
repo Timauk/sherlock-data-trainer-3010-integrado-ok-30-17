@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ModelVisualization } from '@/types/gameTypes';
+import NeuralNetworkVisualization from './NeuralNetworkVisualization';
 
 interface AdvancedAnalysisProps {
   numbers: number[][];
@@ -62,6 +63,9 @@ const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
             <TabsTrigger value="patterns">Padrões</TabsTrigger>
             <TabsTrigger value="distribution">Distribuição</TabsTrigger>
             <TabsTrigger value="trends">Tendências</TabsTrigger>
+            {neuralNetworkVisualization && (
+              <TabsTrigger value="neural">Rede Neural</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="patterns">
@@ -112,6 +116,16 @@ const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
               </ResponsiveContainer>
             </div>
           </TabsContent>
+
+          {neuralNetworkVisualization && (
+            <TabsContent value="neural">
+              <NeuralNetworkVisualization 
+                layers={[15, 128, 64, 15]}
+                inputData={numbers[numbers.length - 1]}
+                outputData={neuralNetworkVisualization.predictions.map(p => p.probability)}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </CardContent>
     </Card>

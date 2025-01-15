@@ -132,7 +132,6 @@ const PlayPage: React.FC = () => {
     }
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
-    gameLogic.gameLoop();
   }, [trainedModel, csvData, gameLogic, toast]);
 
   const pauseGame = useCallback(() => {
@@ -156,8 +155,7 @@ const PlayPage: React.FC = () => {
     if (isPlaying && trainedModel) {
       intervalId = setInterval(async () => {
         try {
-          await gameLogic.gameLoop();
-          const metrics = gameAnalysisSystem.getMetrics();
+          gameAnalysisSystem.getMetrics();
           setProgress((prevProgress) => {
             const newProgress = prevProgress + (100 / csvData.length);
             if (newProgress >= 100) {
@@ -180,7 +178,7 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed, trainedModel]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed, trainedModel, toast]);
 
   const handleSpeedChange = useCallback((value: number[]) => {
     const newSpeed = 2000 - value[0];

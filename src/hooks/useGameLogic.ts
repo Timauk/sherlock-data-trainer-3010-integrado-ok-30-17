@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import { useToast } from "../components/ui/use-toast";
+import { useToast } from "../hooks/use-toast";
 import { useGameInitialization } from './useGameInitialization';
 import { useGameLoop } from './useGameLoop';
-import { updateModelWithNewData } from '../utils/modelUtils';
 import { cloneChampion, updateModelWithChampionKnowledge } from '../utils/playerEvolution';
 import { selectBestPlayers } from '../utils/evolutionSystem';
 import { Player, ModelVisualization, ChampionData, EvolutionDataEntry } from '../types/gameTypes';
@@ -28,7 +27,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   });
   const [dates, setDates] = useState<Date[]>([]);
   const [numbers, setNumbers] = useState<number[][]>([]);
-  const [frequencyData, setFrequencyData] = useState<Record<string, number[]>>({});
   const [updateInterval, setUpdateInterval] = useState<number>(10);
   const [isInfiniteMode, setIsInfiniteMode] = useState<boolean>(false);
   const [concursoNumber, setConcursoNumber] = useState<number>(0);
@@ -41,27 +39,11 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     systemLogger.log(logType, message, { matches });
   }, []);
 
-  const gameLoop = useGameLoop(
-    players,
-    setPlayers,
-    csvData,
-    trainedModel || null, // Garantindo que seja null quando undefined
-    concursoNumber,
-    setEvolutionData,
-    generation,
-    addLog,
-    updateInterval,
-    trainingData,
-    setTrainingData,
-    setNumbers,
-    setDates,
-    setNeuralNetworkVisualization,
-    setBoardNumbers,
-    setModelMetrics,
-    setConcursoNumber,
-    setGameCount,
-    (title, description) => toast({ title, description })
-  );
+  const gameLoop = useGameLoop({
+    isPlaying: false,
+    generation: 0,
+    frequencyData: {}
+  });
 
   const evolveGeneration = useCallback(async () => {
     if (!trainedModel) {
@@ -79,7 +61,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
       
       if (trainedModel && championData) {
         try {
-          const updatedModel = await updateModelWithChampionKnowledge(
+          await updateModelWithChampionKnowledge(
             trainedModel,
             champion,
             championData.trainingData
@@ -122,8 +104,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   }, [players, generation, trainedModel, gameCount, championData, trainingData]);
 
   const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
-    setFrequencyData(newFrequencyData);
-    
     if (trainedModel && players.length > 0) {
       const frequencyFeatures = Object.values(newFrequencyData).flat();
       setTrainingData(prev => {
@@ -193,4 +173,3 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     clonePlayer,
   };
 };
-

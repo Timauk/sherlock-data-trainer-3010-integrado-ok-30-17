@@ -16,7 +16,7 @@ export interface Player {
   matches: number;
   fitness: number;
   isChampion?: boolean;
-  predictions: number[];
+  predictions?: number[];
   lastPrediction?: number[];
 }
 
@@ -78,4 +78,22 @@ export interface ModelArtifacts {
   modelInitializer?: any;
   trainingConfig?: any;
   weightsManifest?: any[];
+}
+
+export interface AnalysisTabsProps {
+  numbers: number[][];
+  dates: Date[];
+  modelMetrics: {
+    accuracy: number;
+    randomAccuracy: number;
+    totalPredictions: number;
+  };
+  neuralNetworkVisualization?: ModelVisualization;
+  onFrequencyUpdate: (data: Record<string, number[]>) => void;
+}
+
+export interface DataUploaderProps {
+  onCsvUpload: (file: File) => void;
+  onModelUpload: (jsonFile: File, weightsFile: File) => void;
+  onSaveModel: () => void;
 }

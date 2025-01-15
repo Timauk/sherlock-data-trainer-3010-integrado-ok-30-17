@@ -2,15 +2,12 @@ import React, { useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, Save } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-
-interface DataUploaderProps {
-  onCsvUpload: (file: File) => void;
-  onModelUpload: (jsonFile: File, weightsFile: File) => void;
-}
+import { DataUploaderProps } from '@/types/gameTypes';
 
 const DataUploader: React.FC<DataUploaderProps> = ({
   onCsvUpload,
-  onModelUpload
+  onModelUpload,
+  onSaveModel
 }) => {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const modelJsonInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +96,13 @@ const DataUploader: React.FC<DataUploaderProps> = ({
         >
           <Save className="mr-2 h-4 w-4" />
           Finalizar Upload do Modelo
+        </Button>
+        <Button 
+          onClick={onSaveModel}
+          className="w-full bg-blue-600 hover:bg-blue-700"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Salvar Modelo Atual
         </Button>
       </div>
     </div>
