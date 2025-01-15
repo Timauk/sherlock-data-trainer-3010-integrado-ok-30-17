@@ -1,116 +1,62 @@
-import * as tf from '@tensorflow/tfjs';
-import { Optional, Nullable } from './utils';
+import type { LayersModel } from '@tensorflow/tfjs';
+
+export interface ModelVisualization {
+  predictions: Array<{
+    number: number;
+    probability: number;
+  }>;
+}
 
 export interface Player {
   id: number;
-  score: number;
-  predictions: number[];
-  weights: number[];
-  fitness: number;
-  generation: number;
-}
-
-export interface ModelVisualization {
-  input: number[];
-  output: number[];
-  weights: number[][];
-}
-
-export interface ModelMetrics {
-  accuracy: number;
-  randomAccuracy: number;
-  totalPredictions: number;
-  predictionConfidence?: number;
-  perGameAccuracy?: number;
-  perGameRandomAccuracy?: number;
-}
-
-export interface ModelArtifactsInfo {
-  dateSaved: Date;
-  modelTopologyType: string;
-  modelTopologyBytes: number;
-  weightSpecsBytes: number;
-  weightDataBytes: number;
-}
-
-export interface WeightSpecs {
   name: string;
-  shape: number[];
-  dtype: 'float32' | 'int32' | 'bool' | 'string' | 'complex64';
-}
-
-export interface ModelArtifacts {
-  modelTopology: any;
-  weightSpecs: WeightSpecs[];
-  weightData: ArrayBuffer;
-  format?: string;
-  generatedBy?: string;
-  convertedBy: string;
-  modelInitializer?: string;
-  trainingConfig?: any;
-  weightsManifest?: any[];
-  modelArtifactsInfo?: ModelArtifactsInfo;
+  score: number;
+  weights: number[];
+  generation: number;
+  matches: number;
+  fitness: number;
+  isChampion?: boolean;
+  predictions?: number[];
+  lastPrediction?: number[];
 }
 
 export interface GameState {
   players: Player[];
   generation: number;
-  evolutionData: EvolutionDataEntry[];
+  champion: Player | null;
   boardNumbers: number[];
   concursoNumber: number;
-  isInfiniteMode: boolean;
-  trainingData: number[][];
-  model?: Nullable<tf.LayersModel>;
-}
-
-export interface EvolutionDataEntry {
-  generation: number;
-  playerId: number;
-  score: number;
-  fitness: number;
-}
-
-export interface LunarData {
-  lunarPhase: string;
-  lunarPatterns: Record<string, number[]>;
-}
-
-export interface TimeSeriesData {
-  numbers: number[][];
+  isPlaying: boolean;
+  model: LayersModel | null;
+  evolutionData: Array<{
+    generation: number;
+    playerId: number;
+    score: number;
+    fitness: number;
+  }>;
+  frequencyData: Record<string, number[]>;
   dates: Date[];
+  numbers: number[][];
 }
 
-export interface ChampionData {
-  player: Player;
-  trainingData: number[][];
+export interface DiagnosticResult {
+  phase: string;
+  status: 'success' | 'warning' | 'error';
+  message: string;
+  details?: string;
 }
 
-export interface Weight {
-  name: string;
-  value: number;
-  description: string;
+export interface SystemMetrics {
+  accuracy: number;
+  randomAccuracy: number;
+  totalPredictions: number;
+  modelVisualization?: ModelVisualization;
 }
 
-export interface PlayerWeights {
-  [key: string]: number;
-}
-
-export interface GameConfig {
-  maxPlayers: number;
-  generationSize: number;
-  mutationRate: number;
-  crossoverRate: number;
-  elitismCount: number;
-}
-
-export interface ModelResponse {
-  success: boolean;
-  model?: tf.LayersModel;
-  error?: string;
-}
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  cleanedData?: number[][];
+export interface TrainingMetrics {
+  loss: number;
+  accuracy: number;
+  epoch: number;
+  validationLoss?: number;
+  validationAccuracy?: number;
 }

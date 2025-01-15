@@ -7,36 +7,23 @@ import LunarAnalysis from '../LunarAnalysis';
 import { Player, ModelVisualization } from '@/types/gameTypes';
 
 interface AnalysisTabsProps {
-  boardNumbers: number[];
-  concursoNumber: number;
-  players: Player[];
-  evolutionData: Array<{
-    generation: number;
-    playerId: number;
-    score: number;
-    fitness: number;
-  }>;
-  dates: Date[];
   numbers: number[][];
-  updateFrequencyData: (data: Record<string, number[]>) => void;
+  dates: Date[];
   modelMetrics: {
     accuracy: number;
     randomAccuracy: number;
     totalPredictions: number;
   };
   neuralNetworkVisualization?: ModelVisualization;
+  onFrequencyUpdate: (data: Record<string, number[]>) => void;
 }
 
 const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
-  boardNumbers,
-  concursoNumber,
-  players,
-  evolutionData,
-  dates,
   numbers,
-  updateFrequencyData,
+  dates,
   modelMetrics,
-  neuralNetworkVisualization
+  neuralNetworkVisualization,
+  onFrequencyUpdate
 }) => {
   return (
     <Card className="mt-4">
@@ -50,7 +37,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
         <TabsContent value="frequency">
           <FrequencyAnalysis 
             numbers={numbers}
-            updateFrequencyData={updateFrequencyData}
+            onFrequencyUpdate={onFrequencyUpdate}
           />
         </TabsContent>
         
@@ -64,7 +51,6 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
         <TabsContent value="advanced">
           <AdvancedAnalysis 
             numbers={numbers}
-            dates={dates}
             modelMetrics={modelMetrics}
             neuralNetworkVisualization={neuralNetworkVisualization}
           />

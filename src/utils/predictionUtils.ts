@@ -6,16 +6,7 @@ export const makePrediction = async (
   model: tf.LayersModel,
   currentNumbers: number[],
   weights: number[],
-  concursoNumber: number,
   setVisualization: (vis: ModelVisualization) => void,
-  lunarData: {
-    lunarPhase: number;
-    lunarPatterns: number[];
-  },
-  timeSeriesData: {
-    numbers: number[][];
-    dates: Date[];
-  }
 ): Promise<number[]> => {
   try {
     const normalizedInput = currentNumbers.map(n => n / 25);
@@ -36,11 +27,6 @@ export const makePrediction = async (
       .sort((a, b) => a - b);
     
     setVisualization({
-      layers: model.layers.map(layer => ({
-        name: layer.name,
-        units: layer.units || 0,
-        activation: layer.getConfig().activation
-      })),
       predictions: weightedPredictions
     });
     
