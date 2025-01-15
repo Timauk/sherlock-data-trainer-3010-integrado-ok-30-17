@@ -96,6 +96,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
       });
 
       const newPredictions: Prediction[] = [];
+      
       // Primeiros 8 jogos (originais)
       const targets = [
         { matches: 11, count: 2 },
@@ -104,8 +105,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         { matches: 14, count: 1 },
         { matches: 15, count: 1 }
       ];
-      
-      // Gera os 8 jogos originais
+
       for (const target of targets) {
         for (let i = 0; i < target.count; i++) {
           const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
@@ -173,7 +173,6 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         for (let i = 0; i < target.count; i++) {
           const variationFactor = 0.05 + ((15 - target.matches) * 0.02);
           
-          // Importante: Usar apenas os primeiros 15 números normalizados
           const normalizedInput = lastConcursoNumbers.slice(0, 15).map(n => {
             const variation = (Math.random() - 0.5) * variationFactor;
             return (n / 25) * (1 + variation);
@@ -183,7 +182,6 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
           const prediction = await trainedModel.predict(inputTensor) as tf.Tensor;
           const predictionArray = Array.from(await prediction.data());
           
-          // Aplica 80% do peso neural
           const neuralWeight = 0.8;
           const weightAdjustment = (target.matches / 15) * neuralWeight;
           
@@ -218,10 +216,10 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         }
       }
 
-      // Adiciona a comparação com os números selecionados
       const predictionsWithMatches = newPredictions.map(pred => ({
         ...pred,
-        matchesWithSelected: pred.numbers.filter(n => selectedNumbers.includes(n)).length
+        matchesWithSelected: selectedNumbers.length > 0 ? 
+          pred.numbers.filter(n => selectedNumbers.includes(n)).length : 0
       }));
 
       setPredictions(predictionsWithMatches);

@@ -51,7 +51,8 @@ const findSequentialPatterns = (numbers: number[][]): number[][] => {
   for (let i = 0; i < numbers.length - minPatternLength; i++) {
     const sequence: number[] = [];
     for (let j = 0; j < minPatternLength; j++) {
-      sequence.push(...numbers[i + j]);
+      const currentNumbers: number[] = numbers[i + j];
+      sequence.push(...currentNumbers);
     }
     
     const uniqueSequence = Array.from(new Set(sequence));
