@@ -16,7 +16,7 @@ export interface Player {
   matches: number;
   fitness: number;
   isChampion?: boolean;
-  predictions?: number[];
+  predictions: number[];
   lastPrediction?: number[];
 }
 
@@ -90,6 +90,7 @@ export interface AnalysisTabsProps {
   };
   neuralNetworkVisualization?: ModelVisualization;
   onFrequencyUpdate: (data: Record<string, number[]>) => void;
+  boardNumbers: number[];
 }
 
 export interface DataUploaderProps {

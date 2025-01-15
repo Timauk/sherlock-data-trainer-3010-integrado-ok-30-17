@@ -38,6 +38,7 @@ const GameControls: React.FC<ControlPanelProps> = ({
       <DataUploader 
         onCsvUpload={onCsvUpload} 
         onModelUpload={onModelUpload}
+        onSaveModel={onSaveModel}
       />
 
       <div className="flex flex-wrap gap-2">

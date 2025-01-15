@@ -41,7 +41,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       
       <div className="space-y-2">
         <p className="text-sm">
-          <span className="font-medium">Previsões:</span> {formatPredictions(player.predictions)}
+          <span className="font-medium">Previsões:</span> {formatPredictions(player.predictions || [])}
         </p>
         <p className="text-sm">
           <span className="font-medium">Acertos:</span> {player.matches}
