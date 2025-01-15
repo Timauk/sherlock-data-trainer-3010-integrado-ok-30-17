@@ -1,14 +1,16 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import AdvancedAnalysis from '../AdvancedAnalysis';
+import { Player, ModelVisualization } from '@/types/gameTypes';
 import FrequencyAnalysis from '../FrequencyAnalysis';
 import LunarAnalysis from '../LunarAnalysis';
-import { ModelVisualization } from '@/types/gameTypes';
+import NeuralNetworkVisualization from '../NeuralNetworkVisualization';
 
-interface AnalysisTabsProps {
+export interface AnalysisTabsProps {
   numbers: number[][];
   dates: Date[];
+  players: Player[];
+  boardNumbers: number[];
+  concursoNumber: number;
   modelMetrics: {
     accuracy: number;
     randomAccuracy: number;
@@ -21,42 +23,43 @@ interface AnalysisTabsProps {
 const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   numbers,
   dates,
+  players,
+  boardNumbers,
+  concursoNumber,
   modelMetrics,
   neuralNetworkVisualization,
   updateFrequencyData
 }) => {
   return (
-    <Card className="mt-4">
-      <Tabs defaultValue="frequency" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="frequency">Análise de Frequência</TabsTrigger>
-          <TabsTrigger value="lunar">Análise Lunar</TabsTrigger>
-          <TabsTrigger value="advanced">Análise Avançada</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="frequency">
-          <FrequencyAnalysis 
-            numbers={numbers}
-            onFrequencyUpdate={updateFrequencyData}
-          />
-        </TabsContent>
-        
-        <TabsContent value="lunar">
-          <LunarAnalysis 
-            dates={dates}
-            numbers={numbers}
-          />
-        </TabsContent>
-        
-        <TabsContent value="advanced">
-          <AdvancedAnalysis 
-            numbers={numbers}
-            modelMetrics={modelMetrics}
-            neuralNetworkVisualization={neuralNetworkVisualization}
-          />
-        </TabsContent>
-      </Tabs>
-    </Card>
+    <Tabs defaultValue="frequency" className="w-full">
+      <TabsList>
+        <TabsTrigger value="frequency">Análise de Frequência</TabsTrigger>
+        <TabsTrigger value="lunar">Análise Lunar</TabsTrigger>
+        <TabsTrigger value="neural">Visualização Neural</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="frequency">
+        <FrequencyAnalysis 
+          numbers={numbers} 
+          onUpdate={updateFrequencyData}
+          currentNumbers={boardNumbers}
+        />
+      </TabsContent>
+      
+      <TabsContent value="lunar">
+        <LunarAnalysis 
+          dates={dates}
+          numbers={numbers}
+        />
+      </TabsContent>
+      
+      <TabsContent value="neural">
+        <NeuralNetworkVisualization
+          visualization={neuralNetworkVisualization}
+          metrics={modelMetrics}
+        />
+      </TabsContent>
+    </Tabs>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useServerStatus } from '@/hooks/useServerStatus';
 import GameMetrics from './GameMetrics';
 import ControlPanel from './GameControls/ControlPanel';
@@ -6,7 +6,6 @@ import AnalysisTabs from './GameAnalysis/AnalysisTabs';
 import ChampionPredictions from './ChampionPredictions';
 import ProcessingSelector from './ProcessingSelector';
 import GeneticTreeVisualization from './GeneticTreeVisualization';
-import { useGameLogic } from '@/hooks/useGameLogic';
 import { Player } from '@/types/gameTypes';
 import RealTimeFeedback from './RealTimeFeedback';
 
@@ -21,7 +20,7 @@ interface PlayPageContentProps {
   onSaveModel: () => void;
   progress: number;
   generation: number;
-  gameLogic: ReturnType<typeof useGameLogic>;
+  gameLogic: any; // Manteremos o tipo 'any' temporariamente para evitar problemas de compilação
 }
 
 const PlayPageContent: React.FC<PlayPageContentProps> = ({
@@ -37,7 +36,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   generation,
   gameLogic
 }) => {
-  const [isServerProcessing, setIsServerProcessing] = useState<boolean>(false);
+  const [isServerProcessing, setIsServerProcessing] = React.useState<boolean>(false);
   const { status: serverStatus } = useServerStatus();
   
   const champion: Player | null = gameLogic.players && gameLogic.players.length > 0 
@@ -104,6 +103,9 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
       <AnalysisTabs
         numbers={gameLogic.numbers}
         dates={gameLogic.dates}
+        players={gameLogic.players}
+        boardNumbers={gameLogic.boardNumbers}
+        concursoNumber={gameLogic.concursoNumber}
         modelMetrics={gameLogic.modelMetrics}
         neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
         updateFrequencyData={gameLogic.updateFrequencyData}
