@@ -8,13 +8,11 @@ import { Input } from "@/components/ui/input";
 interface CheckpointControlsProps {
   savePath: string;
   onSavePathChange: (path: string) => void;
-  onAutoSave: () => void;
 }
 
 const CheckpointControls: React.FC<CheckpointControlsProps> = ({
   savePath,
   onSavePathChange,
-  onAutoSave,
 }) => {
   const { toast } = useToast();
   const [inputPath, setInputPath] = useState<string>(savePath);

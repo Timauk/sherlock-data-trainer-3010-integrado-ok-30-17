@@ -14,7 +14,6 @@ const PlayPage: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(1000);
   const [csvData, setCsvData] = useState<number[][]>([]);
-  const [csvDates, setCsvDates] = useState<Date[]>([]);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
@@ -44,7 +43,6 @@ const PlayPage: React.FC = () => {
         };
       });
       setCsvData(data.map(d => d.bolas));
-      setCsvDates(data.map(d => d.data));
       gameLogic.addLog("CSV carregado e processado com sucesso!");
       gameLogic.addLog(`Número de registros carregados: ${data.length}`);
       

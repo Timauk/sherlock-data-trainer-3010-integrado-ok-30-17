@@ -5,10 +5,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 interface AdvancedAnalysisProps {
   numbers: number[][];
-  dates: Date[];
 }
 
-const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ numbers, dates }) => {
+const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ numbers }) => {
   const calculatePatterns = () => {
     const patterns = {
       consecutive: 0,
