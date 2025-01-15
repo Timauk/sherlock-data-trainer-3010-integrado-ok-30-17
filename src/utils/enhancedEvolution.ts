@@ -1,4 +1,17 @@
-import { Player } from '../types/gameTypes';
+import { Player } from '@/types/gameTypes';
+
+export const createEnhancedPlayer = (id: number, generation: number): Player => {
+  return {
+    id,
+    name: `Enhanced Player ${id}`,
+    score: 0,
+    predictions: [],
+    weights: Array(10).fill(0).map(() => Math.random() * 2 - 1),
+    fitness: 0,
+    generation,
+    matches: 0
+  };
+};
 
 export const calculateFitness = (player: Player, boardNumbers: number[]): number => {
   const matches = player.predictions.filter(num => boardNumbers.includes(num)).length;

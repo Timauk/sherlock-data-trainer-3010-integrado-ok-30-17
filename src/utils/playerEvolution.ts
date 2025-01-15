@@ -1,30 +1,17 @@
-import { Player } from '../types/gameTypes';
+import { Player } from '@/types/gameTypes';
 import * as tf from '@tensorflow/tfjs';
 
-export const cloneChampion = (champion: Player, totalPlayers: number): Player[] => {
-  const clones: Player[] = [];
-  
-  // Mantém o campeão original
-  clones.push({...champion});
-  
-  // Cria clones com 50% de variação nos pesos
-  for (let i = 1; i < totalPlayers; i++) {
-    const modifiedWeights = champion.weights.map(weight => {
-      const variation = (Math.random() - 0.5) * weight;
-      return weight + variation;
-    });
-    
-    clones.push({
-      id: Math.random(),
-      score: 0,
-      predictions: [],
-      weights: modifiedWeights,
-      fitness: 0,
-      generation: champion.generation + 1
-    });
-  }
-  
-  return clones;
+export const cloneChampion = (champion: Player, count: number): Player[] => {
+  return Array(count).fill(null).map((_, index) => ({
+    id: Date.now() + index,
+    name: `Clone ${index + 1} of ${champion.name}`,
+    score: 0,
+    predictions: [],
+    weights: [...champion.weights],
+    fitness: 0,
+    generation: champion.generation + 1,
+    matches: 0
+  }));
 };
 
 export const updateModelWithChampionKnowledge = async (

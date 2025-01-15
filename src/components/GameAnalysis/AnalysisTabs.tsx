@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import AdvancedAnalysis from '../AdvancedAnalysis';
 import FrequencyAnalysis from '../FrequencyAnalysis';
 import LunarAnalysis from '../LunarAnalysis';
-import { Player, ModelVisualization } from '@/types/gameTypes';
+import { ModelVisualization } from '@/types/gameTypes';
 
 interface AnalysisTabsProps {
   numbers: number[][];
@@ -16,6 +16,8 @@ interface AnalysisTabsProps {
   };
   neuralNetworkVisualization?: ModelVisualization;
   onFrequencyUpdate: (data: Record<string, number[]>) => void;
+  boardNumbers: number[];
+  concursoNumber: number;
 }
 
 const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
@@ -23,7 +25,9 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   dates,
   modelMetrics,
   neuralNetworkVisualization,
-  onFrequencyUpdate
+  onFrequencyUpdate,
+  boardNumbers,
+  concursoNumber
 }) => {
   return (
     <Card className="mt-4">
