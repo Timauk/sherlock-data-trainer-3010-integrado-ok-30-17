@@ -102,15 +102,11 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
       </div>
       
       <AnalysisTabs
-        boardNumbers={gameLogic.boardNumbers}
-        concursoNumber={gameLogic.concursoNumber}
-        players={gameLogic.players}
-        evolutionData={gameLogic.evolutionData}
-        dates={gameLogic.dates}
         numbers={gameLogic.numbers}
-        updateFrequencyData={gameLogic.updateFrequencyData}
+        dates={gameLogic.dates}
         modelMetrics={gameLogic.modelMetrics}
-        neuralNetworkVisualization={gameLogic.neuralNetworkVisualization || undefined}
+        neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
+        updateFrequencyData={gameLogic.updateFrequencyData}
       />
     </div>
   );

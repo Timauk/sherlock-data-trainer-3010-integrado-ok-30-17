@@ -15,9 +15,7 @@ interface AnalysisTabsProps {
     totalPredictions: number;
   };
   neuralNetworkVisualization?: ModelVisualization;
-  onFrequencyUpdate: (data: Record<string, number[]>) => void;
-  boardNumbers: number[];
-  concursoNumber: number;
+  updateFrequencyData: (data: Record<string, number[]>) => void;
 }
 
 const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
@@ -25,9 +23,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   dates,
   modelMetrics,
   neuralNetworkVisualization,
-  onFrequencyUpdate,
-  boardNumbers,
-  concursoNumber
+  updateFrequencyData
 }) => {
   return (
     <Card className="mt-4">
@@ -41,7 +37,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
         <TabsContent value="frequency">
           <FrequencyAnalysis 
             numbers={numbers}
-            onFrequencyUpdate={onFrequencyUpdate}
+            onFrequencyUpdate={updateFrequencyData}
           />
         </TabsContent>
         
