@@ -14,13 +14,21 @@ interface ChampionPredictionsProps {
   isServerProcessing?: boolean;
 }
 
+interface Prediction {
+  numbers: number[];
+  estimatedAccuracy: number;
+  targetMatches: number;
+  matchesWithSelected: number;
+  isNeuralReduced?: boolean;
+}
+
 const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
   champion,
   trainedModel,
   lastConcursoNumbers,
   isServerProcessing = false
 }) => {
-  const [predictions, setPredictions] = useState<Array<{ numbers: number[], estimatedAccuracy: number, targetMatches: number, matchesWithSelected: number, isNeuralReduced?: boolean }>>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [copySuccess, setCopySuccess] = useState(false);
   const { toast } = useToast();
@@ -87,7 +95,7 @@ const ChampionPredictions: React.FC<ChampionPredictionsProps> = ({
         modelLoaded: !!trainedModel
       });
 
-      const newPredictions = [];
+      const newPredictions: Prediction[] = [];
       // Primeiros 8 jogos (originais)
       const targets = [
         { matches: 11, count: 2 },

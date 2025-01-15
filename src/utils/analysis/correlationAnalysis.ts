@@ -32,25 +32,13 @@ const analyzeNumberCorrelations = (numbers: number[][]): Map<number, number[]> =
           if (!correlations.has(num1)) {
             correlations.set(num1, []);
           }
-          correlations.get(num1)?.push(num2);
+          const currentCorrelations = correlations.get(num1);
+          if (currentCorrelations) {
+            currentCorrelations.push(num2);
+          }
         }
       });
     });
-  });
-
-  // Normalize and filter correlations
-  correlations.forEach((correlated, number) => {
-    const frequency = new Map<number, number>();
-    correlated.forEach(num => {
-      frequency.set(num, (frequency.get(num) || 0) + 1);
-    });
-
-    const significantCorrelations = Array.from(frequency.entries())
-      .filter(([_, freq]) => freq > correlated.length * 0.3)
-      .map(([num]) => num)
-      .sort((a, b) => a - b);
-
-    correlations.set(number, significantCorrelations);
   });
 
   return correlations;
@@ -61,7 +49,7 @@ const findSequentialPatterns = (numbers: number[][]): number[][] => {
   const minPatternLength = 3;
 
   for (let i = 0; i < numbers.length - minPatternLength; i++) {
-    const sequence = [];
+    const sequence: number[] = [];
     for (let j = 0; j < minPatternLength; j++) {
       sequence.push(...numbers[i + j]);
     }
