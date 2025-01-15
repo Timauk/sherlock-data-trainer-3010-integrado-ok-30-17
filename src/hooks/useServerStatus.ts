@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = process.env['NODE_ENV'] === 'production' 
+const API_URL = import.meta.env.PROD 
   ? window.location.origin 
   : 'http://localhost:3001';
 
