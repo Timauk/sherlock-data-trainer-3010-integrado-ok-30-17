@@ -18,7 +18,7 @@ const PlayPage: React.FC = () => {
   const { toast } = useToast();
   
   const { initializeModel } = useModelTraining();
-  const gameLogic = useGameLogic(csvData, null); // Inicialmente null, será atualizado após o carregamento
+  const gameLogic = useGameLogic(csvData, null);
 
   const loadCSV = useCallback(async (file: File) => {
     if (!file) {
@@ -61,19 +61,9 @@ const PlayPage: React.FC = () => {
     }
   }, [gameLogic, toast]);
 
-  const loadModel = useCallback(async (jsonFile: File, weightsFile: File) => {
-    if (!jsonFile || !weightsFile) {
-      toast({
-        title: "Erro",
-        description: "Arquivos do modelo não fornecidos",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const loadModel = useCallback(async (_jsonFile: File, _weightsFile: File) => {
     try {
       await initializeModel();
-      const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, weightsFile]));
       gameLogic.addLog("Modelo carregado com sucesso!");
       toast({
         title: "Modelo Carregado",

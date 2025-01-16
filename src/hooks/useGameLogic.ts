@@ -7,7 +7,7 @@ import { selectBestPlayers } from '../utils/evolutionSystem';
 import { Player, ChampionData, EvolutionDataEntry } from '../types/gameTypes';
 import { systemLogger } from '../utils/logging/systemLogger';
 
-export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
+export const useGameLogic = (_csvData: number[][], trainedModel: tf.LayersModel | null) => {
   const { players, setPlayers, initializePlayers } = useGameInitialization();
   const [generation, setGeneration] = useState<number>(1);
   const [gameCount, setGameCount] = useState<number>(0);
