@@ -3,13 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface FrequencyAnalysisProps {
   numbers: number[][];
-  onFrequencyUpdate: (data: Record<string, number[]>) => void;
+  updateFrequencyData: (data: Record<string, number[]>) => void;
   currentNumbers: number[];
 }
 
 const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   numbers,
-  onFrequencyUpdate,
+  updateFrequencyData,
   currentNumbers
 }) => {
   const frequencyData: Record<string, number[]> = {};
@@ -25,8 +25,10 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   });
 
   React.useEffect(() => {
-    onFrequencyUpdate(frequencyData);
-  }, [numbers, onFrequencyUpdate]);
+    if (typeof updateFrequencyData === 'function') {
+      updateFrequencyData(frequencyData);
+    }
+  }, [numbers, updateFrequencyData]);
 
   return (
     <Card>
