@@ -117,12 +117,12 @@ const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
             </div>
           </TabsContent>
 
-          {neuralNetworkVisualization && (
+          {neuralNetworkVisualization && modelMetrics && (
             <TabsContent value="neural">
               <NeuralNetworkVisualization 
                 layers={[15, 128, 64, 15]}
-                inputData={numbers[numbers.length - 1]}
-                outputData={neuralNetworkVisualization.predictions.map(p => p.probability)}
+                visualization={neuralNetworkVisualization}
+                metrics={modelMetrics}
               />
             </TabsContent>
           )}

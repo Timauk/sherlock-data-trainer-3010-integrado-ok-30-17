@@ -20,7 +20,7 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
       if (!frequencyData[key]) {
         frequencyData[key] = [];
       }
-      frequencyData[key].push(numberSet);
+      frequencyData[key].push(number);
     });
   });
 
