@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { ModelVisualization } from '@/types/gameTypes';
 
 interface NeuralNetworkVisualizationProps {
-  layers: number[];
+  layers?: number[];
   inputData?: number[];
   outputData?: number[];
+  visualization?: ModelVisualization;
+  metrics: {
+    accuracy: number;
+    randomAccuracy: number;
+    totalPredictions: number;
+  };
 }
 
-const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({ layers, inputData, outputData }) => {
+const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
+  layers = [15, 128, 128, 15],
+  visualization,
+  metrics,
+  inputData,
+  outputData
+}) => {
   const [activeNodes, setActiveNodes] = useState<string[]>([]);
   const width = 600;
   const height = 400;
@@ -14,26 +27,13 @@ const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
   const layerSpacing = width / (layers.length + 1);
 
   useEffect(() => {
-    if (inputData && outputData) {
-      const newActiveNodes: string[] = [];
-      
-      // Ativar nós da camada de entrada
-      inputData.forEach((value, index) => {
-        if (value > 0.5) { // Podemos ajustar este limiar conforme necessário
-          newActiveNodes.push(`node-0-${index}`);
-        }
-      });
-      
-      // Ativar nós da camada de saída
-      outputData.forEach((value, index) => {
-        if (value > 0.5) { // Podemos ajustar este limiar conforme necessário
-          newActiveNodes.push(`node-${layers.length - 1}-${index}`);
-        }
-      });
-      
+    if (visualization?.predictions) {
+      const newActiveNodes = visualization.predictions
+        .filter(pred => pred.probability > 0.5)
+        .map(pred => `node-${layers.length - 1}-${pred.number}`);
       setActiveNodes(newActiveNodes);
     }
-  }, [inputData, outputData, layers]);
+  }, [visualization, layers.length]);
 
   const calculateNodePosition = (layerIndex: number, nodeIndex: number, nodesInLayer: number) => {
     const x = (layerIndex + 1) * layerSpacing;
@@ -85,9 +85,23 @@ const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
   };
 
   return (
-    <div className="mt-8 bg-white p-4 rounded-lg shadow">
+    <div className="mt-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
       <h3 className="text-xl font-bold mb-4">Visualização da Rede Neural</h3>
-      <svg width={width} height={height}>
+      <div className="mb-4 grid grid-cols-3 gap-4">
+        <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded">
+          <p className="font-semibold">Precisão</p>
+          <p>{(metrics.accuracy * 100).toFixed(2)}%</p>
+        </div>
+        <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded">
+          <p className="font-semibold">Precisão Aleatória</p>
+          <p>{(metrics.randomAccuracy * 100).toFixed(2)}%</p>
+        </div>
+        <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded">
+          <p className="font-semibold">Total de Previsões</p>
+          <p>{metrics.totalPredictions}</p>
+        </div>
+      </div>
+      <svg width={width} height={height} className="mx-auto">
         {renderConnections()}
         {renderNodes()}
       </svg>

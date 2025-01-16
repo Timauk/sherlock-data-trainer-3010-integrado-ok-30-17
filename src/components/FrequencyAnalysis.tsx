@@ -9,7 +9,7 @@ interface FrequencyAnalysisProps {
 
 const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   numbers,
-  onFrequencyUpdate: onUpdate,
+  onFrequencyUpdate,
   currentNumbers
 }) => {
   const frequencyData: Record<string, number[]> = {};
@@ -25,17 +25,24 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   });
 
   React.useEffect(() => {
-    onUpdate(frequencyData);
-  }, [numbers, onUpdate]);
+    onFrequencyUpdate(frequencyData);
+  }, [numbers, onFrequencyUpdate]);
 
   return (
     <Card>
       <CardContent>
         <h3 className="text-lg font-semibold">Análise de Frequência</h3>
-        <div>
+        <div className="grid gap-2">
           {Object.entries(frequencyData).map(([number, sets]) => (
-            <div key={number} className={currentNumbers.includes(parseInt(number)) ? "bg-green-100 p-2" : "p-2"}>
-              <span>{number}: </span>
+            <div 
+              key={number} 
+              className={`p-2 rounded ${
+                currentNumbers.includes(Number(number)) 
+                  ? "bg-green-100 dark:bg-green-900" 
+                  : "bg-gray-50 dark:bg-gray-800"
+              }`}
+            >
+              <span className="font-medium">{number}: </span>
               <span>{sets.length} ocorrências</span>
             </div>
           ))}
