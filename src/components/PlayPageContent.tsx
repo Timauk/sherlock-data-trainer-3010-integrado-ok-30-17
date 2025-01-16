@@ -19,8 +19,7 @@ interface PlayPageContentProps {
   onModelUpload: (jsonFile: File, weightsFile: File) => void;
   onSaveModel: () => void;
   progress: number;
-  generation: number;
-  gameLogic: any; // Manteremos o tipo 'any' temporariamente para evitar problemas de compilação
+  gameLogic: any;
 }
 
 const PlayPageContent: React.FC<PlayPageContentProps> = ({
@@ -33,7 +32,6 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
   onModelUpload,
   onSaveModel,
   progress,
-  generation,
   gameLogic
 }) => {
   const [isServerProcessing, setIsServerProcessing] = React.useState<boolean>(false);
@@ -68,10 +66,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         />
       </div>
       
-      <GeneticTreeVisualization 
-        players={gameLogic.players}
-        generation={gameLogic.generation}
-      />
+      <GeneticTreeVisualization players={gameLogic.players} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="space-y-4">
@@ -108,7 +103,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         concursoNumber={gameLogic.concursoNumber}
         modelMetrics={gameLogic.modelMetrics}
         neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
-        updateFrequencyData={gameLogic.updateFrequencyData}
+        onFrequencyUpdate={gameLogic.updateFrequencyData}
       />
     </div>
   );

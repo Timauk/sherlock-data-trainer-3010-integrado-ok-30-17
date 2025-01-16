@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,10 @@ interface NumberSelectorProps {
 const NumberSelector: React.FC<NumberSelectorProps> = ({ onNumbersSelected }) => {
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    onNumbersSelected(selectedNumbers);
+  }, [selectedNumbers, onNumbersSelected]);
 
   const toggleNumber = (num: number) => {
     if (selectedNumbers.includes(num)) {

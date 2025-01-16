@@ -8,7 +8,7 @@ interface GeneticTreeVisualizationProps {
 }
 
 const GeneticTreeVisualization: React.FC<GeneticTreeVisualizationProps> = ({ 
-  players
+  players 
 }) => {
   const genealogyData = players.map(player => ({
     id: player.id,
