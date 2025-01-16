@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { usePerformanceAlerts } from "@/hooks/usePerformanceAlerts";
 import { performanceMonitor } from "@/utils/performance/performanceMonitor";
-import { modelMonitoring } from "@/utils/monitoring/modelMonitoring";
+import { modelMonitor } from "@/utils/monitoring/modelMonitoring"; // Corrigido de modelMonitoring para modelMonitor
 import { feedbackSystem } from "@/utils/prediction/feedbackSystem";
 import DiagnosticResults from './DiagnosticResults';
 
@@ -38,8 +38,8 @@ const SystemDiagnostics = () => {
 
     try {
       // Fase 1: Gestão de Dados e IA
-      const metrics = modelMonitoring.getMetricsSummary();
-      const accuracyPercentage = metrics.avgAccuracy * 100;
+      const metrics = modelMonitor.getAverageMetrics();
+      const accuracyPercentage = metrics.accuracy * 100;
       diagnosticResults.push({
         phase: "Fase 1: Gestão de Dados e IA",
         status: accuracyPercentage > 50 ? 'success' : 'warning',
@@ -60,7 +60,7 @@ const SystemDiagnostics = () => {
       setProgress(50);
 
       // Fase 3: Modelos Especializados
-      const specializedModels = modelMonitoring.getSpecializedModelsStatus();
+      const specializedModels = modelMonitor.getSpecializedModelsStatus();
       const modelsRatio = specializedModels.activeCount / specializedModels.totalCount;
       diagnosticResults.push({
         phase: "Fase 3: Modelos Especializados",
@@ -83,7 +83,7 @@ const SystemDiagnostics = () => {
       setProgress(85);
 
       // Fase 5: Análise Avançada
-      const analysisStatus = modelMonitoring.getAnalysisStatus();
+      const analysisStatus = modelMonitor.getAnalysisStatus();
       diagnosticResults.push({
         phase: "Fase 5: Análise Avançada",
         status: analysisStatus.activeAnalyses >= 6 ? 'success' : 'warning',

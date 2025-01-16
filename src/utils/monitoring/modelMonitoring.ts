@@ -12,7 +12,7 @@ class ModelMonitor {
       this.metrics = this.metrics.slice(-this.maxMetricsHistory);
     }
 
-    systemLogger.log('monitoring', 'Métricas do modelo atualizadas', metrics);
+    systemLogger.log('model', 'Métricas do modelo atualizadas', metrics); // Corrigido de 'monitoring' para 'model'
   }
 
   getAverageMetrics(): TrainingMetrics {
@@ -49,7 +49,7 @@ class ModelMonitor {
 
   clearMetrics(): void {
     this.metrics = [];
-    systemLogger.log('monitoring', 'Histórico de métricas limpo');
+    systemLogger.log('model', 'Histórico de métricas limpo'); // Corrigido de 'monitoring' para 'model'
   }
 }
 

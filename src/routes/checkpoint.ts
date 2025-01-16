@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/latest', async (req, res) => {
+router.get('/latest', async (_req, res) => { // Renomeado para _req já que não é utilizado
   try {
     const checkpoint = await checkpointManager.loadCheckpoint();
     
