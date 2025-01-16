@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getLunarPhase, analyzeLunarPatterns } from '@/utils/lunarCalculations';
+import { analyzeLunarPatterns } from '@/utils/lunarCalculations';
 
 interface LunarAnalysisProps {
   dates: Date[];

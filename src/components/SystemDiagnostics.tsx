@@ -7,7 +7,7 @@ import { performanceMonitor } from "@/utils/performance/performanceMonitor";
 import { modelMonitoring } from "@/utils/monitoring/modelMonitoring";
 import { feedbackSystem } from "@/utils/prediction/feedbackSystem";
 import DiagnosticResults from './DiagnosticResults';
-import { SystemStatus, SpecializedModelsStatus, DataQualityMetrics, AnalysisStatus } from '@/types/monitoring';
+import { DiagnosticResult } from './SystemDiagnostics';
 
 export interface DiagnosticResult {
   phase: string;

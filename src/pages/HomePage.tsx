@@ -1,11 +1,18 @@
-import React from 'react';
-import ImplementationChecklist from '@/components/ImplementationChecklist';
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
+  const handleNavigate = () => {
+    navigate('/play');
+  };
+
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Plano de Implementação</h1>
-      <ImplementationChecklist />
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-4xl font-bold mb-4">Bem-vindo ao Jogo</h1>
+      <p className="text-lg mb-8">Prepare-se para analisar e prever resultados!</p>
+      <Button onClick={handleNavigate}>Iniciar Jogo</Button>
     </div>
   );
 };

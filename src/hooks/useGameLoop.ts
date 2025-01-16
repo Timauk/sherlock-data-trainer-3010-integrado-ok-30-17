@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { systemLogger } from '@/utils/logging/systemLogger';
-import { TimeSeriesAnalysis } from '@/utils/analysis/timeSeriesAnalysis';
 
 export const useGameLoop = (initialState = {
   isPlaying: false,
