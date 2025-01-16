@@ -8,21 +8,26 @@ interface FrequencyAnalysisProps {
 }
 
 const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
-  numbers,
+  numbers = [],
   updateFrequencyData,
-  currentNumbers
+  currentNumbers = []
 }) => {
   const frequencyData: Record<string, number[]> = {};
 
-  numbers.forEach((numberSet) => {
-    numberSet.forEach((number) => {
-      const key = number.toString();
-      if (!frequencyData[key]) {
-        frequencyData[key] = [];
+  // Garantir que numbers existe antes de usar forEach
+  if (Array.isArray(numbers)) {
+    numbers.forEach((numberSet) => {
+      if (Array.isArray(numberSet)) {
+        numberSet.forEach((number) => {
+          const key = number.toString();
+          if (!frequencyData[key]) {
+            frequencyData[key] = [];
+          }
+          frequencyData[key].push(number);
+        });
       }
-      frequencyData[key].push(number);
     });
-  });
+  }
 
   React.useEffect(() => {
     if (typeof updateFrequencyData === 'function') {

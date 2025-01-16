@@ -66,6 +66,7 @@ export interface TrainingMetrics {
   epoch: number;
   validationLoss?: number;
   validationAccuracy?: number;
+  totalSamples?: number;
 }
 
 export interface ModelArtifacts {
