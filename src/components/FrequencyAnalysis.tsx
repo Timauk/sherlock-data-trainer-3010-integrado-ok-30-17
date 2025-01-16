@@ -14,7 +14,7 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
 }) => {
   const frequencyData: Record<string, number[]> = {};
 
-  // Garantir que numbers existe antes de usar forEach
+  // Garantir que numbers existe e é um array antes de usar forEach
   if (Array.isArray(numbers)) {
     numbers.forEach((numberSet) => {
       if (Array.isArray(numberSet)) {
