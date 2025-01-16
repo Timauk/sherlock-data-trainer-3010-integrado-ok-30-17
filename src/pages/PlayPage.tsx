@@ -146,6 +146,15 @@ const PlayPage: React.FC = () => {
     gameLogic.addLog("Jogo reiniciado.");
   }, [gameLogic]);
 
+  const handleSpeedChange = useCallback((value: number[]) => {
+    const newSpeed = 2000 - value[0];
+    setGameSpeed(newSpeed);
+    toast({
+      title: "Velocidade Ajustada",
+      description: `${newSpeed}ms por jogada`,
+    });
+  }, [toast]);
+
   useEffect(() => {
     initializeModel();
   }, [initializeModel]);
@@ -180,15 +189,6 @@ const PlayPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [isPlaying, csvData, gameLogic, gameSpeed, trainedModel, toast]);
 
-  const handleSpeedChange = useCallback((value: number[]) => {
-    const newSpeed = 2000 - value[0];
-    setGameSpeed(newSpeed);
-    toast({
-      title: "Velocidade Ajustada",
-      description: `${newSpeed}ms por jogada`,
-    });
-  }, [toast]);
-
   return (
     <div className="p-6">
       <PlayPageHeader />
@@ -216,7 +216,6 @@ const PlayPage: React.FC = () => {
         onModelUpload={loadModel}
         onSaveModel={saveModel}
         progress={progress}
-        generation={gameLogic.generation}
         gameLogic={gameLogic}
       />
     </div>

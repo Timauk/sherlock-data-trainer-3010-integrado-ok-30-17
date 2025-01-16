@@ -103,7 +103,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         concursoNumber={gameLogic.concursoNumber}
         modelMetrics={gameLogic.modelMetrics}
         neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
-        onFrequencyUpdate={gameLogic.updateFrequencyData}
+        updateFrequencyData={gameLogic.updateFrequencyData}
       />
     </div>
   );
