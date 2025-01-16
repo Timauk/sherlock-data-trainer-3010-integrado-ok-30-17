@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 export const useServerStatus = () => {
-  const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+  const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const { toast } = useToast();
 
   const checkServerStatus = async () => {
@@ -10,8 +10,11 @@ export const useServerStatus = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch('http://localhost:3001/api/status', {
-        signal: controller.signal
+      const response = await fetch('/api/status', {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       
       clearTimeout(timeoutId);
@@ -25,7 +28,7 @@ export const useServerStatus = () => {
       setStatus('offline');
       toast({
         title: "Servidor Indisponível",
-        description: "Verifique se o servidor está rodando em localhost:3001",
+        description: "Verifique se o servidor está rodando",
         variant: "destructive",
       });
     }

@@ -1,13 +1,23 @@
 import express from 'express';
+import { systemLogger } from '../utils/logging/systemLogger.js';
+
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.json({ 
-    status: 'online',
-    memory: process.memoryUsage(),
-    uptime: process.uptime(),
-    cpuUsage: process.cpuUsage()
-  });
+router.get('/', (_req, res) => {
+  try {
+    const statusInfo = {
+      status: 'online',
+      memory: process.memoryUsage(),
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    };
+    
+    systemLogger.log('system', 'Status check realizado com sucesso', statusInfo);
+    res.json(statusInfo);
+  } catch (error) {
+    systemLogger.log('system', 'Erro ao verificar status', { error });
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 export { router as statusRouter };
