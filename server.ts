@@ -60,7 +60,12 @@ app.get('/api', (_req: Request, res: Response) => {
   });
 });
 
-// Serve index.html for all other routes
+// Root route handler
+app.get('/', (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Serve index.html for all other routes (SPA fallback)
 app.get('*', (_req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
