@@ -55,11 +55,7 @@ export const useModelTraining = () => {
     }
   }, []);
 
-  const startTraining = useCallback(async (
-    historicalData: number[][],
-    dates: Date[],
-    lunarData: any[]
-  ) => {
+  const startTraining = useCallback(async (historicalData: number[][]) => {
     try {
       setIsTraining(true);
       setProgress(0);
