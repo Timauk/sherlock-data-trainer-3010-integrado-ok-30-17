@@ -23,9 +23,7 @@ export interface AnalysisTabsProps {
 const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   numbers,
   dates,
-  players,
   boardNumbers,
-  concursoNumber,
   modelMetrics,
   neuralNetworkVisualization,
   updateFrequencyData
@@ -55,7 +53,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
       
       <TabsContent value="neural">
         <NeuralNetworkVisualization
-          data={neuralNetworkVisualization}
+          visualization={neuralNetworkVisualization}
           metrics={modelMetrics}
         />
       </TabsContent>

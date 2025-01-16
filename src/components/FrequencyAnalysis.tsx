@@ -12,15 +12,15 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   onFrequencyUpdate: onUpdate,
   currentNumbers
 }) => {
-  // Logic to analyze frequency of numbers
   const frequencyData: Record<string, number[]> = {};
 
   numbers.forEach((numberSet) => {
     numberSet.forEach((number) => {
-      if (!frequencyData[number]) {
-        frequencyData[number] = [];
+      const key = number.toString();
+      if (!frequencyData[key]) {
+        frequencyData[key] = [];
       }
-      frequencyData[number].push(numberSet);
+      frequencyData[key].push(numberSet);
     });
   });
 
@@ -34,7 +34,7 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
         <h3 className="text-lg font-semibold">Análise de Frequência</h3>
         <div>
           {Object.entries(frequencyData).map(([number, sets]) => (
-            <div key={number}>
+            <div key={number} className={currentNumbers.includes(parseInt(number)) ? "bg-green-100 p-2" : "p-2"}>
               <span>{number}: </span>
               <span>{sets.length} ocorrências</span>
             </div>
