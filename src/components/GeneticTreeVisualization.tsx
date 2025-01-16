@@ -5,10 +5,11 @@ import { Player } from '@/types/gameTypes';
 
 interface GeneticTreeVisualizationProps {
   players: Player[];
-  generation: number;
 }
 
-const GeneticTreeVisualization: React.FC<GeneticTreeVisualizationProps> = ({ players, generation }) => {
+const GeneticTreeVisualization: React.FC<GeneticTreeVisualizationProps> = ({ 
+  players
+}) => {
   const genealogyData = players.map(player => ({
     id: player.id,
     generation: player.generation,

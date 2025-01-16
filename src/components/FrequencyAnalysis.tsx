@@ -33,7 +33,7 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
       <CardContent>
         <h3 className="text-lg font-semibold">Análise de Frequência</h3>
         <div className="grid gap-2">
-          {Object.entries(frequencyData).map(([number, sets]) => (
+          {Object.entries(frequencyData).map(([number, occurrences]) => (
             <div 
               key={number} 
               className={`p-2 rounded ${
@@ -43,7 +43,7 @@ const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
               }`}
             >
               <span className="font-medium">{number}: </span>
-              <span>{sets.length} ocorrências</span>
+              <span>{occurrences.length} ocorrências</span>
             </div>
           ))}
         </div>

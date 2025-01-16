@@ -3,8 +3,6 @@ import { ModelVisualization } from '@/types/gameTypes';
 
 interface NeuralNetworkVisualizationProps {
   layers?: number[];
-  inputData?: number[];
-  outputData?: number[];
   visualization?: ModelVisualization;
   metrics: {
     accuracy: number;
@@ -16,9 +14,7 @@ interface NeuralNetworkVisualizationProps {
 const NeuralNetworkVisualization: React.FC<NeuralNetworkVisualizationProps> = ({
   layers = [15, 128, 128, 15],
   visualization,
-  metrics,
-  inputData,
-  outputData
+  metrics
 }) => {
   const [activeNodes, setActiveNodes] = useState<string[]>([]);
   const width = 600;
