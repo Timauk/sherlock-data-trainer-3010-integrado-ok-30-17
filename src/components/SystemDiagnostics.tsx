@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -7,7 +6,6 @@ import { performanceMonitor } from "@/utils/performance/performanceMonitor";
 import { modelMonitoring } from "@/utils/monitoring/modelMonitoring";
 import { feedbackSystem } from "@/utils/prediction/feedbackSystem";
 import DiagnosticResults from './DiagnosticResults';
-import { DiagnosticResult } from './SystemDiagnostics';
 
 export interface DiagnosticResult {
   phase: string;
@@ -22,10 +20,6 @@ const SystemDiagnostics = () => {
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
   usePerformanceAlerts();
-
-  const getUIComponentCount = () => {
-    return document.querySelectorAll('[data-testid], [role]').length;
-  };
 
   const getPerformanceMetrics = () => {
     const metrics = performanceMonitor.getAverageMetrics();

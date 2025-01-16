@@ -15,23 +15,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [gameCount, setGameCount] = useState<number>(0);
   const [championData, setChampionData] = useState<ChampionData | undefined>();
   const [evolutionData, setEvolutionData] = useState<EvolutionDataEntry[]>([]);
-  const [neuralNetworkVisualization, setNeuralNetworkVisualization] = useState<ModelVisualization | null>(null);
-  const [modelMetrics, setModelMetrics] = useState<{
-    accuracy: number;
-    randomAccuracy: number;
-    totalPredictions: number;
-  }>({
-    accuracy: 0,
-    randomAccuracy: 0,
-    totalPredictions: 0,
-  });
-  const [dates, setDates] = useState<Date[]>([]);
-  const [numbers, setNumbers] = useState<number[][]>([]);
-  const [updateInterval, setUpdateInterval] = useState<number>(10);
   const [isInfiniteMode, setIsInfiniteMode] = useState<boolean>(false);
-  const [concursoNumber, setConcursoNumber] = useState<number>(0);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
-  const [boardNumbers, setBoardNumbers] = useState<number[]>([]);
   const [isManualMode, setIsManualMode] = useState<boolean>(false);
 
   const addLog = useCallback((message: string, matches?: number) => {
@@ -151,8 +136,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     players,
     generation,
     evolutionData,
-    neuralNetworkVisualization,
-    modelMetrics,
     initializePlayers,
     gameLoop,
     evolveGeneration,
@@ -160,12 +143,8 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     toggleInfiniteMode: useCallback(() => {
       setIsInfiniteMode(prev => !prev);
     }, []),
-    dates,
-    numbers,
-    updateFrequencyData,
     isInfiniteMode,
-    boardNumbers,
-    concursoNumber,
+    trainingData,
     trainedModel,
     gameCount,
     isManualMode,
