@@ -10,36 +10,24 @@ export const useServerStatus = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch('/api/status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+      const response = await fetch('http://localhost:3001/api/status', {
         signal: controller.signal
       });
       
       clearTimeout(timeoutId);
       
       if (response.ok) {
-        if (status !== 'online') {
-          setStatus('online');
-          console.log('Servidor conectado com sucesso');
-        }
+        setStatus('online');
       } else {
         throw new Error('Servidor respondeu com erro');
       }
     } catch (error) {
-      console.log('Erro ao verificar status do servidor:', error);
-      
-      if (status !== 'offline') {
-        setStatus('offline');
-        toast({
-          title: "Servidor Indisponível",
-          description: "Verifique se o servidor está rodando em localhost:3001",
-          variant: "destructive",
-        });
-      }
+      setStatus('offline');
+      toast({
+        title: "Servidor Indisponível",
+        description: "Verifique se o servidor está rodando em localhost:3001",
+        variant: "destructive",
+      });
     }
   };
 
@@ -50,7 +38,7 @@ export const useServerStatus = () => {
   }, []);
 
   return { 
-    status, 
+    status,
     checkServerStatus
   };
 };
