@@ -39,7 +39,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
       <TabsContent value="frequency">
         <FrequencyAnalysis 
           numbers={numbers} 
-          onFrequencyUpdate={updateFrequencyData}
+          updateFrequencyData={updateFrequencyData}
           currentNumbers={boardNumbers}
         />
       </TabsContent>

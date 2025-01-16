@@ -9,7 +9,8 @@ router.get('/', (_req, res) => {
       status: 'online',
       memory: process.memoryUsage(),
       uptime: process.uptime(),
-      cpuUsage: process.cpuUsage()
+      cpuUsage: process.cpuUsage(),
+      timestamp: new Date().toISOString()
     };
     
     logger.info(statusInfo, 'Status check');
