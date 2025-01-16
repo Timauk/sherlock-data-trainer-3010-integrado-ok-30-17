@@ -83,14 +83,16 @@ export interface ModelArtifacts {
 export interface AnalysisTabsProps {
   numbers: number[][];
   dates: Date[];
+  players: Player[];
+  boardNumbers: number[];
+  concursoNumber: number;
   modelMetrics: {
     accuracy: number;
     randomAccuracy: number;
     totalPredictions: number;
   };
   neuralNetworkVisualization?: ModelVisualization;
-  onFrequencyUpdate: (data: Record<string, number[]>) => void;
-  boardNumbers: number[];
+  updateFrequencyData: (data: Record<string, number[]>) => void;
 }
 
 export interface DataUploaderProps {

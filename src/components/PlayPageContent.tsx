@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from 'next-themes';
+import { useServerStatus } from '@/hooks/useServerStatus';
 import GameMetrics from './GameMetrics';
 import ControlPanel from './GameControls/ControlPanel';
 import AnalysisTabs from './GameAnalysis/AnalysisTabs';
