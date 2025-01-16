@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import * as tf from '@tensorflow/tfjs';
 import { useToast } from "@/hooks/use-toast";
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { PlayPageHeader } from '@/components/PlayPageHeader';
@@ -176,7 +175,7 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed, toast]);
 
   return (
     <div className="p-6">

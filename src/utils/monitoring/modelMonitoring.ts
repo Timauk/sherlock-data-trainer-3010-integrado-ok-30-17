@@ -1,82 +1,56 @@
-import { performanceMonitor } from "../performance/performanceMonitor";
-import { SystemStatus, SpecializedModelsStatus, DataQualityMetrics, AnalysisStatus, ModelMetricsSummary } from '@/types/monitoring';
+import { systemLogger } from '../logging/systemLogger';
+import { TrainingMetrics } from '@/types/gameTypes';
 
-class ModelMonitoring {
-  private static instance: ModelMonitoring;
-  private metrics: ModelMetricsSummary = {
-    avgAccuracy: 0,
-    totalSamples: 0
-  };
+class ModelMonitor {
+  private metrics: TrainingMetrics[] = [];
+  private readonly maxMetricsHistory = 1000;
 
-  private constructor() {}
-
-  static getInstance(): ModelMonitoring {
-    if (!ModelMonitoring.instance) {
-      ModelMonitoring.instance = new ModelMonitoring();
+  addMetrics(metrics: TrainingMetrics): void {
+    this.metrics.push(metrics);
+    
+    if (this.metrics.length > this.maxMetricsHistory) {
+      this.metrics = this.metrics.slice(-this.maxMetricsHistory);
     }
-    return ModelMonitoring.instance;
+
+    systemLogger.log('monitoring', 'Métricas do modelo atualizadas', metrics);
   }
 
-  recordMetrics(
-    accuracy: number,
-    learningRate: number,
-    errorRate: number
-  ): void {
-    const metrics: ModelMetricsSummary = {
-      avgAccuracy: accuracy,
-      totalSamples: this.metrics.totalSamples + 1
-    };
-
-    this.metrics = metrics;
-    this.checkThresholds(metrics);
-  }
-
-  private checkThresholds(metrics: ModelMetricsSummary): void {
-    if (metrics.avgAccuracy < 0.5) {
-      const event = new CustomEvent('modelAlert', {
-        detail: {
-          type: 'accuracy',
-          value: metrics.avgAccuracy,
-          metrics: metrics
-        }
-      });
-      window.dispatchEvent(event);
+  getAverageMetrics(): TrainingMetrics {
+    if (this.metrics.length === 0) {
+      return {
+        loss: 0,
+        accuracy: 0,
+        epoch: 0
+      };
     }
-  }
 
-  getMetricsSummary(): ModelMetricsSummary {
-    return this.metrics;
-  }
+    const sum = this.metrics.reduce((acc, curr) => ({
+      loss: acc.loss + curr.loss,
+      accuracy: acc.accuracy + curr.accuracy,
+      epoch: curr.epoch,
+      validationLoss: (acc.validationLoss || 0) + (curr.validationLoss || 0),
+      validationAccuracy: (acc.validationAccuracy || 0) + (curr.validationAccuracy || 0)
+    }));
 
-  getSpecializedModelsStatus(): SpecializedModelsStatus {
+    const count = this.metrics.length;
+
     return {
-      active: true,
-      activeCount: 4,
-      totalCount: 4
+      loss: sum.loss / count,
+      accuracy: sum.accuracy / count,
+      epoch: sum.epoch,
+      validationLoss: sum.validationLoss ? sum.validationLoss / count : undefined,
+      validationAccuracy: sum.validationAccuracy ? sum.validationAccuracy / count : undefined
     };
   }
 
-  getAnalysisStatus(): AnalysisStatus {
-    return {
-      active: true,
-      activeAnalyses: 8
-    };
+  getLatestMetrics(): TrainingMetrics | null {
+    return this.metrics[this.metrics.length - 1] || null;
   }
 
-  getSystemStatus(): SystemStatus {
-    return {
-      healthy: true,
-      health: 98,
-      alerts: 0
-    };
-  }
-
-  getDataQualityMetrics(): DataQualityMetrics {
-    return {
-      quality: 0.95,
-      completeness: 0.98
-    };
+  clearMetrics(): void {
+    this.metrics = [];
+    systemLogger.log('monitoring', 'Histórico de métricas limpo');
   }
 }
 
-export const modelMonitoring = ModelMonitoring.getInstance();
+export const modelMonitor = new ModelMonitor();
