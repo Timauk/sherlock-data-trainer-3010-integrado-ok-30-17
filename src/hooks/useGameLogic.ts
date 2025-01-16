@@ -5,7 +5,7 @@ import { useGameInitialization } from './useGameInitialization';
 import { useGameLoop } from './useGameLoop';
 import { cloneChampion, updateModelWithChampionKnowledge } from '../utils/playerEvolution';
 import { selectBestPlayers } from '../utils/evolutionSystem';
-import { Player, ModelVisualization, ChampionData, EvolutionDataEntry } from '../types/gameTypes';
+import { Player, ChampionData, EvolutionDataEntry } from '../types/gameTypes';
 import { systemLogger } from '../utils/logging/systemLogger';
 
 export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel | null) => {
@@ -18,6 +18,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [isInfiniteMode, setIsInfiniteMode] = useState<boolean>(false);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [isManualMode, setIsManualMode] = useState<boolean>(false);
+  const [updateInterval, setUpdateInterval] = useState<number>(1000);
 
   const addLog = useCallback((message: string, matches?: number) => {
     const logType = matches ? 'prediction' : 'action';
@@ -150,5 +151,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     isManualMode,
     toggleManualMode,
     clonePlayer,
+    updateInterval,
   };
 };

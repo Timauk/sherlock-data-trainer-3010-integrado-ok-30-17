@@ -1,6 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useToast } from "@/hooks/use-toast";
-import { systemLogger } from '@/utils/logging/systemLogger';
+import { useState, useEffect } from 'react';
 
 export const useGameLoop = (initialState = {
   isPlaying: false,
@@ -8,14 +6,13 @@ export const useGameLoop = (initialState = {
   frequencyData: {} as Record<string, number[]>
 }) => {
   const [state, setState] = useState(initialState);
-  const { toast } = useToast();
 
-  const updateFrequencyData = useCallback((newData: Record<string, number[]>) => {
+  const updateFrequencyData = (newData: Record<string, number[]>) => {
     setState(prev => ({
       ...prev,
       frequencyData: newData
     }));
-  }, []);
+  };
 
   useEffect(() => {
     if (state.isPlaying) {
