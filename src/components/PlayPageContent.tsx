@@ -43,6 +43,14 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         gameLogic.players[0])
     : null;
 
+  const defaultMetrics = {
+    accuracy: 0,
+    randomAccuracy: 0,
+    totalPredictions: 0,
+    perGameAccuracy: 0,
+    perGameRandomAccuracy: 0
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <ProcessingSelector
@@ -55,11 +63,11 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         <GameMetrics 
           progress={progress}
           champion={champion}
-          modelMetrics={gameLogic.modelMetrics}
+          modelMetrics={gameLogic.modelMetrics || defaultMetrics}
         />
         
         <RealTimeFeedback
-          accuracy={gameLogic.modelMetrics.accuracy * 100}
+          accuracy={(gameLogic.modelMetrics?.accuracy || 0) * 100}
           predictionConfidence={champion?.fitness ? champion.fitness * 100 : 0}
           processingSpeed={90}
           memoryUsage={75}
@@ -101,7 +109,7 @@ const PlayPageContent: React.FC<PlayPageContentProps> = ({
         players={gameLogic.players}
         boardNumbers={gameLogic.boardNumbers}
         concursoNumber={gameLogic.concursoNumber}
-        modelMetrics={gameLogic.modelMetrics}
+        modelMetrics={gameLogic.modelMetrics || defaultMetrics}
         neuralNetworkVisualization={gameLogic.neuralNetworkVisualization}
         updateFrequencyData={gameLogic.updateFrequencyData}
       />
