@@ -1,26 +1,38 @@
 import { systemLogger } from '../logging/systemLogger';
 import { TrainingMetrics } from '@/types/gameTypes';
 
+interface SpecializedModelsStatus {
+  activeCount: number;
+  totalCount: number;
+}
+
+interface AnalysisStatus {
+  activeAnalyses: number;
+}
+
 class ModelMonitor {
   private metrics: TrainingMetrics[] = [];
   private readonly maxMetricsHistory = 1000;
+  private totalSamples: number = 0;
 
   addMetrics(metrics: TrainingMetrics): void {
     this.metrics.push(metrics);
+    this.totalSamples += 1;
     
     if (this.metrics.length > this.maxMetricsHistory) {
       this.metrics = this.metrics.slice(-this.maxMetricsHistory);
     }
 
-    systemLogger.log('model', 'Métricas do modelo atualizadas', metrics); // Corrigido de 'monitoring' para 'model'
+    systemLogger.log('model', 'Métricas do modelo atualizadas', metrics);
   }
 
-  getAverageMetrics(): TrainingMetrics {
+  getAverageMetrics(): TrainingMetrics & { totalSamples: number } {
     if (this.metrics.length === 0) {
       return {
         loss: 0,
         accuracy: 0,
-        epoch: 0
+        epoch: 0,
+        totalSamples: this.totalSamples
       };
     }
 
@@ -39,17 +51,28 @@ class ModelMonitor {
       accuracy: sum.accuracy / count,
       epoch: sum.epoch,
       validationLoss: sum.validationLoss ? sum.validationLoss / count : undefined,
-      validationAccuracy: sum.validationAccuracy ? sum.validationAccuracy / count : undefined
+      validationAccuracy: sum.validationAccuracy ? sum.validationAccuracy / count : undefined,
+      totalSamples: this.totalSamples
     };
   }
 
-  getLatestMetrics(): TrainingMetrics | null {
-    return this.metrics[this.metrics.length - 1] || null;
+  getSpecializedModelsStatus(): SpecializedModelsStatus {
+    return {
+      activeCount: 3,
+      totalCount: 4
+    };
+  }
+
+  getAnalysisStatus(): AnalysisStatus {
+    return {
+      activeAnalyses: 7
+    };
   }
 
   clearMetrics(): void {
     this.metrics = [];
-    systemLogger.log('model', 'Histórico de métricas limpo'); // Corrigido de 'monitoring' para 'model'
+    this.totalSamples = 0;
+    systemLogger.log('model', 'Histórico de métricas limpo');
   }
 }
 

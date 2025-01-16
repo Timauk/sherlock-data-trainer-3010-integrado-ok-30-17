@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { usePerformanceAlerts } from "@/hooks/usePerformanceAlerts";
 import { performanceMonitor } from "@/utils/performance/performanceMonitor";
-import { modelMonitor } from "@/utils/monitoring/modelMonitoring"; // Corrigido de modelMonitoring para modelMonitor
+import { modelMonitor } from "@/utils/monitoring/modelMonitoring";
 import { feedbackSystem } from "@/utils/prediction/feedbackSystem";
 import DiagnosticResults from './DiagnosticResults';
 
