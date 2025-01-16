@@ -17,9 +17,8 @@ const PlayPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
-  const { model: trainedModel, initializeModel } = useModelTraining();
-  
-  const gameLogic = useGameLogic(csvData, trainedModel);
+  const { initializeModel } = useModelTraining();
+  const gameLogic = useGameLogic(csvData, null); // Inicialmente null, será atualizado após o carregamento
 
   const loadCSV = useCallback(async (file: File) => {
     if (!file) {
@@ -93,7 +92,7 @@ const PlayPage: React.FC = () => {
   }, [gameLogic, toast, initializeModel]);
 
   const saveModel = useCallback(async () => {
-    if (!trainedModel) {
+    if (!gameLogic.trainedModel) {
       toast({
         title: "Erro",
         description: "Nenhum modelo para salvar",
@@ -103,7 +102,7 @@ const PlayPage: React.FC = () => {
     }
 
     try {
-      await trainedModel.save('downloads://modelo-atual');
+      await gameLogic.trainedModel.save('downloads://modelo-atual');
       gameLogic.addLog("Modelo salvo com sucesso!");
       toast({
         title: "Modelo Salvo",
@@ -119,10 +118,10 @@ const PlayPage: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [trainedModel, gameLogic, toast]);
+  }, [gameLogic, toast]);
 
   const playGame = useCallback(() => {
-    if (!trainedModel || csvData.length === 0) {
+    if (!gameLogic.trainedModel || csvData.length === 0) {
       toast({
         title: "Erro",
         description: "Verifique se o modelo e os dados CSV foram carregados",
@@ -132,7 +131,7 @@ const PlayPage: React.FC = () => {
     }
     setIsPlaying(true);
     gameLogic.addLog("Jogo iniciado.");
-  }, [trainedModel, csvData, gameLogic, toast]);
+  }, [gameLogic, csvData.length, toast]);
 
   const pauseGame = useCallback(() => {
     setIsPlaying(false);
@@ -161,7 +160,7 @@ const PlayPage: React.FC = () => {
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
-    if (isPlaying && trainedModel) {
+    if (isPlaying && gameLogic.trainedModel) {
       intervalId = setInterval(async () => {
         try {
           gameAnalysisSystem.getMetrics();
@@ -187,7 +186,7 @@ const PlayPage: React.FC = () => {
       }, gameSpeed);
     }
     return () => clearInterval(intervalId);
-  }, [isPlaying, csvData, gameLogic, gameSpeed, trainedModel, toast]);
+  }, [isPlaying, csvData, gameLogic, gameSpeed]);
 
   return (
     <div className="p-6">

@@ -16,7 +16,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
   const [isInfiniteMode, setIsInfiniteMode] = useState<boolean>(false);
   const [trainingData, setTrainingData] = useState<number[][]>([]);
   const [isManualMode, setIsManualMode] = useState<boolean>(false);
-  const [updateInterval, setUpdateInterval] = useState<number>(1000);
+  const [updateInterval] = useState<number>(1000);
 
   const addLog = useCallback((message: string, matches?: number) => {
     const logType = matches ? 'prediction' : 'action';
@@ -87,7 +87,7 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     }
   }, [players, generation, trainedModel, gameCount, championData, trainingData]);
 
-  const updateFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
+  const handleFrequencyData = useCallback((newFrequencyData: { [key: string]: number[] }) => {
     if (trainedModel && players.length > 0) {
       const frequencyFeatures = Object.values(newFrequencyData).flat();
       setTrainingData(prev => {
@@ -125,12 +125,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     initializePlayers();
   }, [initializePlayers]);
 
-  useEffect(() => {
-    if (csvData.length > 0) {
-      setUpdateInterval(Math.max(10, Math.floor(csvData.length / 10)));
-    }
-  }, [csvData]);
-
   return {
     players,
     generation,
@@ -150,5 +144,6 @@ export const useGameLogic = (csvData: number[][], trainedModel: tf.LayersModel |
     toggleManualMode,
     clonePlayer,
     updateInterval,
+    updateFrequencyData: handleFrequencyData
   };
 };
