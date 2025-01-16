@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useToast } from "@/components/ui/use-toast";
-
-const API_URL = import.meta.env.PROD 
-  ? window.location.origin 
-  : 'http://localhost:3001';
+import { useToast } from "@/hooks/use-toast";
 
 export const useServerStatus = () => {
   const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
@@ -14,7 +10,7 @@ export const useServerStatus = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${API_URL}/api/status`, {
+      const response = await fetch('/api/status', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

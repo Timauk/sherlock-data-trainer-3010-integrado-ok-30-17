@@ -41,7 +41,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
       <TabsContent value="frequency">
         <FrequencyAnalysis 
           numbers={numbers} 
-          onUpdate={updateFrequencyData}
+          onFrequencyUpdate={updateFrequencyData}
           currentNumbers={boardNumbers}
         />
       </TabsContent>
@@ -55,7 +55,7 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
       
       <TabsContent value="neural">
         <NeuralNetworkVisualization
-          visualization={neuralNetworkVisualization}
+          data={neuralNetworkVisualization}
           metrics={modelMetrics}
         />
       </TabsContent>
