@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+
 import { useToast } from "@/hooks/use-toast";
 
 // Função para calcular pesos baseados na idade dos dados
@@ -71,3 +72,4 @@ export const setupPeriodicRetraining = (
     }
   }, interval);
 };
+

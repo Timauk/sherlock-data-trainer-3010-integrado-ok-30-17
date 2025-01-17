@@ -1,5 +1,4 @@
 import * as tf from '@tensorflow/tfjs';
-import { ModelArtifacts } from '../../types/gameTypes';
 import { systemLogger } from '../logging/systemLogger';
 
 export class ModelManager {
@@ -14,7 +13,7 @@ export class ModelManager {
     return ModelManager.instance;
   }
 
-  async saveModel(model: tf.LayersModel, metadata?: any): Promise<void> {
+  async saveModel(model: tf.LayersModel): Promise<void> {
     try {
       const artifacts = await model.save('indexeddb://current-model');
       systemLogger.log('model', 'Modelo salvo com sucesso', { artifacts });
@@ -47,7 +46,7 @@ export class ModelManager {
 }
 
 export const modelManagementSystem = {
-  async saveModel(model: tf.LayersModel, metadata?: any): Promise<void> {
+  async saveModel(model: tf.LayersModel): Promise<void> {
     try {
       const artifacts = await model.save('indexeddb://current-model');
       systemLogger.log('model', 'Modelo salvo com sucesso', { artifacts });

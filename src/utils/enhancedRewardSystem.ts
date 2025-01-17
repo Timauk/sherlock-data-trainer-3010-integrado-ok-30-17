@@ -1,5 +1,3 @@
-import { systemLogger } from './logging/systemLogger';
-
 interface RewardFactors {
   matches: number;
   consistency: number;

@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { ModelManager } from '../integrated/modelManagementSystem';
 import { systemLogger } from '../logging/systemLogger';
-import { ModelArtifacts } from '../../types/gameTypes';
 
 class CheckpointManager {
   private modelManager: ModelManager;

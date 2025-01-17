@@ -1,5 +1,3 @@
-import { differenceInDays } from 'date-fns';
-
 export interface DataSummary {
   period: string;
   frequencies: { [key: number]: number };
@@ -19,7 +17,7 @@ export const summarizeHistoricalData = (
   dates: Date[]
 ): DataSummary[] => {
   const summaries: DataSummary[] = [];
-  const periodLength = 50; // Agrupa dados em períodos de 50 jogos
+  const periodLength = 50;
 
   for (let i = 0; i < numbers.length; i += periodLength) {
     const periodNumbers = numbers.slice(i, i + periodLength);

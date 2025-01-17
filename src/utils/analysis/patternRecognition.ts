@@ -1,5 +1,4 @@
-import { differenceInDays } from 'date-fns';
-
+// Removendo a importação não utilizada
 export interface PatternAnalysis {
   repeatingSequences: number[][];
   hotNumbers: number[];
