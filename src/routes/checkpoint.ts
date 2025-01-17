@@ -22,7 +22,8 @@ router.post('/', async (req, res) => {
       csvData: req.body.csvData
     };
 
-    await checkpointManager.saveCheckpoint(model, checkpointData);
+    // Removido o segundo argumento que estava causando o erro
+    await checkpointManager.saveCheckpoint(model);
 
     logger.info('Checkpoint saved successfully');
     res.json({ 
@@ -37,7 +38,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/latest', async (_req, res) => { // Renomeado para _req já que não é utilizado
+router.get('/latest', async (_req, res) => {
   try {
     const checkpoint = await checkpointManager.loadCheckpoint();
     
