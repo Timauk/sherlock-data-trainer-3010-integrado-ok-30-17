@@ -2,6 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { systemLogger } from '../logging/systemLogger';
 import { deepPatternAnalyzer } from '../analysis/deepPatternAnalysis';
 import { rewardSystem } from '../enhancedRewardSystem';
+import { Player } from '@/types/gameTypes';
 
 interface FeedbackMetrics {
   accuracy: number;
@@ -28,13 +29,13 @@ export class LearningFeedbackLoop {
     model: tf.LayersModel,
     prediction: number[],
     actual: number[],
-    patterns: number[][]
+    players: Player[]
   ): Promise<void> {
-    const deepPatterns = await deepPatternAnalyzer.analyzePatterns(patterns);
+    const deepPatterns = await deepPatternAnalyzer.analyzePatterns(players);
     
     const reward = rewardSystem.calculateReward({
       matches: this.calculateMatches(prediction, actual),
-      consistency: this.calculateConsistency(patterns),
+      consistency: this.calculateConsistency(players),
       novelty: this.calculateNovelty(deepPatterns),
       efficiency: this.calculateEfficiency(prediction, actual)
     });
@@ -58,8 +59,8 @@ export class LearningFeedbackLoop {
     return prediction.filter(p => actual.includes(p)).length;
   }
 
-  private calculateConsistency(patterns: number[][]): number {
-    return patterns.length > 0 ? 0.5 : 0;
+  private calculateConsistency(players: Player[]): number {
+    return players.length > 0 ? 0.5 : 0;
   }
 
   private calculateNovelty(patterns: any[]): number {

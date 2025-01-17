@@ -18,7 +18,7 @@ export class EnsembleLearning {
       const predictions = await this.generatePredictions(players);
       systemLogger.log('system', 'Modelo treinado com sucesso', { predictions });
     } catch (error) {
-      systemLogger.log('error', 'Erro ao treinar modelo', { error });
+      systemLogger.log('system', 'Erro ao treinar modelo', { error });
       throw error;
     }
   }
