@@ -33,6 +33,11 @@ export default defineConfig(({ mode }) => ({
     sourcemap: true,
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
     }
   }
 }));

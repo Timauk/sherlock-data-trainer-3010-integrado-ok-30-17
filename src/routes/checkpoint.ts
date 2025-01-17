@@ -15,15 +15,12 @@ router.post('/', async (req, res) => {
 
     const { model, ...restData } = req.body;
 
-    const checkpointData: CheckpointData = {
-      timestamp: new Date().toISOString(),
+    await checkpointManager.saveCheckpoint({
+      ...restData,
       systemInfo,
-      gameState: restData,
+      timestamp: new Date().toISOString(),
       csvData: req.body.csvData
-    };
-
-    // Removido o segundo argumento que estava causando o erro
-    await checkpointManager.saveCheckpoint(model);
+    });
 
     logger.info('Checkpoint saved successfully');
     res.json({ 
