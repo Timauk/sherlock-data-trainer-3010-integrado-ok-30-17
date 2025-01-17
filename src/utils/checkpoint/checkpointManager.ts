@@ -9,9 +9,9 @@ class CheckpointManager {
     this.modelManager = ModelManager.getInstance();
   }
 
-  async saveCheckpoint(model: tf.LayersModel, metadata?: any): Promise<void> {
+  async saveCheckpoint(model: tf.LayersModel): Promise<void> {
     try {
-      await this.modelManager.saveModel(model, metadata);
+      await this.modelManager.saveModel(model);
       systemLogger.log('checkpoint', 'Checkpoint salvo com sucesso');
     } catch (error) {
       systemLogger.log('system', 'Erro ao salvar checkpoint', { error });

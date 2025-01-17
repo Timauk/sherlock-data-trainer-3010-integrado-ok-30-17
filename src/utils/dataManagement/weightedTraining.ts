@@ -1,20 +1,15 @@
 import * as tf from '@tensorflow/tfjs';
 
-import { useToast } from "@/hooks/use-toast";
-
-// Função para calcular pesos baseados na idade dos dados
 export const calculateDataWeights = (dates: Date[]): number[] => {
   const now = new Date();
   const maxAge = Math.max(...dates.map(date => now.getTime() - date.getTime()));
   
   return dates.map(date => {
     const age = now.getTime() - date.getTime();
-    // Dados mais recentes têm peso maior (0.5 a 1.0)
     return 0.5 + (0.5 * (1 - age / maxAge));
   });
 };
 
-// Função para retreinar o modelo periodicamente
 export const periodicModelRetraining = async (
   model: tf.LayersModel,
   historicalData: number[][],
@@ -53,7 +48,6 @@ export const periodicModelRetraining = async (
   }
 };
 
-// Configuração do intervalo de retreinamento
 export const setupPeriodicRetraining = (
   model: tf.LayersModel,
   historicalData: number[][],
@@ -61,7 +55,7 @@ export const setupPeriodicRetraining = (
   addLog: (message: string) => void,
   intervalHours: number = 24
 ) => {
-  const interval = intervalHours * 60 * 60 * 1000; // Converte horas para milissegundos
+  const interval = intervalHours * 60 * 60 * 1000;
   
   return setInterval(async () => {
     try {
@@ -72,4 +66,3 @@ export const setupPeriodicRetraining = (
     }
   }, interval);
 };
-

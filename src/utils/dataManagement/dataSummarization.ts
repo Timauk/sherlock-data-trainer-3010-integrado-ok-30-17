@@ -29,28 +29,22 @@ export const summarizeHistoricalData = (
     const sumRange: number[] = [];
 
     periodNumbers.forEach(draw => {
-      // Contagem de frequências
       draw.forEach(num => {
         frequencies[num] = (frequencies[num] || 0) + 1;
       });
 
-      // Análise de consecutivos
       for (let j = 1; j < draw.length; j++) {
         if (draw[j] === draw[j-1] + 1) consecutive++;
       }
 
-      // Contagem par/ímpar
       evenCount += draw.filter(n => n % 2 === 0).length;
-
-      // Soma total
       sumRange.push(draw.reduce((a, b) => a + b, 0));
     });
 
-    // Análise sazonal
     const monthlyTrends = Array(12).fill(0);
     const weeklyTrends = Array(7).fill(0);
 
-    periodDates.forEach((date, idx) => {
+    periodDates.forEach(date => {
       monthlyTrends[date.getMonth()]++;
       weeklyTrends[date.getDay()]++;
     });
