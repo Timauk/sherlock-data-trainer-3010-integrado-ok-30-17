@@ -1,7 +1,7 @@
 import express from 'express';
 import { checkpointManager } from '../utils/checkpoint/checkpointManager.js';
 import { logger } from '../utils/logging/logger.js';
-import type { CheckpointData, SystemInfo } from '../types/checkpointTypes';
+import type { SystemInfo } from '../types/checkpointTypes';
 
 const router = express.Router();
 
