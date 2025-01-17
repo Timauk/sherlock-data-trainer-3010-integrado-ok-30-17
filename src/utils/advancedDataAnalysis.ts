@@ -1,4 +1,4 @@
-import { differenceInDays, getDay, getMonth } from 'date-fns';
+import { getDay, getMonth } from 'date-fns';
 
 interface AdvancedMetrics {
   dayOfWeekPatterns: number[];
@@ -7,8 +7,8 @@ interface AdvancedMetrics {
   numberGaps: number[];
   consecutivePatterns: number[];
   sumPatterns: number;
-  consecutive: number;  // Added this
-  evenOdd: number;     // Added this
+  consecutive: number;
+  evenOdd: number;
 }
 
 export const analyzeAdvancedPatterns = (

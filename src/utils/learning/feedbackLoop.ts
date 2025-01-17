@@ -59,15 +59,16 @@ export class LearningFeedbackLoop {
   }
 
   private calculateConsistency(patterns: number[][]): number {
-    return 0.5;
+    return patterns.length > 0 ? 0.5 : 0;
   }
 
   private calculateNovelty(patterns: any[]): number {
-    return 0.5;
+    return patterns.length > 0 ? 0.5 : 0;
   }
 
   private calculateEfficiency(prediction: number[], actual: number[]): number {
-    return 0.5;
+    const matches = prediction.filter(p => actual.includes(p)).length;
+    return matches / actual.length;
   }
 
   private async calculateLoss(
