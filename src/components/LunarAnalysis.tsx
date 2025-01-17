@@ -9,10 +9,28 @@ interface LunarAnalysisProps {
   recentResults?: number;
 }
 
-const LunarAnalysis: React.FC<LunarAnalysisProps> = ({ dates, numbers, recentResults = 100 }) => {
-  // Pega apenas os resultados mais recentes
-  const recentDates = dates.slice(-recentResults);
-  const recentNumbers = numbers.slice(-recentResults);
+const LunarAnalysis: React.FC<LunarAnalysisProps> = ({ 
+  dates = [], 
+  numbers = [], 
+  recentResults = 100 
+}) => {
+  // Verifica se temos dados válidos
+  if (!dates.length || !numbers.length) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Análise Lunar</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Sem dados disponíveis para análise</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Pega apenas os resultados mais recentes com verificação de limites
+  const recentDates = dates.slice(-Math.min(recentResults, dates.length));
+  const recentNumbers = numbers.slice(-Math.min(recentResults, numbers.length));
   
   const patterns = analyzeLunarPatterns(recentDates, recentNumbers);
   

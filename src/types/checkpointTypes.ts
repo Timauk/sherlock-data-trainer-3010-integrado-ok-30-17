@@ -1,3 +1,5 @@
+import { LayersModel } from '@tensorflow/tfjs';
+
 export interface SystemInfo {
   totalMemory: number;
   freeMemory: number;
@@ -7,6 +9,11 @@ export interface SystemInfo {
 export interface CheckpointData {
   timestamp: string;
   systemInfo: SystemInfo;
-  modelState: any;
-  version: string;
+  gameState: any; // Adicionado gameState como any por enquanto
+  csvData?: string;
+}
+
+export interface Checkpoint {
+  model: LayersModel;
+  data: CheckpointData;
 }
